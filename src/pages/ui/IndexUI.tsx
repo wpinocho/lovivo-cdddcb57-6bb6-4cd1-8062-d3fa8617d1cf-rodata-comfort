@@ -28,9 +28,9 @@ const HERO_IMG = '/hero-rider.jpg'
 const LIFESTYLE_CITY = '/lifestyle-1.jpg'
 const LIFESTYLE_CLOSEUP = '/lifestyle-2.jpg'
 const LIFESTYLE_HIGHWAY = '/lifestyle-3.jpg'
-const PRODUCT_WORN = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/temp_1775758153018_41fdd5d1/1775758153019-o1owc493xo.png'
-const PRODUCT_FLAT = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/temp_1775758153018_41fdd5d1/1775758153019-xrjmy4v1q.png'
-const PRODUCT_FEATURES = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/temp_1775758153018_41fdd5d1/1775758153019-oxgjmtqqit.png'
+const PRODUCT_WORN = '/product-worn.jpg'
+const PRODUCT_FLAT = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775767354281-gqxi2j4hklp.webp'
+const PRODUCT_FEATURES = '/product-worn.jpg'
 const BUY_URL = '/productos/soporte-lumbar-rodata-one'
 
 interface IndexUIProps {

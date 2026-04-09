@@ -12,14 +12,27 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 2)
-- Researched competitor PDP pages: Motocush, Therabody, Hyperice
-- Generated 4 new images saved to public/:
-  - `/pdp-lifestyle-1.jpg` — Mexican rider with product on CDMX street at dusk
-  - `/pdp-lifestyle-2.jpg` — Rider on Mexican highway/mountains with product (back view)  
-  - `/pdp-features-es.jpg` — Spanish-labeled product callout with rodata.mx branding
-  - `/pdp-testimonials.jpg` — testimonial portraits
-- Fully rebuilt `src/pages/ui/ProductPageUI.tsx` — 11-section premium PDP (staged, will be live after commit)
+## Recent Changes (Session 3)
+- Fixed all "Motosupport" branded images — replaced with correct RODATA branding
+- Generated new `hero-rider.jpg` — rider on rainy urban street, cinematic dark mood
+- Generated new `product-worn.jpg` — RODATA lumbar support worn by rider on Mexican cobblestone street at night (Gemini edit from uploaded product photo) — BEST asset
+- Updated `PRODUCT_FLAT` — using user-uploaded product photo (clean studio shot, RODATA branding, dark bg)
+- Updated `PRODUCT_FEATURES` in IndexUI — reuses `product-worn.jpg` (cinematic banner)
+- Updated `FEATURES_ES` in ProductPageUI — uses uploaded product flat shot
+- IndexUI and ProductPageUI both updated to use correct image paths
+
+## Image Assets (Current)
+| File | Usage | Notes |
+|------|-------|-------|
+| `/hero-rider.jpg` | IndexUI hero background | Generated - urban rider, dark/cinematic |
+| `/product-worn.jpg` | IndexUI hero right, PDP lifestyle, features banner | Generated - rider on CDMX cobblestone, RODATA visible |
+| `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT (IndexUI + PDP gallery) | User-uploaded — clean studio shot, RODATA label |
+| `/lifestyle-1.jpg` | IndexUI lifestyle grid | From previous session |
+| `/lifestyle-2.jpg` | IndexUI lifestyle grid | From previous session |
+| `/lifestyle-3.jpg` | IndexUI problem section + final CTA | From previous session |
+| `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 |
+| `/pdp-lifestyle-2.jpg` | PDP highway lifestyle break | From session 2 |
+| `/pdp-features-es.jpg` | (replaced — no longer used) | Was "Motosupport" branded |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
 1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
@@ -53,7 +66,7 @@ Full premium landing page + premium product detail page are built. The store tar
 - Connect Stripe payment gateway (Dashboard)
 - Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
 - Replace placeholder testimonials with real rider reviews post-launch
-- Lifestyle images are AI-generated — replace with real brand shoot when available
+- lifestyle-1/2/3.jpg and pdp-lifestyle-1/2.jpg — verify these don't have "Motosupport" branding
 
 ## User Preferences
 - Language: Spanish (Mexico)
