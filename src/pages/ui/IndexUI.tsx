@@ -24,6 +24,9 @@ import {
 import type { UseIndexLogicReturn } from '@/components/headless/HeadlessIndex'
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
+const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5cj210ebhw5.webp'
+const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-qkvhxknpkwp.webp'
+const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-cy9gmns3t8p.webp'
 const HERO_IMG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775772513540-16g7elmcuii.webp'
 const LIFESTYLE_CITY = '/lifestyle-1.jpg'
 const LIFESTYLE_CLOSEUP = '/lifestyle-2.jpg'
@@ -505,39 +508,53 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
                 name: 'Carlos',
                 city: 'CDMX',
                 stars: 5,
+                photo: REVIEW_IMG_1,
               },
               {
                 text: 'Se siente firme pero no incómodo. Lo mejor es que no estorba debajo de la chamarra.',
                 name: 'Jorge',
                 city: 'Guadalajara',
                 stars: 5,
+                photo: REVIEW_IMG_2,
               },
               {
                 text: 'Me gustó que se ve como parte del equipo y no como una faja cualquiera. La calidad se nota.',
                 name: 'Andrés',
                 city: 'Monterrey',
                 stars: 5,
+                photo: REVIEW_IMG_3,
               },
-            ].map(({ text, name, city, stars }) => (
+            ].map(({ text, name, city, stars, photo }) => (
               <div
                 key={name}
-                className="bg-brand-graphite border border-white/[0.07] rounded-xl p-8 flex flex-col"
+                className="bg-brand-graphite border border-white/[0.07] rounded-xl overflow-hidden flex flex-col"
               >
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: stars }).map((_, i) => (
-                    <Star key={i} size={14} fill="currentColor" className="text-brand-amber" />
-                  ))}
-                </div>
-                <blockquote className="text-brand-smoke text-sm leading-relaxed flex-1 font-inter mb-6">
-                  "{text}"
-                </blockquote>
-                <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
-                  <div className="h-9 w-9 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center">
-                    <span className="font-sora font-bold text-brand-amber text-sm">{name[0]}</span>
+                {/* Customer photo */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <img src={photo} alt={`${name} usando el Rodata One`} className="w-full h-full object-cover" loading="lazy"/>
+                  <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, transparent 50%, rgba(17,19,21,0.65) 100%)'}}/>
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+                    <Check size={10} className="text-brand-amber"/><span className="text-brand-amber text-[10px] font-inter font-medium">Compra verificada</span>
                   </div>
-                  <div>
-                    <p className="font-sora font-semibold text-brand-offwhite text-sm">{name}</p>
-                    <p className="text-brand-steel text-xs font-inter">{city}</p>
+                </div>
+                {/* Content */}
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex gap-1 mb-3">
+                    {Array.from({ length: stars }).map((_, i) => (
+                      <Star key={i} size={13} fill="currentColor" className="text-brand-amber" />
+                    ))}
+                  </div>
+                  <blockquote className="text-brand-smoke text-sm leading-relaxed flex-1 font-inter mb-5">
+                    "{text}"
+                  </blockquote>
+                  <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+                    <div className="h-8 w-8 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center">
+                      <span className="font-sora font-bold text-brand-amber text-sm">{name[0]}</span>
+                    </div>
+                    <div>
+                      <p className="font-sora font-semibold text-brand-offwhite text-sm">{name}</p>
+                      <p className="text-brand-steel text-xs font-inter">{city}</p>
+                    </div>
                   </div>
                 </div>
               </div>

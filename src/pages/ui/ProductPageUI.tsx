@@ -35,12 +35,18 @@ const FEATURES = [
     desc: 'Malla técnica que ventila sin perder estructura. Pensado para usarse bajo la chamarra todo el año.', image: FEATURES_ES },
 ]
 
+const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5cj210ebhw5.webp'
+const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-qkvhxknpkwp.webp'
+const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-cy9gmns3t8p.webp'
+const REVIEW_IMG_4 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5t3oqzjcni4.webp'
+const REVIEW_IMG_5 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-62id4kdds6.webp'
+
 const REVIEWS = [
-  { name: 'Carlos M.', city: 'CDMX',        stars: 5, initial: 'C', date: 'Mar 2025', text: 'Trayecto CDMX–Querétaro y llegué mucho menos tenso. Ya es parte de mi equipo en cada salida.' },
-  { name: 'Jorge R.',  city: 'Guadalajara', stars: 5, initial: 'J', date: 'Feb 2025', text: 'Firme y cómodo. Cabe perfecto bajo la chamarra, no se nota y no estorba. La calidad se siente.' },
-  { name: 'Andrés V.', city: 'Monterrey',   stars: 5, initial: 'A', date: 'Mar 2025', text: 'Llevo años rodando y siempre terminaba tenso. Con el Rodata One llego mucho más fresco. Vale la pena.' },
-  { name: 'Miguel T.', city: 'Puebla',      stars: 4, initial: 'M', date: 'Ene 2025', text: 'La talla M me quedó exacta con la guía. El ajuste con las correas es muy fácil. Lo recomiendo.' },
-  { name: 'Rodrigo S.', city: 'CDMX',       stars: 5, initial: 'R', date: 'Feb 2025', text: 'Compré dudando si iba a ser incómodo — es todo lo contrario. Sale conmigo en cada rodada.' },
+  { name: 'Carlos M.', city: 'CDMX',        stars: 5, initial: 'C', date: 'Mar 2025', photo: REVIEW_IMG_1, text: 'Trayecto CDMX–Querétaro y llegué mucho menos tenso. Ya es parte de mi equipo en cada salida.' },
+  { name: 'Jorge R.',  city: 'Guadalajara', stars: 5, initial: 'J', date: 'Feb 2025', photo: REVIEW_IMG_2, text: 'Firme y cómodo. Cabe perfecto bajo la chamarra, no se nota y no estorba. La calidad se siente.' },
+  { name: 'Andrés V.', city: 'Monterrey',   stars: 5, initial: 'A', date: 'Mar 2025', photo: REVIEW_IMG_3, text: 'Llevo años rodando y siempre terminaba tenso. Con el Rodata One llego mucho más fresco. Vale la pena.' },
+  { name: 'Miguel T.', city: 'Puebla',      stars: 4, initial: 'M', date: 'Ene 2025', photo: REVIEW_IMG_4, text: 'La talla M me quedó exacta con la guía. El ajuste con las correas es muy fácil. Lo recomiendo.' },
+  { name: 'Rodrigo S.', city: 'CDMX',       stars: 5, initial: 'R', date: 'Feb 2025', photo: REVIEW_IMG_5, text: 'Compré dudando si iba a ser incómodo — es todo lo contrario. Sale conmigo en cada rodada.' },
 ]
 
 const FAQS = [
@@ -411,18 +417,28 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {REVIEWS.map(({name, city, stars, date, initial, text}) => (
-              <div key={name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-6 flex flex-col hover:border-brand-amber/20 transition-colors duration-300">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><span className="font-sora font-bold text-brand-amber">{initial}</span></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-sora font-semibold text-brand-offwhite text-sm">{name}</p>
-                    <p className="text-brand-steel text-xs font-inter">{city} · {date}</p>
+            {REVIEWS.map(({name, city, stars, date, initial, text, photo}) => (
+              <div key={name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col hover:border-brand-amber/20 transition-colors duration-300">
+                {/* Photo */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <img src={photo} alt={`Foto de ${name} usando el Rodata One`} className="w-full h-full object-cover" loading="lazy"/>
+                  <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, transparent 50%, rgba(17,19,21,0.7) 100%)'}}/>
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+                    <Check size={10} className="text-brand-amber"/><span className="text-brand-amber text-[10px] font-inter font-medium">Compra verificada</span>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0"><Check size={10} className="text-brand-amber"/><span className="text-brand-amber text-[10px] font-inter">Verificado</span></div>
                 </div>
-                <Stars count={stars} size={12}/>
-                <blockquote className="text-brand-smoke text-sm font-inter leading-relaxed mt-3 flex-1">"{text}"</blockquote>
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-9 w-9 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><span className="font-sora font-bold text-brand-amber text-sm">{initial}</span></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-sora font-semibold text-brand-offwhite text-sm">{name}</p>
+                      <p className="text-brand-steel text-xs font-inter">{city} · {date}</p>
+                    </div>
+                  </div>
+                  <Stars count={stars} size={12}/>
+                  <blockquote className="text-brand-smoke text-sm font-inter leading-relaxed mt-3 flex-1">"{text}"</blockquote>
+                </div>
               </div>
             ))}
           </div>
