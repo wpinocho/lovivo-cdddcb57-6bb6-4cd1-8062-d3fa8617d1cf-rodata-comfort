@@ -12,9 +12,11 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 5)
-- Replaced generated `lifestyle-highway-v2.jpg` with user-uploaded real photo (rider de espaldas en carretera serpenteante, cactos, luz dorada, RODATA visible en cinturón)
-- `LIFESTYLE_HIGHWAY` in ProductPageUI.tsx now points to: `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775768374485-uca4dkx21g.webp`
+## Recent Changes (Session 6)
+- `imagegen--edit_image` tool confirmed WORKING — returns visible images, AI can see results
+- Limitation discovered: Gemini does NOT add graphical overlays (heat maps, glows) well over photorealistic photos — it regenerates the scene without the overlay
+- `/lifestyle-3.jpg` improved quality (Mexican mountain desert road, dramatic sunset, rider from behind)
+- "El problema real" section image now has CSS radial-gradient amber glow overlay simulating a lumbar heat-map effect (like Motocush reference) — positioned at rider's lower back area using `mixBlendMode: screen`
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -25,7 +27,7 @@ Full premium landing page + premium product detail page are built. The store tar
 | `supabase/...uca4dkx21g.webp` | PDP "Menos fatiga. Más rodada." (LIFESTYLE_HIGHWAY) | **USER REAL PHOTO** — rider de espaldas, carretera serpenteante, cactos, luz dorada, RODATA en cinturón |
 | `/lifestyle-1.jpg` | IndexUI lifestyle grid | From previous session |
 | `/lifestyle-2.jpg` | IndexUI lifestyle grid | From previous session |
-| `/lifestyle-3.jpg` | IndexUI problem section + final CTA | From previous session |
+| `/lifestyle-3.jpg` | IndexUI problem section + final CTA | **UPDATED** — Mexican mountain road, sunset, improved quality |
 | `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 — verify branding |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
@@ -46,7 +48,7 @@ Full premium landing page + premium product detail page are built. The store tar
 12. **Sticky Bottom Bar** — Shows when main CTA scrolls out
 
 ## Landing Page (IndexUI.tsx) — 11 Sections
-1. Hero, 2. Benefits Bar, 3. Problem Section, 4. How It Works, 5. Lifestyle Grid,
+1. Hero, 2. Benefits Bar, 3. Problem Section (**lumbar glow overlay added**), 4. How It Works, 5. Lifestyle Grid,
 6. For Whom, 7. Comparison Table, 8. Testimonials, 9. Guarantee, 10. FAQ, 11. Final CTA
 
 ## Product Info
@@ -56,12 +58,17 @@ Full premium landing page + premium product detail page are built. The store tar
 - Variants: S (60-75cm), M (75-90cm), L (90-100cm), XL (100-115cm)
 - Status: active
 
+## Tool Notes (for future sessions)
+- `imagegen--edit_image`: Works, visible results. Good for style/lighting/scene edits. NOT good for adding graphic overlays (heat maps, glows, logos) on photorealistic photos — use CSS overlays instead.
+- `user-uploads://` URLs: NOT directly accessible by imagegen tools — must use `lov-copy` first to get a proper URL.
+
 ## Next Steps / Known Issues
 - Connect Stripe payment gateway (Dashboard)
 - Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
 - Replace placeholder testimonials with real rider reviews post-launch
 - `/pdp-lifestyle-1.jpg` (city lifestyle quote section) — verify if it has "Motosupport" branding
 - `/lifestyle-1.jpg`, `/lifestyle-2.jpg`, `/lifestyle-3.jpg` — verify if they have "Motosupport" branding
+- Tune CSS glow overlay position once the preview is live (bottom/left percentages may need adjustment)
 
 ## User Preferences
 - Language: Spanish (Mexico)

@@ -211,12 +211,42 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
             </div>
 
             <div className="relative">
-              <img
-                src={LIFESTYLE_HIGHWAY}
-                alt="Rider en carretera experimentando fatiga lumbar"
-                className="w-full rounded-lg object-cover aspect-square shadow-2xl"
-                loading="lazy"
-              />
+              <div className="relative rounded-lg overflow-hidden aspect-square shadow-2xl">
+                <img
+                  src={LIFESTYLE_HIGHWAY}
+                  alt="Rider en carretera experimentando fatiga lumbar"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                {/* Lumbar zone glow overlay — visual heat-map effect */}
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    /* Positioned on the rider's lower back area */
+                    bottom: '30%',
+                    left: '38%',
+                    width: '26%',
+                    aspectRatio: '1',
+                    background: 'radial-gradient(circle, rgba(201,139,46,0.75) 0%, rgba(201,139,46,0.45) 30%, rgba(201,100,20,0.25) 55%, transparent 75%)',
+                    borderRadius: '50%',
+                    filter: 'blur(6px)',
+                    mixBlendMode: 'screen',
+                  }}
+                />
+                {/* Outer diffuse ring */}
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    bottom: '27%',
+                    left: '33%',
+                    width: '36%',
+                    aspectRatio: '1',
+                    background: 'radial-gradient(circle, transparent 40%, rgba(201,139,46,0.12) 65%, transparent 80%)',
+                    borderRadius: '50%',
+                    filter: 'blur(10px)',
+                  }}
+                />
+              </div>
               <div className="absolute -bottom-6 -left-6 bg-brand-graphite border border-white/[0.08] rounded-lg p-5 shadow-2xl max-w-[220px]">
                 <p className="font-sora font-bold text-brand-amber text-2xl mb-1">+80%</p>
                 <p className="text-brand-smoke text-xs font-inter">de riders siente fatiga en zona lumbar después de trayectos frecuentes</p>
