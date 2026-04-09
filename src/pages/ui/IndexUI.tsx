@@ -28,7 +28,7 @@ const HERO_IMG = '/hero-rider.jpg'
 const LIFESTYLE_CITY = '/lifestyle-1.jpg'
 const LIFESTYLE_CLOSEUP = '/lifestyle-2.jpg'
 const LIFESTYLE_HIGHWAY = '/lifestyle-3.jpg'
-const LIFESTYLE_WORN = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775771529637-k65g2caxbwi.webp'
+const LIFESTYLE_WORN = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775771349198-676o65sijn4.webp'
 const LIFESTYLE_BELT = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775771349198-tl8qt6nmo8.webp'
 const LIFESTYLE_DETAIL = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775771349198-z730si7cdto.webp'
 const PROBLEMA_REAL_IMG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775770729257-1nufsuab1jt.webp'
@@ -321,8 +321,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
               <img
                 src={LIFESTYLE_WORN}
                 alt="Rider usando Soporte Lumbar Rodata One por detrás"
-                className="col-span-2 rounded-xl object-cover aspect-video shadow-lg"
-                  style={{ objectPosition: 'center 10%' }}
+                className="col-span-2 rounded-xl object-cover object-top aspect-video shadow-lg"
                 loading="lazy"
               />
               <img
