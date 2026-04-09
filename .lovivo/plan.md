@@ -12,14 +12,10 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 3)
-- Fixed all "Motosupport" branded images — replaced with correct RODATA branding
-- Generated new `hero-rider.jpg` — rider on rainy urban street, cinematic dark mood
-- Generated new `product-worn.jpg` — RODATA lumbar support worn by rider on Mexican cobblestone street at night (Gemini edit from uploaded product photo) — BEST asset
-- Updated `PRODUCT_FLAT` — using user-uploaded product photo (clean studio shot, RODATA branding, dark bg)
-- Updated `PRODUCT_FEATURES` in IndexUI — reuses `product-worn.jpg` (cinematic banner)
-- Updated `FEATURES_ES` in ProductPageUI — uses uploaded product flat shot
-- IndexUI and ProductPageUI both updated to use correct image paths
+## Recent Changes (Session 4)
+- Fixed "Motosupport" branded image in PDP "Menos fatiga. Más rodada." lifestyle break section
+- Generated new `lifestyle-highway-v2.jpg` — rider from behind on winding desert mountain road at golden hour, RODATA label visible on lumbar belt
+- Updated `LIFESTYLE_HIGHWAY` in ProductPageUI.tsx to use `/lifestyle-highway-v2.jpg`
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -27,12 +23,12 @@ Full premium landing page + premium product detail page are built. The store tar
 | `/hero-rider.jpg` | IndexUI hero background | Generated - urban rider, dark/cinematic |
 | `/product-worn.jpg` | IndexUI hero right, PDP lifestyle, features banner | Generated - rider on CDMX cobblestone, RODATA visible |
 | `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT (IndexUI + PDP gallery) | User-uploaded — clean studio shot, RODATA label |
+| `/lifestyle-highway-v2.jpg` | PDP "Menos fatiga. Más rodada." section | NEW - desert mountain road, golden hour, RODATA belt |
 | `/lifestyle-1.jpg` | IndexUI lifestyle grid | From previous session |
 | `/lifestyle-2.jpg` | IndexUI lifestyle grid | From previous session |
 | `/lifestyle-3.jpg` | IndexUI problem section + final CTA | From previous session |
-| `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 |
-| `/pdp-lifestyle-2.jpg` | PDP highway lifestyle break | From session 2 |
-| `/pdp-features-es.jpg` | (replaced — no longer used) | Was "Motosupport" branded |
+| `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 — verify branding |
+| `/pdp-lifestyle-2.jpg` | (replaced — no longer used) | Had "Motosupport" branding |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
 1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
@@ -40,11 +36,11 @@ Full premium landing page + premium product detail page are built. The store tar
    - "Comprar ahora" amber CTA + "Agregar al carrito" outline
    - 3 trust icons + WhatsApp link
 2. **Stats Bar** — +800 riders, 4.9★, 100% México (graphite bg)
-3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay
+3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay (`/lifestyle-highway-v2.jpg`)
 4. **Feature Breakdown** — 3 alternating full-width sections (panel/correas/malla)
 5. **Technical Specs** — Clean table on offwhite bg
 6. **How to Wear** — 3 numbered steps + inline CTA (graphite bg)
-7. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
+7. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote (`/pdp-lifestyle-1.jpg`)
 8. **Reviews** — 5 verified reviews + 4.9/127 rating summary pill (dark bg)
 9. **Guarantee** — 4 trust cards on offwhite bg
 10. **FAQ** — 6 accordion items (graphite bg)
@@ -66,7 +62,8 @@ Full premium landing page + premium product detail page are built. The store tar
 - Connect Stripe payment gateway (Dashboard)
 - Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
 - Replace placeholder testimonials with real rider reviews post-launch
-- lifestyle-1/2/3.jpg and pdp-lifestyle-1/2.jpg — verify these don't have "Motosupport" branding
+- `/pdp-lifestyle-1.jpg` (city lifestyle quote section) — verify if it has "Motosupport" branding
+- `/lifestyle-1.jpg`, `/lifestyle-2.jpg`, `/lifestyle-3.jpg` — verify if they have "Motosupport" branding
 
 ## User Preferences
 - Language: Spanish (Mexico)
