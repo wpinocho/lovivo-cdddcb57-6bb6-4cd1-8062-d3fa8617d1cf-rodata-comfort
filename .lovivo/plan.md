@@ -12,12 +12,11 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 9)
-- Reviews in IndexUI + ProductPageUI now have real customer photos embedded in the cards
-- Each review card shows a full-width photo (aspect 4/3) at the top with a "Compra verificada" badge overlay
-- 5 review images assigned: REVIEW_IMG_1 (Honda moto rider), REVIEW_IMG_2 (gas station moto), REVIEW_IMG_3 (mirror selfie), REVIEW_IMG_4 (flat product front), REVIEW_IMG_5 (flat product back)
-- Hero section cleaned up: removed the PRODUCT_WORN overlay that was on top of the hero background
-- New hero background: user-uploaded rider de espaldas en carretera serpenteante con RODATA visible, overlay ligero
+## Recent Changes (Session 10)
+- Fixed review images not loading: the `message-images` Supabase bucket URLs were not publicly accessible
+- Re-uploaded all 5 review images to the `product-images` bucket (reliable public access)
+- Updated REVIEW_IMG_1–5 URLs in both IndexUI.tsx and ProductPageUI.tsx to use `product-images` bucket
+- New reliable URLs pattern: `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-X.webp`
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -32,11 +31,11 @@ Full premium landing page + premium product detail page are built. The store tar
 | `supabase/...z730si7cdto.webp` | IndexUI "Parte del equipo" — bottom right | macro detalle correas y malla |
 | `/lifestyle-3.jpg` | IndexUI final CTA background | Mexican mountain road, sunset |
 | `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 — verify branding |
-| `supabase/...5cj210ebhw5.webp` | REVIEW_IMG_1 — Carlos M. / Carlos | rider de espaldas junto a Honda roja |
-| `supabase/...qkvhxknpkwp.webp` | REVIEW_IMG_2 — Jorge R. / Jorge | rider sentado en moto en gasolinera |
-| `supabase/...cy9gmns3t8p.webp` | REVIEW_IMG_3 — Andrés V. / Andrés | mirror selfie de espaldas con soporte |
-| `supabase/...5t3oqzjcni4.webp` | REVIEW_IMG_4 — Miguel T. | flat lay producto frente |
-| `supabase/...62id4kdds6.webp` | REVIEW_IMG_5 — Rodrigo S. | flat lay producto panel RODATA visible |
+| `product-images/.../review-1.webp` | REVIEW_IMG_1 — Carlos / Carlos M. | rider de espaldas junto a Honda roja — **product-images bucket** |
+| `product-images/.../review-2.webp` | REVIEW_IMG_2 — Jorge / Jorge R. | rider sentado en moto en gasolinera — **product-images bucket** |
+| `product-images/.../review-3.webp` | REVIEW_IMG_3 — Andrés / Andrés V. | mirror selfie de espaldas con soporte — **product-images bucket** |
+| `product-images/.../review-4.webp` | REVIEW_IMG_4 — Miguel T. | flat lay producto frente — **product-images bucket** |
+| `product-images/.../review-5.webp` | REVIEW_IMG_5 — Rodrigo S. | flat lay producto panel RODATA visible — **product-images bucket** |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
 1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
@@ -71,6 +70,7 @@ Full premium landing page + premium product detail page are built. The store tar
 - Replace placeholder testimonials text with real rider reviews post-launch
 - `/pdp-lifestyle-1.jpg` (city lifestyle quote section) — verify if it has "Motosupport" branding
 - `/lifestyle-3.jpg` — verify if it has "Motosupport" branding
+- **IMPORTANT:** Always save user images to `product-images` bucket (via image--optimize), NOT `message-images`. The `message-images` bucket has access restrictions.
 
 ## User Preferences
 - Language: Spanish (Mexico)

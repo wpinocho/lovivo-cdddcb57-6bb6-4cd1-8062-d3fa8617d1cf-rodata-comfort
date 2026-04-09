@@ -24,9 +24,9 @@ import {
 import type { UseIndexLogicReturn } from '@/components/headless/HeadlessIndex'
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
-const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5cj210ebhw5.webp'
-const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-qkvhxknpkwp.webp'
-const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-cy9gmns3t8p.webp'
+const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
+const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-2.webp'
+const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-3.webp'
 const HERO_IMG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775772513540-16g7elmcuii.webp'
 const LIFESTYLE_CITY = '/lifestyle-1.jpg'
 const LIFESTYLE_CLOSEUP = '/lifestyle-2.jpg'

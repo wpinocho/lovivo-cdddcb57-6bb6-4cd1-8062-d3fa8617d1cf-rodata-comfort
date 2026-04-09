@@ -35,11 +35,11 @@ const FEATURES = [
     desc: 'Malla técnica que ventila sin perder estructura. Pensado para usarse bajo la chamarra todo el año.', image: FEATURES_ES },
 ]
 
-const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5cj210ebhw5.webp'
-const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-qkvhxknpkwp.webp'
-const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-cy9gmns3t8p.webp'
-const REVIEW_IMG_4 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-5t3oqzjcni4.webp'
-const REVIEW_IMG_5 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775773936878-62id4kdds6.webp'
+const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
+const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-2.webp'
+const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-3.webp'
+const REVIEW_IMG_4 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-4.webp'
+const REVIEW_IMG_5 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-5.webp'
 
 const REVIEWS = [
   { name: 'Carlos M.', city: 'CDMX',        stars: 5, initial: 'C', date: 'Mar 2025', photo: REVIEW_IMG_1, text: 'Trayecto CDMX–Querétaro y llegué mucho menos tenso. Ya es parte de mi equipo en cada salida.' },
