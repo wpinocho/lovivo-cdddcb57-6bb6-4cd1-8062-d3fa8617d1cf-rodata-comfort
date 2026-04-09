@@ -141,21 +141,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
           </div>
         </div>
 
-        {/* Product image - desktop right side */}
-        <div className="absolute right-0 bottom-0 w-[45%] h-full hidden lg:flex items-end justify-center pointer-events-none z-10 overflow-hidden">
-          <img
-            src={PRODUCT_WORN}
-            alt="Soporte Lumbar Rodata One en uso"
-            className="w-full h-full object-cover object-top opacity-80"
-            loading="eager"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(to right, #111315 0%, rgba(17,19,21,0) 30%, rgba(17,19,21,0) 80%, #111315 100%), linear-gradient(to top, #111315 0%, rgba(17,19,21,0) 20%)',
-            }}
-          />
-        </div>
+
       </section>
 
       {/* ══════════════════════════════════════════════
