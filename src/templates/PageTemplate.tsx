@@ -1,13 +1,6 @@
 import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-/**
- * EDITABLE TEMPLATE - PageTemplate
- * 
- * Template base con slots editables para cualquier página.
- * El agente IA puede modificar layout, estilos, estructura completamente.
- */
-
 interface PageTemplateProps {
   children: ReactNode
   header?: ReactNode
@@ -16,6 +9,7 @@ interface PageTemplateProps {
   className?: string
   contentClassName?: string
   layout?: 'default' | 'full-width' | 'sidebar-left' | 'sidebar-right' | 'centered'
+  noPadding?: boolean
 }
 
 export const PageTemplate = ({ 
@@ -25,7 +19,8 @@ export const PageTemplate = ({
   footer, 
   className,
   contentClassName,
-  layout = 'default'
+  layout = 'default',
+  noPadding = false,
 }: PageTemplateProps) => {
   const layoutClasses = {
     'default': 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
@@ -39,14 +34,8 @@ export const PageTemplate = ({
     if (layout === 'sidebar-left') {
       return (
         <div className={layoutClasses[layout]}>
-          {sidebar && (
-            <aside className="lg:col-span-1">
-              {sidebar}
-            </aside>
-          )}
-          <main className={cn("lg:col-span-3", contentClassName)}>
-            {children}
-          </main>
+          {sidebar && <aside className="lg:col-span-1">{sidebar}</aside>}
+          <main className={cn("lg:col-span-3", contentClassName)}>{children}</main>
         </div>
       )
     }
@@ -54,23 +43,15 @@ export const PageTemplate = ({
     if (layout === 'sidebar-right') {
       return (
         <div className={layoutClasses[layout]}>
-          <main className={cn("lg:col-span-3", contentClassName)}>
-            {children}
-          </main>
-          {sidebar && (
-            <aside className="lg:col-span-1">
-              {sidebar}
-            </aside>
-          )}
+          <main className={cn("lg:col-span-3", contentClassName)}>{children}</main>
+          {sidebar && <aside className="lg:col-span-1">{sidebar}</aside>}
         </div>
       )
     }
 
     return (
       <div className={layoutClasses[layout]}>
-        <main className={cn(contentClassName)}>
-          {children}
-        </main>
+        <main className={cn(contentClassName)}>{children}</main>
       </div>
     )
   }
@@ -78,17 +59,17 @@ export const PageTemplate = ({
   return (
     <div className={cn("min-h-screen bg-background", className)}>
       {header && (
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <header className="sticky top-0 z-40 bg-brand-carbon border-b border-white/[0.06]">
           {header}
         </header>
       )}
       
-      <div className="flex-1 py-6">
+      <div className={cn("flex-1", !noPadding && "py-6")}>
         {renderContent()}
       </div>
 
       {footer && (
-        <footer className="border-t bg-muted/30">
+        <footer>
           {footer}
         </footer>
       )}
