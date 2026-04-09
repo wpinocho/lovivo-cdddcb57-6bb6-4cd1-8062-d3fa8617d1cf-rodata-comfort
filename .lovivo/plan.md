@@ -12,22 +12,28 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 6)
-- `imagegen--edit_image` tool confirmed WORKING — returns visible images, AI can see results
-- Limitation discovered: Gemini does NOT add graphical overlays (heat maps, glows) well over photorealistic photos — it regenerates the scene without the overlay
-- `/lifestyle-3.jpg` improved quality (Mexican mountain desert road, dramatic sunset, rider from behind)
-- "El problema real" section image now has CSS radial-gradient amber glow overlay simulating a lumbar heat-map effect (like Motocush reference) — positioned at rider's lower back area using `mixBlendMode: screen`
+## Recent Changes (Session 7)
+- "El problema real" section image updated to user-uploaded image with integrated lumbar glow (rider on desert highway with RODATA visible + amber glow overlay)
+- "Parte del equipo" section (IndexUI) updated with 3 new high-quality product images:
+  - LIFESTYLE_WORN: Rider wearing RODATA from behind — studio quality, dark bg
+  - LIFESTYLE_BELT: Clean product flatlay of belt alone — premium dark bg
+  - LIFESTYLE_DETAIL: Macro closeup of straps & mesh detail — dark bg
+  - Grid: worn shot (col-span-2 top) + belt + detail (bottom row)
 
 ## Image Assets (Current)
 | File | Usage | Notes |
 |------|-------|-------|
 | `/hero-rider.jpg` | IndexUI hero background | Generated - urban rider, dark/cinematic |
 | `/product-worn.jpg` | IndexUI hero right, PDP lifestyle, features banner | Generated - rider on CDMX cobblestone, RODATA visible |
-| `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT + FEATURES_ES (IndexUI + PDP gallery) | User-uploaded — clean studio shot, RODATA label |
+| `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT in IndexUI + PDP gallery (FEATURES_ES) | User-uploaded — clean studio shot, RODATA label |
 | `supabase/...uca4dkx21g.webp` | PDP "Menos fatiga. Más rodada." (LIFESTYLE_HIGHWAY) | **USER REAL PHOTO** — rider de espaldas, carretera serpenteante, cactos, luz dorada, RODATA en cinturón |
-| `/lifestyle-1.jpg` | IndexUI lifestyle grid | From previous session |
-| `/lifestyle-2.jpg` | IndexUI lifestyle grid | From previous session |
-| `/lifestyle-3.jpg` | IndexUI problem section + final CTA | **UPDATED** — Mexican mountain road, sunset, improved quality |
+| `supabase/...1nufsuab1jt.webp` | IndexUI "El problema real" | **USER UPLOAD** — rider en moto con glow lumbar ámbar integrado, carretera desierto |
+| `supabase/...676o65sijn4.webp` | IndexUI "Parte del equipo" — imagen principal (col-span-2) | **NEW** — rider usando RODATA de espaldas, studio quality |
+| `supabase/...tl8qt6nmo8.webp` | IndexUI "Parte del equipo" — bottom left | **NEW** — cinturón RODATA solo, fondo oscuro premium |
+| `supabase/...z730si7cdto.webp` | IndexUI "Parte del equipo" — bottom right | **NEW** — macro detalle correas y malla |
+| `/lifestyle-1.jpg` | (no longer used in "Parte del equipo") | Can repurpose |
+| `/lifestyle-2.jpg` | (no longer used in "Parte del equipo") | Can repurpose |
+| `/lifestyle-3.jpg` | IndexUI final CTA background | Mexican mountain road, sunset |
 | `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 — verify branding |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
@@ -48,7 +54,7 @@ Full premium landing page + premium product detail page are built. The store tar
 12. **Sticky Bottom Bar** — Shows when main CTA scrolls out
 
 ## Landing Page (IndexUI.tsx) — 11 Sections
-1. Hero, 2. Benefits Bar, 3. Problem Section (**lumbar glow overlay added**), 4. How It Works, 5. Lifestyle Grid,
+1. Hero, 2. Benefits Bar, 3. Problem Section (user upload with integrated glow), 4. How It Works, 5. Lifestyle Grid (updated with new product photos),
 6. For Whom, 7. Comparison Table, 8. Testimonials, 9. Guarantee, 10. FAQ, 11. Final CTA
 
 ## Product Info
@@ -67,8 +73,7 @@ Full premium landing page + premium product detail page are built. The store tar
 - Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
 - Replace placeholder testimonials with real rider reviews post-launch
 - `/pdp-lifestyle-1.jpg` (city lifestyle quote section) — verify if it has "Motosupport" branding
-- `/lifestyle-1.jpg`, `/lifestyle-2.jpg`, `/lifestyle-3.jpg` — verify if they have "Motosupport" branding
-- Tune CSS glow overlay position once the preview is live (bottom/left percentages may need adjustment)
+- `/lifestyle-3.jpg` — verify if it has "Motosupport" branding
 
 ## User Preferences
 - Language: Spanish (Mexico)
