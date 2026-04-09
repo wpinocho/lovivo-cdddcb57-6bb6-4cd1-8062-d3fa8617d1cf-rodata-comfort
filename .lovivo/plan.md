@@ -10,12 +10,19 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Tagline:** Rueda más. Llega mejor.
 - **Colors:** Carbon #111315, Graphite #1D2125, Steel #5E6670, Smoke #C7CDD3, Offwhite #F5F7F8, Amber #C98B2E
 - **Fonts:** Sora (headings) + Inter (body)
-- **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
+- **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic. Benefit-first, not material/spec-first.
 
-## Recent Changes (Session 11)
-- Replaced broken `/pdp-lifestyle-1.jpg` (had wrong product upside-down + another product in frame)
-- Generated new city lifestyle image using RODATA product as reference: rider in CDMX street, evening light, lumbar support visible, authentic Mexican atmosphere
-- Saved to `public/pdp-lifestyle-1.jpg` (also_in_repo: true) — no code changes needed, path was already correct
+## Recent Changes (Session 12)
+- Rewrote ProductPageUI.tsx FEATURES section copy → now fully benefit-focused (pain relief, ride longer, comfort), not material-focused
+- Updated 3 feature images to user-provided product photos:
+  - FEAT_IMG_1: back shot of rider wearing RODATA (studio grey bg) → Feature 01 "Termina cada rodada sin el dolor de siempre"
+  - FEAT_IMG_2: rider on motorcycle at sunset with RODATA → Feature 02 "Rueda horas sin detenerte a ajustar nada"
+  - FEAT_IMG_3: macro close-up of straps/mesh panel → Feature 03 "Bajo la chamarra, sin que lo notes" (this one CAN talk about materials per user)
+- Updated product panel eyebrow + description + bullets → now pain-problem focused
+- Updated "How to wear" section title/descriptions → clearer, more benefit language
+- Updated section headline "Ingeniería de soporte" → "Por qué funciona / Diseñado para que dures más en el camino"
+- Updated Lifestyle Break copy → "Deja de bajar a estirar. Empieza a llegar mejor."
+- Updated Final CTA → "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -23,31 +30,30 @@ Full premium landing page + premium product detail page are built. The store tar
 | `supabase/...16g7elmcuii.webp` | IndexUI hero background | rider de espaldas + moto + carretera dorada, RODATA visible |
 | `/product-worn.jpg` | PDP gallery, features | Generated - rider on CDMX cobblestone, RODATA visible |
 | `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT in IndexUI + PDP gallery (FEATURES_ES) | User-uploaded — clean studio shot, RODATA label |
-| `supabase/...uca4dkx21g.webp` | PDP "Menos fatiga. Más rodada." (LIFESTYLE_HIGHWAY) | USER REAL PHOTO — rider de espaldas, carretera serpenteante, cactos, luz dorada, RODATA en cinturón |
-| `supabase/...1nufsuab1jt.webp` | IndexUI "El problema real" | USER UPLOAD — rider en moto con glow lumbar ámbar integrado, carretera desierto |
-| `supabase/...676o65sijn4.webp` | IndexUI "Parte del equipo" — col-span-2 top | rider usando RODATA de espaldas, studio quality |
+| `supabase/...uca4dkx21g.webp` | PDP "Lifestyle Break" (LIFESTYLE_HIGHWAY) | USER REAL PHOTO — rider de espaldas, carretera serpenteante |
+| `supabase/...1nufsuab1jt.webp` | IndexUI "El problema real" | USER UPLOAD — rider en moto con glow lumbar ámbar |
+| `supabase/...676o65sijn4.webp` | IndexUI "Parte del equipo" — col-span-2 top | rider usando RODATA de espaldas |
 | `supabase/...tl8qt6nmo8.webp` | IndexUI "Parte del equipo" — bottom left | cinturón RODATA solo, fondo oscuro premium |
 | `supabase/...z730si7cdto.webp` | IndexUI "Parte del equipo" — bottom right | macro detalle correas y malla |
 | `/lifestyle-3.jpg` | IndexUI final CTA background | Mexican mountain road, sunset |
-| `/pdp-lifestyle-1.jpg` | PDP "Ahora el Rodata One sale conmigo..." quote section | **REGENERATED** — rider en CDMX, moto, soporte lumbar visible, luz de tarde |
-| `product-images/.../review-1.webp` | REVIEW_IMG_1 — Carlos / Carlos M. | rider de espaldas junto a Honda roja — **product-images bucket** |
-| `product-images/.../review-2.webp` | REVIEW_IMG_2 — Jorge / Jorge R. | rider sentado en moto en gasolinera — **product-images bucket** |
-| `product-images/.../review-3.webp` | REVIEW_IMG_3 — Andrés / Andrés V. | mirror selfie de espaldas con soporte — **product-images bucket** |
-| `product-images/.../review-4.webp` | REVIEW_IMG_4 — Miguel T. | flat lay producto frente — **product-images bucket** |
-| `product-images/.../review-5.webp` | REVIEW_IMG_5 — Rodrigo S. | flat lay producto panel RODATA visible — **product-images bucket** |
+| `/pdp-lifestyle-1.jpg` | PDP "Ahora el Rodata One sale conmigo..." quote section | REGENERATED — rider en CDMX |
+| `supabase/...80hvv9dmxa.webp` | PDP Feature 01 (FEAT_IMG_1) | Studio shot — back view man wearing RODATA support, grey bg |
+| `supabase/...xhxki05535d.webp` | PDP Feature 02 (FEAT_IMG_2) | Rider on motorcycle at sunset, RODATA visible |
+| `supabase/...dzkdrl1lt2.webp` | PDP Feature 03 (FEAT_IMG_3) | Macro close-up correas y malla panel RODATA |
+| `product-images/.../review-1.webp` through `review-5.webp` | Review cards in both pages | Product-images bucket (public access) |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
-1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
+1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel. NEW: benefit-focused bullets & description
 2. **Stats Bar** — +800 riders, 4.9★, 100% México
-3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay
-4. **Feature Breakdown** — 3 alternating full-width sections
+3. **Lifestyle Break** — Full-bleed highway image. NEW: "Deja de bajar a estirar. Empieza a llegar mejor."
+4. **Feature Breakdown** — 3 alternating full-width sections. NEW: all benefit-focused copy + new user photos
 5. **Technical Specs** — Clean table on offwhite bg
-6. **How to Wear** — 3 numbered steps + inline CTA
+6. **How to Wear** — 3 numbered steps. NEW: clearer benefit language
 7. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
 8. **Reviews** — 5 cards with real customer photos (aspect 4/3) + "Compra verificada" badge
 9. **Guarantee** — 4 trust cards on offwhite bg
 10. **FAQ** — 6 accordion items
-11. **Final CTA** — Dark centered with price + amber button
+11. **Final CTA** — NEW: "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
 12. **Sticky Bottom Bar** — Shows when main CTA scrolls out
 
 ## Landing Page (IndexUI.tsx) — 11 Sections
@@ -72,7 +78,7 @@ Full premium landing page + premium product detail page are built. The store tar
 
 ## User Preferences
 - Language: Spanish (Mexico)
-- Tone: Premium, technical, no medical claims
+- Tone: Premium, technical, no medical claims. BENEFIT-FIRST not material/spec-first.
 - Mobile-first
 - No fake countdown timers, no aggressive popups
 - Dark sections mixed with light sections for visual rhythm

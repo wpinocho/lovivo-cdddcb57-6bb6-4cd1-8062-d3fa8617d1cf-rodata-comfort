@@ -19,6 +19,11 @@ const FEATURES_ES       = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/o
 const PRODUCT_WORN      = '/product-worn.jpg'
 const PRODUCT_FLAT      = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775767354281-gqxi2j4hklp.webp'
 
+// Feature section images (user-provided)
+const FEAT_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133671-80hvv9dmxa.webp'
+const FEAT_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133672-xhxki05535d.webp'
+const FEAT_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133672-dzkdrl1lt2.webp'
+
 const SIZE_GUIDE = [
   { size: 'S',  waist: '60–75 cm',   recom: 'Cintura delgada' },
   { size: 'M',  waist: '75–90 cm',   recom: 'Talla promedio'  },
@@ -27,12 +32,12 @@ const SIZE_GUIDE = [
 ]
 
 const FEATURES = [
-  { number: '01', icon: Layers, title: 'Panel hexagonal lumbar',
-    desc: 'Panel rígido de perfil bajo que distribuye la presión de forma uniforme. Soporte real sin restringir el movimiento durante toda la rodada.', image: PRODUCT_FLAT },
-  { number: '02', icon: SlidersHorizontal, title: 'Correas de doble ajuste',
-    desc: 'Dos tensores de precisión independientes. Ajusta exactamente el soporte que necesitas — firme sin apretarte, suave sin perder posición.', image: PRODUCT_WORN },
-  { number: '03', icon: Wind, title: 'Construcción técnica transpirable',
-    desc: 'Malla técnica que ventila sin perder estructura. Pensado para usarse bajo la chamarra todo el año.', image: FEATURES_ES },
+  { number: '01', icon: Layers, title: 'Termina cada rodada sin el dolor de siempre',
+    desc: 'La zona lumbar es la primera que siente los trayectos largos y la vibración constante. El Rodata One actúa exactamente ahí — soporte firme que distribuye la carga de la postura de manejo, sin restringirte. Pones el cinturón, subes a la moto y te olvidas de él.', image: FEAT_IMG_1 },
+  { number: '02', icon: SlidersHorizontal, title: 'Rueda horas sin detenerte a ajustar nada',
+    desc: 'El sistema de doble correa mantiene el soporte en exactamente el mismo lugar desde que arrancas hasta que bajas de la moto. Sin que se corra, sin que apriete de más. En trayectos largos, el equipo tiene que trabajar contigo — no en tu contra.', image: FEAT_IMG_2 },
+  { number: '03', icon: Wind, title: 'Bajo la chamarra, sin que lo notes',
+    desc: 'Construcción técnica en textil negro mate con malla perforada transpirable. Perfil bajo diseñado para no estorbar debajo de cualquier chamarra de moto. Resiste el uso diario, los climas y las temporadas largas sin deformarse ni perder estructura.', image: FEAT_IMG_3 },
 ]
 
 const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
@@ -165,7 +170,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="h-px w-6 bg-brand-amber block" />
-                <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">Para riders que ruedan en serio</span>
+                <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">El soporte que cambia cómo llegas</span>
               </div>
               <h1 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight">{logic.product.title}</h1>
               <div className="flex items-center gap-3">
@@ -180,9 +185,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 )}
               </div>
               <div className="border-t border-white/[0.08] pt-5 space-y-3">
-                <p className="text-brand-smoke text-sm leading-relaxed font-inter">Soporte lumbar técnico para motociclistas. Reduce la fatiga y mejora tu comodidad en trayectos urbanos y rodadas largas.</p>
+                <p className="text-brand-smoke text-sm leading-relaxed font-inter">¿Llegas cansado después de cierta distancia? La zona lumbar acumula cada golpe, cada vibración y cada hora en postura de manejo. El Rodata One está diseñado para cambiar eso.</p>
                 <div className="space-y-2">
-                  {['Cómodo debajo de la chamarra', 'Panel hexagonal lumbar de perfil bajo', 'Doble tensor de ajuste preciso'].map(item => (
+                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Soporte firme que no estorba ni bajo la chamarra', 'Ajuste en segundos — y se queda exactamente donde lo pusiste'].map(item => (
                     <div key={item} className="flex items-center gap-2.5">
                       <div className="h-4 w-4 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><Check size={9} className="text-brand-amber" /></div>
                       <span className="text-brand-smoke text-xs font-inter">{item}</span>
@@ -301,9 +306,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="max-w-xl">
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Menos fatiga. Más rodada.</span>
-            <h2 className="font-sora font-bold text-brand-offwhite text-4xl sm:text-5xl leading-[1.05] mb-5">El soporte que se queda contigo en cada trayecto.</h2>
-            <p className="text-brand-smoke text-lg font-inter leading-relaxed">Diseñado para riders que ya cuidan su equipo — y saben que la espalda también forma parte de él.</p>
+            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Para riders que no se rinden antes de tiempo</span>
+            <h2 className="font-sora font-bold text-brand-offwhite text-4xl sm:text-5xl leading-[1.05] mb-5">Deja de bajar a estirar. Empieza a llegar mejor.</h2>
+            <p className="text-brand-smoke text-lg font-inter leading-relaxed">El dolor de espalda no avisa — simplemente llega en algún punto de la rodada. El Rodata One retrasa ese punto hasta mucho más lejos de lo que estás acostumbrado.</p>
           </div>
         </div>
       </section>
@@ -312,8 +317,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
       <section style={{backgroundColor:'#111315'}} className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Ingeniería de soporte</span>
-            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl lg:text-5xl">Construido para riders, no para uso genérico</h2>
+            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Por qué funciona</span>
+            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl lg:text-5xl">Diseñado para que dures más en el camino</h2>
           </div>
           <div className="space-y-24">
             {FEATURES.map(({number, icon: Icon, title, desc, image}, idx) => (
@@ -486,8 +491,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
       <section style={{backgroundColor:'#111315'}} className="border-t border-white/[0.08] py-16 lg:py-20">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Rodata One</span>
-          <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">Haz que tus trayectos se sientan mejor.</h2>
-          <p className="text-brand-smoke font-inter text-sm mb-8">Envío gratis · 30 días de prueba · Cambio de talla fácil</p>
+          <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">¿Cuántas rodadas más vas a terminar con dolor de espalda?</h2>
+          <p className="text-brand-smoke font-inter text-sm mb-8">Envío gratis en México · 30 días de prueba · Cambio de talla fácil</p>
           <div className="flex items-baseline justify-center gap-3 mb-7">
             <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
             {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
