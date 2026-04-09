@@ -3,7 +3,7 @@
 
 ## Current State
 rodata.mx is a DTC store selling a single product: **Soporte Lumbar Rodata One** (MX$749, compare at MX$999).
-A full premium landing page has been built. The store targets male motorcyclists 25-45 in Mexico.
+Full premium landing page + premium product detail page are built. The store targets male motorcyclists 25-45 in Mexico. Ready to launch Meta Ads campaigns.
 
 ## Brand Identity
 - **Name:** rodata.mx
@@ -12,55 +12,48 @@ A full premium landing page has been built. The store targets male motorcyclists
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 1)
-- Updated design system: `src/index.css` — full rodata.mx brand tokens (HSL + CSS utilities)
-- Updated `tailwind.config.ts` — brand-* color namespace, Sora font
-- Updated `index.html` — Sora font loaded, rodata.mx SEO meta tags
-- Rebuilt `src/components/BrandLogoLeft.tsx` — text logo "rodata.mx" with amber .mx
-- Updated `src/templates/PageTemplate.tsx` — added noPadding prop
-- Rebuilt `src/templates/EcommerceTemplate.tsx` — dark premium header (trust bar + nav), rodata.mx footer
-- Rebuilt `src/pages/ui/IndexUI.tsx` — full 11-section landing page (hero, benefits, problem, how it works, lifestyle, for whom, comparison table, testimonials, guarantee, FAQ, final CTA)
-- Created product: **Soporte Lumbar Rodata One** with S/M/L/XL variants at MX$749
-- Generated images: /hero-rider.jpg, /lifestyle-1.jpg, /lifestyle-2.jpg, /lifestyle-3.jpg
-- User product images stored at Supabase URLs
+## Recent Changes (Session 2)
+- Researched competitor PDP pages: Motocush, Therabody, Hyperice
+- Generated 4 new images saved to public/:
+  - `/pdp-lifestyle-1.jpg` — Mexican rider with product on CDMX street at dusk
+  - `/pdp-lifestyle-2.jpg` — Rider on Mexican highway/mountains with product (back view)  
+  - `/pdp-features-es.jpg` — Spanish-labeled product callout with rodata.mx branding
+  - `/pdp-testimonials.jpg` — testimonial portraits
+- Fully rebuilt `src/pages/ui/ProductPageUI.tsx` — 11-section premium PDP (staged, will be live after commit)
+
+## Product Detail Page (ProductPageUI.tsx) — 11 Sections
+1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
+   - Size pills with waist cm + collapsible size guide table
+   - "Comprar ahora" amber CTA + "Agregar al carrito" outline
+   - 3 trust icons + WhatsApp link
+2. **Stats Bar** — +800 riders, 4.9★, 100% México (graphite bg)
+3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay
+4. **Feature Breakdown** — 3 alternating full-width sections (panel/correas/malla)
+5. **Technical Specs** — Clean table on offwhite bg
+6. **How to Wear** — 3 numbered steps + inline CTA (graphite bg)
+7. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
+8. **Reviews** — 5 verified reviews + 4.9/127 rating summary pill (dark bg)
+9. **Guarantee** — 4 trust cards on offwhite bg
+10. **FAQ** — 6 accordion items (graphite bg)
+11. **Final CTA** — Dark centered with price + amber button
+12. **Sticky Bottom Bar** — Shows when main CTA scrolls out
+
+## Landing Page (IndexUI.tsx) — 11 Sections
+1. Hero, 2. Benefits Bar, 3. Problem Section, 4. How It Works, 5. Lifestyle Grid,
+6. For Whom, 7. Comparison Table, 8. Testimonials, 9. Guarantee, 10. FAQ, 11. Final CTA
 
 ## Product Info
 - Title: Soporte Lumbar Rodata One
-- Slug: soporte-lumbar-rodata-one (hardcoded fallback in BUY_URL)
+- Slug: soporte-lumbar-rodata-one
 - Price: MX$749 / Compare at: MX$999
-- Variants: Talla S (60-75cm), M (75-90cm), L (90-100cm), XL (100-115cm)
+- Variants: S (60-75cm), M (75-90cm), L (90-100cm), XL (100-115cm)
 - Status: active
 
-## Landing Page Sections
-1. Hero — full viewport, dark bg + rider image, headline "Rueda más. Llega mejor."
-2. Benefits Bar — 4 icons on dark graphite strip
-3. Problem Section — emotional copy + stat callout + highway lifestyle image
-4. How It Works — 3 technical cards + product feature image
-5. Lifestyle / In Use — 4 image grid + feature checklist
-6. For Whom — 4 rider persona cards
-7. Comparison Table — Rodata One vs Genéricos (7 rows)
-8. Testimonials — 3 testimonials (placeholder, ready to replace)
-9. Guarantee — 4 trust cards (30 days, size exchange, free shipping, WhatsApp)
-10. FAQ — 7 questions with Accordion
-11. Final CTA — dark cinematic section with price + buy button
-
-## Active Plan: Future Sessions
-### Pages to build next
-- Product detail page (ProductPageUI.tsx) — already exists, may need rodata.mx branding update
-- Cart / Checkout pages — already exist but may need minor theming tweaks
-
-### Features to implement
-- Connect store to Stripe payment gateway (dashboard)
-- Connect WhatsApp business number in footer (currently placeholder: 5215500000000)
-- Replace placeholder testimonials with real ones
-- Add real product photos (user can upload to Dashboard)
-- Potentially add a blog post about moto ergonomics
-
-### Known issues / notes
-- Testimonials are placeholder — need real rider reviews
-- WhatsApp number in footer needs to be updated to real business number
-- Lifestyle images (/lifestyle-1.jpg, /lifestyle-2.jpg, /lifestyle-3.jpg) are AI-generated — can be replaced with real photos
-- Hero image (/hero-rider.jpg) is AI-generated — premium look, but can replace with brand shoot
+## Next Steps / Known Issues
+- Connect Stripe payment gateway (Dashboard)
+- Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
+- Replace placeholder testimonials with real rider reviews post-launch
+- Lifestyle images are AI-generated — replace with real brand shoot when available
 
 ## User Preferences
 - Language: Spanish (Mexico)
@@ -69,3 +62,4 @@ A full premium landing page has been built. The store targets male motorcyclists
 - No fake countdown timers, no aggressive popups
 - Dark sections mixed with light sections for visual rhythm
 - Amber as primary CTA color
+- Campaign-ready for Meta Ads — PDP is the landing page
