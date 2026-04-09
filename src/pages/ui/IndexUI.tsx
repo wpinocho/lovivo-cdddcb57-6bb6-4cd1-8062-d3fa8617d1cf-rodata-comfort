@@ -24,7 +24,7 @@ import {
 import type { UseIndexLogicReturn } from '@/components/headless/HeadlessIndex'
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
-const HERO_IMG = '/hero-rider.jpg'
+const HERO_IMG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775772513540-16g7elmcuii.webp'
 const LIFESTYLE_CITY = '/lifestyle-1.jpg'
 const LIFESTYLE_CLOSEUP = '/lifestyle-2.jpg'
 const LIFESTYLE_HIGHWAY = '/lifestyle-3.jpg'
@@ -60,14 +60,14 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
           <img
             src={HERO_IMG}
             alt="Rider en ciudad con soporte lumbar Rodata One"
-            className="w-full h-full object-cover object-center opacity-50"
+            className="w-full h-full object-cover object-center opacity-80"
             loading="eager"
             fetchPriority="high"
           />
           <div
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(105deg, #111315 0%, #111315 40%, rgba(17,19,21,0.85) 60%, rgba(17,19,21,0.3) 100%)',
+              background: 'linear-gradient(105deg, #111315 0%, #111315 35%, rgba(17,19,21,0.7) 55%, rgba(17,19,21,0.25) 100%)',
             }}
           />
         </div>

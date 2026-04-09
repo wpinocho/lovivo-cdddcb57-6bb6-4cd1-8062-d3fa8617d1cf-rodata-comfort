@@ -12,25 +12,23 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 7)
-- "El problema real" section image updated to user-uploaded image with integrated lumbar glow (rider on desert highway with RODATA visible + amber glow overlay)
-- "Parte del equipo" section (IndexUI) updated with 3 new high-quality product images:
-  - LIFESTYLE_WORN: Rider wearing RODATA from behind — studio quality, dark bg
-  - LIFESTYLE_BELT: Clean product flatlay of belt alone — premium dark bg
-  - LIFESTYLE_DETAIL: Macro closeup of straps & mesh detail — dark bg
-  - Grid: worn shot (col-span-2 top) + belt + detail (bottom row)
+## Recent Changes (Session 8)
+- Hero image replaced with user-uploaded photo: rider de espaldas junto a moto en carretera serpenteante, hora dorada, RODATA visible en cinturón
+- Overlay ajustado a capa ligera: img opacity 80% + gradient más sutil (left dark for text, right more open)
+- Previous HERO_IMG was `/hero-rider.jpg` (generated); now uses Supabase URL
 
 ## Image Assets (Current)
 | File | Usage | Notes |
 |------|-------|-------|
-| `/hero-rider.jpg` | IndexUI hero background | Generated - urban rider, dark/cinematic |
+| `supabase/...16g7elmcuii.webp` | IndexUI hero background | **NEW** — rider de espaldas + moto + carretera dorada, RODATA visible |
+| `/hero-rider.jpg` | (no longer used) | Old generated hero |
 | `/product-worn.jpg` | IndexUI hero right, PDP lifestyle, features banner | Generated - rider on CDMX cobblestone, RODATA visible |
 | `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT in IndexUI + PDP gallery (FEATURES_ES) | User-uploaded — clean studio shot, RODATA label |
 | `supabase/...uca4dkx21g.webp` | PDP "Menos fatiga. Más rodada." (LIFESTYLE_HIGHWAY) | **USER REAL PHOTO** — rider de espaldas, carretera serpenteante, cactos, luz dorada, RODATA en cinturón |
 | `supabase/...1nufsuab1jt.webp` | IndexUI "El problema real" | **USER UPLOAD** — rider en moto con glow lumbar ámbar integrado, carretera desierto |
-| `supabase/...676o65sijn4.webp` | IndexUI "Parte del equipo" — imagen principal (col-span-2) | **NEW** — rider usando RODATA de espaldas, studio quality |
-| `supabase/...tl8qt6nmo8.webp` | IndexUI "Parte del equipo" — bottom left | **NEW** — cinturón RODATA solo, fondo oscuro premium |
-| `supabase/...z730si7cdto.webp` | IndexUI "Parte del equipo" — bottom right | **NEW** — macro detalle correas y malla |
+| `supabase/...676o65sijn4.webp` | IndexUI "Parte del equipo" — imagen principal (col-span-2) | rider usando RODATA de espaldas, studio quality |
+| `supabase/...tl8qt6nmo8.webp` | IndexUI "Parte del equipo" — bottom left | cinturón RODATA solo, fondo oscuro premium |
+| `supabase/...z730si7cdto.webp` | IndexUI "Parte del equipo" — bottom right | macro detalle correas y malla |
 | `/lifestyle-1.jpg` | (no longer used in "Parte del equipo") | Can repurpose |
 | `/lifestyle-2.jpg` | (no longer used in "Parte del equipo") | Can repurpose |
 | `/lifestyle-3.jpg` | IndexUI final CTA background | Mexican mountain road, sunset |
@@ -54,7 +52,7 @@ Full premium landing page + premium product detail page are built. The store tar
 12. **Sticky Bottom Bar** — Shows when main CTA scrolls out
 
 ## Landing Page (IndexUI.tsx) — 11 Sections
-1. Hero, 2. Benefits Bar, 3. Problem Section (user upload with integrated glow), 4. How It Works, 5. Lifestyle Grid (updated with new product photos),
+1. Hero (new user photo + light overlay), 2. Benefits Bar, 3. Problem Section (user upload with integrated glow), 4. How It Works, 5. Lifestyle Grid (updated with new product photos),
 6. For Whom, 7. Comparison Table, 8. Testimonials, 9. Guarantee, 10. FAQ, 11. Final CTA
 
 ## Product Info
