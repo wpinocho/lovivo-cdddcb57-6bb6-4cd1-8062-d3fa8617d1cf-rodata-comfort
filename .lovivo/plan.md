@@ -12,23 +12,21 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic
 
-## Recent Changes (Session 4)
-- Fixed "Motosupport" branded image in PDP "Menos fatiga. Más rodada." lifestyle break section
-- Generated new `lifestyle-highway-v2.jpg` — rider from behind on winding desert mountain road at golden hour, RODATA label visible on lumbar belt
-- Updated `LIFESTYLE_HIGHWAY` in ProductPageUI.tsx to use `/lifestyle-highway-v2.jpg`
+## Recent Changes (Session 5)
+- Replaced generated `lifestyle-highway-v2.jpg` with user-uploaded real photo (rider de espaldas en carretera serpenteante, cactos, luz dorada, RODATA visible en cinturón)
+- `LIFESTYLE_HIGHWAY` in ProductPageUI.tsx now points to: `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775768374485-uca4dkx21g.webp`
 
 ## Image Assets (Current)
 | File | Usage | Notes |
 |------|-------|-------|
 | `/hero-rider.jpg` | IndexUI hero background | Generated - urban rider, dark/cinematic |
 | `/product-worn.jpg` | IndexUI hero right, PDP lifestyle, features banner | Generated - rider on CDMX cobblestone, RODATA visible |
-| `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT (IndexUI + PDP gallery) | User-uploaded — clean studio shot, RODATA label |
-| `/lifestyle-highway-v2.jpg` | PDP "Menos fatiga. Más rodada." section | NEW - desert mountain road, golden hour, RODATA belt |
+| `supabase/...gqxi2j4hklp.webp` | PRODUCT_FLAT + FEATURES_ES (IndexUI + PDP gallery) | User-uploaded — clean studio shot, RODATA label |
+| `supabase/...uca4dkx21g.webp` | PDP "Menos fatiga. Más rodada." (LIFESTYLE_HIGHWAY) | **USER REAL PHOTO** — rider de espaldas, carretera serpenteante, cactos, luz dorada, RODATA en cinturón |
 | `/lifestyle-1.jpg` | IndexUI lifestyle grid | From previous session |
 | `/lifestyle-2.jpg` | IndexUI lifestyle grid | From previous session |
 | `/lifestyle-3.jpg` | IndexUI problem section + final CTA | From previous session |
 | `/pdp-lifestyle-1.jpg` | PDP city lifestyle section | From session 2 — verify branding |
-| `/pdp-lifestyle-2.jpg` | (replaced — no longer used) | Had "Motosupport" branding |
 
 ## Product Detail Page (ProductPageUI.tsx) — 11 Sections
 1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
@@ -36,7 +34,7 @@ Full premium landing page + premium product detail page are built. The store tar
    - "Comprar ahora" amber CTA + "Agregar al carrito" outline
    - 3 trust icons + WhatsApp link
 2. **Stats Bar** — +800 riders, 4.9★, 100% México (graphite bg)
-3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay (`/lifestyle-highway-v2.jpg`)
+3. **Lifestyle Break** — Full-bleed highway image + cinematic copy overlay (user real photo with RODATA)
 4. **Feature Breakdown** — 3 alternating full-width sections (panel/correas/malla)
 5. **Technical Specs** — Clean table on offwhite bg
 6. **How to Wear** — 3 numbered steps + inline CTA (graphite bg)
