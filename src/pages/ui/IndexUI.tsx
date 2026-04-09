@@ -321,7 +321,8 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
               <img
                 src={LIFESTYLE_WORN}
                 alt="Rider usando Soporte Lumbar Rodata One por detrás"
-                className="col-span-2 rounded-xl object-cover object-top aspect-video shadow-lg"
+                className="col-span-2 rounded-xl object-cover aspect-video shadow-lg"
+                style={{ objectPosition: 'center 40%' }}
                 loading="lazy"
               />
               <img
