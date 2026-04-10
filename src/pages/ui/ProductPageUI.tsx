@@ -1,5 +1,5 @@
 // ProductPageUI v3 — rodata.mx premium PDP (rebuild trigger)
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useInView } from "react-intersection-observer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
@@ -31,13 +31,38 @@ const SIZE_GUIDE = [
   { size: 'XL', waist: '100–115 cm', recom: 'Extra grande'    },
 ]
 
-const FEATURES = [
+const FEATURES: { number: string; icon: React.ElementType; title: string; desc: React.ReactNode; image: string }[] = [
   { number: '01', icon: Layers, title: 'Termina cada rodada sin el dolor de siempre',
-    desc: 'La zona lumbar es la primera que siente los trayectos largos y la vibración constante. El Rodata One actúa exactamente ahí — soporte firme que distribuye la carga de la postura de manejo, sin restringirte. Pones el cinturón, subes a la moto y te olvidas de él.', image: FEAT_IMG_1 },
+    desc: (
+      <>
+        En la moto, tu cuerpo va inclinado hacia adelante durante horas —{' '}
+        <strong className="text-brand-smoke">esa postura carga tu zona lumbar de una forma que no te das cuenta hasta que ya duele</strong>.
+        El Rodata One actúa exactamente ahí:{' '}
+        <strong className="text-brand-smoke">soporte firme que distribuye esa tensión</strong> sin restringirte.
+        Lo pones, arrancas y te olvidas de él.
+      </>
+    ), image: FEAT_IMG_1 },
   { number: '02', icon: SlidersHorizontal, title: 'Rueda horas sin detenerte a ajustar nada',
-    desc: 'El sistema de doble correa mantiene el soporte en exactamente el mismo lugar desde que arrancas hasta que bajas de la moto. Sin que se corra, sin que apriete de más. En trayectos largos, el equipo tiene que trabajar contigo — no en tu contra.', image: FEAT_IMG_2 },
+    desc: (
+      <>
+        No es rígido como una faja de gimnasio —{' '}
+        <strong className="text-brand-smoke">es flexible y se mueve contigo mientras manejas</strong>, sin restricciones.
+        El sistema de doble correa lo mantiene{' '}
+        <strong className="text-brand-smoke">exactamente en el mismo lugar desde que arrancas hasta que bajas</strong>.
+        Sin que se corra. Sin que apriete de más. En trayectos largos, el equipo tiene que trabajar contigo — no en tu contra.
+      </>
+    ), image: FEAT_IMG_2 },
   { number: '03', icon: Wind, title: 'Bajo la chamarra, sin que lo notes',
-    desc: 'Construcción técnica en textil negro mate con malla perforada transpirable. Perfil bajo diseñado para no estorbar debajo de cualquier chamarra de moto. Resiste el uso diario, los climas y las temporadas largas sin deformarse ni perder estructura.', image: FEAT_IMG_3 },
+    desc: (
+      <>
+        <strong className="text-brand-smoke">Textil negro mate con malla perforada transpirable</strong> — construcción técnica y perfil bajo
+        diseñado para{' '}
+        <strong className="text-brand-smoke">no estorbar debajo de cualquier chamarra de moto</strong>.
+        A diferencia de los soportes genéricos, no presiona donde no debe ni sobresale.
+        Resiste el uso diario, los climas y las temporadas largas{' '}
+        <strong className="text-brand-smoke">sin deformarse ni perder estructura</strong>.
+      </>
+    ), image: FEAT_IMG_3 },
 ]
 
 const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
@@ -170,7 +195,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="h-px w-6 bg-brand-amber block" />
-                <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">El soporte que cambia cómo llegas</span>
+                <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">Diseñado para la postura de manejo</span>
               </div>
               <h1 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight">{logic.product.title}</h1>
               <div className="flex items-center gap-3">
@@ -185,9 +210,15 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 )}
               </div>
               <div className="border-t border-white/[0.08] pt-5 space-y-3">
-                <p className="text-brand-smoke text-sm leading-relaxed font-inter">¿Llegas cansado después de cierta distancia? La zona lumbar acumula cada golpe, cada vibración y cada hora en postura de manejo. El Rodata One está diseñado para cambiar eso.</p>
+                <p className="text-brand-smoke text-sm leading-relaxed font-inter">
+                  En la moto vas inclinado hacia adelante — esa postura pone{' '}
+                  <strong className="text-brand-offwhite">tu zona lumbar bajo tensión constante</strong>,
+                  hora tras hora. No es lo mismo que una silla de oficina.{' '}
+                  <strong className="text-brand-offwhite">El Rodata One está diseñado para esa postura</strong>{' '}
+                  — no para el gym, no para la oficina.
+                </p>
                 <div className="space-y-2">
-                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Soporte firme que no estorba ni bajo la chamarra', 'Ajuste en segundos — y se queda exactamente donde lo pusiste'].map(item => (
+                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Flexible — se mueve contigo y no estorba el manejo ni bajo la chamarra', 'Ajuste en segundos — y se queda exactamente donde lo pusiste'].map(item => (
                     <div key={item} className="flex items-center gap-2.5">
                       <div className="h-4 w-4 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><Check size={9} className="text-brand-amber" /></div>
                       <span className="text-brand-smoke text-xs font-inter">{item}</span>
@@ -340,43 +371,18 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── 5. SPECS ── */}
-      <section className="bg-brand-offwhite py-16 lg:py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Qué trae incluido</span>
-            <h2 className="font-sora font-bold text-brand-carbon text-3xl">Especificaciones técnicas</h2>
-          </div>
-          <div className="rounded-2xl overflow-hidden border border-brand-smoke/30 shadow-sm">
-            {[
-              ['Material', 'Textil técnico negro mate + malla transpirable'],
-              ['Panel lumbar', 'Hexagonal rígido de perfil bajo'],
-              ['Ajuste', 'Doble tensor de precisión con cierre velcro'],
-              ['Tallas', 'S (60-75cm) · M (75-90cm) · L (90-100cm) · XL (100-115cm)'],
-              ['Uso ideal', 'Bajo chamarra de moto, uso diario y rodadas largas'],
-              ['Incluye', '1 × Soporte Lumbar Rodata One'],
-            ].map(([label, value], i) => (
-              <div key={label} className={cn("grid grid-cols-2 gap-4 px-5 py-4 text-sm border-t border-brand-smoke/20", i % 2 === 0 ? "bg-white" : "bg-brand-offwhite")}>
-                <span className="font-sora font-semibold text-brand-carbon">{label}</span>
-                <span className="font-inter text-brand-steel">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── 6. HOW TO WEAR ── */}
-      <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-20 lg:py-24">
+      <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-14 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10">
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">En tres pasos</span>
             <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Listo para rodar en segundos</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-12">
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {[
-              {step:'1', title:'Ajusta las correas', desc:'Coloca el soporte a la altura lumbar y tensa hasta sentir soporte firme y cómodo.'},
-              {step:'2', title:'Ponlo bajo tu chamarra', desc:'El perfil bajo lo hace discreto bajo tu equipo habitual sin estorbar el manejo.'},
-              {step:'3', title:'Sale a rodar', desc:'El soporte hace su trabajo todo el trayecto. Notarás la diferencia al bajarte.'},
+              {step:'1', title:'Ajusta las correas', desc:'Coloca a la altura lumbar y ajusta las correas hasta sentirlo firme.'},
+              {step:'2', title:'Ponlo bajo tu chamarra', desc:'El perfil bajo lo hace discreto bajo cualquier chamarra de moto.'},
+              {step:'3', title:'Sale a rodar', desc:'Notarás la diferencia al bajarte. Esa es la prueba.'},
             ].map(({step, title, desc}) => (
               <div key={step} className="text-center group">
                 <div className="h-14 w-14 rounded-full bg-brand-amber text-brand-carbon font-sora font-bold text-xl flex items-center justify-center mx-auto mb-5 amber-glow group-hover:scale-105 transition-transform">{step}</div>
@@ -384,11 +390,6 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 <p className="text-brand-steel text-sm font-inter leading-relaxed">{desc}</p>
               </div>
             ))}
-          </div>
-          <div className="text-center">
-            <button onClick={handlePrimary} className="btn-amber-lg amber-glow font-sora">
-              Comprar ahora — {logic.formatMoney(logic.currentPrice)}<ChevronRight size={18}/>
-            </button>
           </div>
         </div>
       </section>

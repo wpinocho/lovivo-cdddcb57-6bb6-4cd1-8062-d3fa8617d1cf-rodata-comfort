@@ -12,114 +12,18 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic. Benefit-first, not material/spec-first.
 
-## Recent Changes (Session 13) — PENDING IMPLEMENTATION
+## Recent Changes (Session 13) — IMPLEMENTED ✅
 ### PDP Copy & Structure Improvements
 
-**Problem identified:**
-- Panel description starts with a question + is too long → not converting
-- No explicit differentiation from generic back braces in ANY section
-- Feature descriptions don't explain WHY motorcycle posture is unique
-- Feature 02 doesn't mention flexibility / freedom of movement
-- Specs section (section 5) is clinical, adds zero conversion value → DELETE
-- "En tres pasos" section is useful for reducing purchase anxiety but too padded → CONDENSE
-- Feature descriptions are wall-of-text with no bold keywords for scannability
-
----
-
-## Implementation Plan — ProductPageUI.tsx
-
-### 1. PANEL DESCRIPTION (section 1, info panel, ~line 188)
-Replace the current "¿Llegas cansado...?" paragraph with shorter, moto-specific, statement-first copy:
-
-```
-<p className="text-brand-smoke text-sm leading-relaxed font-inter">
-  En la moto vas inclinado hacia adelante — esa postura pone{' '}
-  <strong className="text-brand-offwhite">tu zona lumbar bajo tensión constante</strong>,
-  hora tras hora. No es lo mismo que una silla de oficina.{' '}
-  <strong className="text-brand-offwhite">El Rodata One está diseñado para esa postura</strong>{' '}
-  — no para el gym, no para la oficina.
-</p>
-```
-
-Bullets (keep the 3, rewording the 2nd):
-- "Baja de la moto sin ese dolor que acumulas en cada rodada"
-- "Flexible — se mueve contigo y no estorba el manejo ni bajo la chamarra"
-- "Ajuste en segundos — y se queda exactamente donde lo pusiste"
-
-### 2. FEATURES ARRAY — rewrite desc with bold keywords
-
-Feature 01 — "Termina cada rodada sin el dolor de siempre"
-- Render as JSX node (not plain string), using `<strong>` for key phrases
-```jsx
-desc: (
-  <>
-    En la moto, tu cuerpo va inclinado hacia adelante durante horas —{' '}
-    <strong>esa postura carga tu zona lumbar de una forma que no te das cuenta hasta que ya duele</strong>.
-    El Rodata One actúa exactamente ahí:{' '}
-    <strong>soporte firme que distribuye esa tensión</strong> sin restringirte. Lo pones, arrancas y te olvidas de él.
-  </>
-)
-```
-
-Feature 02 — "Rueda horas sin detenerte a ajustar nada"
-```jsx
-desc: (
-  <>
-    No es rígido como una faja de gimnasio —{' '}
-    <strong>es flexible y se mueve contigo mientras manejas</strong>, sin restricciones.
-    El sistema de doble correa lo mantiene{' '}
-    <strong>exactamente en el mismo lugar desde que arrancas hasta que bajas</strong>.
-    Sin que se corra. Sin que apriete de más. En trayectos largos, el equipo tiene que trabajar contigo — no en tu contra.
-  </>
-)
-```
-
-Feature 03 — "Bajo la chamarra, sin que lo notes"
-```jsx
-desc: (
-  <>
-    <strong>Textil negro mate con malla perforada transpirable</strong> — construcción técnica y perfil bajo
-    diseñado para{' '}
-    <strong>no estorbar debajo de cualquier chamarra de moto</strong>.
-    A diferencia de los soportes genéricos, no presiona donde no debe ni sobresale.
-    Resiste el uso diario, los climas y las temporadas largas{' '}
-    <strong>sin deformarse ni perder estructura</strong>.
-  </>
-)
-```
-
-**IMPORTANT:** Since FEATURES is an array of objects with `desc` as a string, it needs to be refactored so `desc` can accept `React.ReactNode`. Change the type from `string` to `React.ReactNode` in the FEATURES array and render it directly as `{desc}` (not inside a plain `<p>`).
-
-The render line (currently `<p className="text-brand-smoke text-base leading-relaxed font-inter mb-6">{desc}</p>`) stays the same — it already renders JSX children fine.
-
-### 3. DELETE SPECS SECTION (section 5, ~lines 343-366)
-Remove entirely. The size info is already in the selector. Material info is covered in Feature 03. Specs table adds zero conversion value and feels clinical.
-
-### 4. CONDENSE "En tres pasos" (section 6)
-- KEEP the 3-step content (it reduces purchase anxiety — "is it complicated?")
-- Remove the bottom CTA button from this section (there's already a sticky bar)
-- Reduce vertical padding: `py-20 lg:py-24` → `py-14 lg:py-16`
-- Make step descriptions even shorter and crisper:
-  - Step 1: "Coloca a la altura lumbar y ajusta las correas hasta sentirlo firme."
-  - Step 2: "El perfil bajo lo hace discreto bajo cualquier chamarra de moto."
-  - Step 3: "Notarás la diferencia al bajarte. Esa es la prueba."
-
-### 5. EYEBROW label in panel (line 173)
-Change: "El soporte que cambia cómo llegas"
-To: "Diseñado para la postura de manejo"
-
-This immediately signals moto-specificity to anyone who lands on the page.
-
----
-
-## Files to modify
-- `src/pages/ui/ProductPageUI.tsx`:
-  - Refactor `FEATURES` array `desc` field from `string` to `React.ReactNode`
-  - Rewrite panel description (lines ~188-196)
-  - Change eyebrow label (line 173)
-  - Rewrite all 3 feature descriptions with bold keywords
-  - Delete entire specs section (lines ~343-366)
-  - Condense "En tres pasos" section (reduce padding, remove CTA, update step descriptions)
+- **Eyebrow label:** "El soporte que cambia cómo llegas" → "Diseñado para la postura de manejo"
+- **Panel description:** Replaced question-lead with statement-first moto-specific copy + bold keywords
+- **Bullet 2:** "Soporte firme que no estorba ni bajo la chamarra" → "Flexible — se mueve contigo y no estorba el manejo ni bajo la chamarra"
+- **Feature descriptions:** Refactored `desc` field to `React.ReactNode`, added `<strong>` bold keywords across all 3 features
+  - Feature 01: postura inclinada en moto → tensión lumbar → soporte que distribuye sin restringir
+  - Feature 02: no rígido como faja → flexible, se mueve → doble correa mantiene posición
+  - Feature 03: textil negro mate + malla perforada → perfil bajo → no estorba bajo chamarra → no se deforma
+- **Specs section (section 5):** DELETED entirely — no conversion value
+- **"En tres pasos" section:** Condensed — padding reduced (`py-14 lg:py-16`), CTA button removed, descriptions made shorter/crisper
 
 ---
 
@@ -154,10 +58,10 @@ This immediately signals moto-specificity to anyone who lands on the page.
 | `product-images/.../review-1.webp` through `review-5.webp` | Review cards in both pages | Product-images bucket (public access) |
 
 ## Product Detail Page (ProductPageUI.tsx) — Sections (UPDATED)
-1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel. NEW: benefit-focused bullets & description
+1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel. NEW: moto-specific description + bold keywords + flexible bullet
 2. **Stats Bar** — +800 riders, 4.9★, 100% México
-3. **Lifestyle Break** — Full-bleed highway image. NEW: "Deja de bajar a estirar. Empieza a llegar mejor."
-4. **Feature Breakdown** — 3 alternating full-width sections. NEW: all benefit-focused copy + new user photos
+3. **Lifestyle Break** — Full-bleed highway image. "Deja de bajar a estirar. Empieza a llegar mejor."
+4. **Feature Breakdown** — 3 alternating full-width sections. NEW: React.ReactNode desc with `<strong>` bold keywords + moto-posture differentiation
 5. ~~**Technical Specs**~~ → **DELETED**
 6. **How to Wear** — 3 numbered steps. CONDENSED: less padding, no CTA, shorter descriptions
 7. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
