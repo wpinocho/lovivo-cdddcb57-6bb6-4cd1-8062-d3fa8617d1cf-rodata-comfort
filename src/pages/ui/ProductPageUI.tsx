@@ -35,7 +35,7 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
   { number: '01', icon: Layers, title: 'Termina cada rodada sin el dolor de siempre',
     desc: (
       <>
-        En la moto, tu cuerpo va inclinado hacia adelante durante horas —{' '}
+        En la moto, tu cuerpo va inclinado hacia adelante durante horas,{' '}
         <strong className="text-brand-smoke">esa postura carga tu zona lumbar de una forma que no te das cuenta hasta que ya duele</strong>.
         El Rodata One actúa exactamente ahí:{' '}
         <strong className="text-brand-smoke">soporte firme que distribuye esa tensión</strong> sin restringirte.
@@ -45,7 +45,7 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
   { number: '02', icon: SlidersHorizontal, title: 'Rueda horas sin detenerte a ajustar nada',
     desc: (
       <>
-        No es rígido como una faja de gimnasio —{' '}
+        No es rígido como una faja de gimnasio,{' '}
         <strong className="text-brand-smoke">es flexible y se mueve contigo mientras manejas</strong>, sin restricciones.
         El sistema de doble correa lo mantiene{' '}
         <strong className="text-brand-smoke">exactamente en el mismo lugar desde que arrancas hasta que bajas</strong>.
@@ -55,7 +55,7 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
   { number: '03', icon: Wind, title: 'Bajo la chamarra, sin que lo notes',
     desc: (
       <>
-        <strong className="text-brand-smoke">Textil negro mate con malla perforada transpirable</strong> — construcción técnica y perfil bajo
+        <strong className="text-brand-smoke">Textil negro mate con malla perforada transpirable</strong>: construcción técnica y perfil bajo
         diseñado para{' '}
         <strong className="text-brand-smoke">no estorbar debajo de cualquier chamarra de moto</strong>.
         A diferencia de los soportes genéricos, no presiona donde no debe ni sobresale.
@@ -211,14 +211,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               </div>
               <div className="border-t border-white/[0.08] pt-5 space-y-3">
                 <p className="text-brand-smoke text-sm leading-relaxed font-inter">
-                  En la moto vas inclinado hacia adelante — esa postura pone{' '}
-                  <strong className="text-brand-offwhite">tu zona lumbar bajo tensión constante</strong>,
-                  hora tras hora. No es lo mismo que una silla de oficina.{' '}
-                  <strong className="text-brand-offwhite">El Rodata One está diseñado para esa postura</strong>{' '}
-                  — no para el gym, no para la oficina.
+                  El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda.
                 </p>
                 <div className="space-y-2">
-                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Flexible — se mueve contigo y no estorba el manejo ni bajo la chamarra', 'Ajuste en segundos — y se queda exactamente donde lo pusiste'].map(item => (
+                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Flexible: se mueve contigo y no estorba el manejo ni bajo la chamarra', 'Ajuste en segundos y se queda exactamente donde lo pusiste'].map(item => (
                     <div key={item} className="flex items-center gap-2.5">
                       <div className="h-4 w-4 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><Check size={9} className="text-brand-amber" /></div>
                       <span className="text-brand-smoke text-xs font-inter">{item}</span>
@@ -235,7 +231,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-brand-smoke text-sm font-sora font-semibold">
                           {option.name}
-                          {logic.selected[option.name] && <span className="text-brand-steel font-inter font-normal ml-2">— {SIZE_GUIDE.find(s => s.size === logic.selected[option.name])?.waist ?? logic.selected[option.name]}</span>}
+                          {logic.selected[option.name] && <span className="text-brand-steel font-inter font-normal ml-2">· {SIZE_GUIDE.find(s => s.size === logic.selected[option.name])?.waist ?? logic.selected[option.name]}</span>}
                         </p>
                         <button onClick={() => setShowSizeGuide(!showSizeGuide)} className="flex items-center gap-1 text-brand-amber text-xs font-inter underline underline-offset-2">
                           Guía de tallas {showSizeGuide ? <ChevronUp size={11}/> : <ChevronDown size={11}/>}
@@ -288,7 +284,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 {logic.inStock ? (
                   <>
                     <button onClick={handlePrimary} className="btn-amber-lg amber-glow font-sora w-full text-base">
-                      <ShoppingCart size={18}/>Comprar ahora — {logic.formatMoney(logic.currentPrice)}
+                      <ShoppingCart size={18}/>Comprar ahora · {logic.formatMoney(logic.currentPrice)}
                     </button>
                     <button onClick={logic.handleAddToCart} className="btn-outline-light font-sora w-full">Agregar al carrito</button>
                   </>
@@ -339,7 +335,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           <div className="max-w-xl">
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Para riders que no se rinden antes de tiempo</span>
             <h2 className="font-sora font-bold text-brand-offwhite text-4xl sm:text-5xl leading-[1.05] mb-5">Deja de bajar a estirar. Empieza a llegar mejor.</h2>
-            <p className="text-brand-smoke text-lg font-inter leading-relaxed">El dolor de espalda no avisa — simplemente llega en algún punto de la rodada. El Rodata One retrasa ese punto hasta mucho más lejos de lo que estás acostumbrado.</p>
+            <p className="text-brand-smoke text-lg font-inter leading-relaxed">El dolor de espalda no avisa. Simplemente llega en algún punto de la rodada. El Rodata One retrasa ese punto hasta mucho más lejos de lo que estás acostumbrado.</p>
           </div>
         </div>
       </section>
@@ -371,28 +367,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── 6. HOW TO WEAR ── */}
-      <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-14 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">En tres pasos</span>
-            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Listo para rodar en segundos</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            {[
-              {step:'1', title:'Ajusta las correas', desc:'Coloca a la altura lumbar y ajusta las correas hasta sentirlo firme.'},
-              {step:'2', title:'Ponlo bajo tu chamarra', desc:'El perfil bajo lo hace discreto bajo cualquier chamarra de moto.'},
-              {step:'3', title:'Sale a rodar', desc:'Notarás la diferencia al bajarte. Esa es la prueba.'},
-            ].map(({step, title, desc}) => (
-              <div key={step} className="text-center group">
-                <div className="h-14 w-14 rounded-full bg-brand-amber text-brand-carbon font-sora font-bold text-xl flex items-center justify-center mx-auto mb-5 amber-glow group-hover:scale-105 transition-transform">{step}</div>
-                <h3 className="font-sora font-bold text-brand-offwhite text-xl mb-3">{title}</h3>
-                <p className="text-brand-steel text-sm font-inter leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* ── 7. CITY LIFESTYLE ── */}
       <section className="relative overflow-hidden" style={{minHeight:'40vh'}}>
@@ -402,7 +377,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
             <blockquote>
               <p className="font-sora font-semibold text-brand-offwhite text-xl sm:text-2xl mb-2">"Ahora el Rodata One sale conmigo en cada rodada."</p>
-              <cite className="text-brand-smoke text-sm font-inter not-italic">— Carlos M., CDMX</cite>
+              <cite className="text-brand-smoke text-sm font-inter not-italic">Carlos M., CDMX</cite>
             </blockquote>
           </div>
         </div>
@@ -451,26 +426,49 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── 9. GUARANTEE ── */}
-      <section className="bg-brand-offwhite py-16 lg:py-20">
+
+
+      {/* ── 7. COMBINED: STEPS + TRUST ── */}
+      <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Compra sin riesgo</span>
-            <h2 className="font-sora font-bold text-brand-carbon text-3xl">Pruébalo sin complicarte</h2>
+            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Simple de usar · Compra sin riesgo</span>
+            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Listo en segundos. Sin riesgo.</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[{icon:RotateCcw, title:'30 días de prueba', desc:'Si no te convence, lo resolvemos.'}, {icon:Ruler, title:'Cambio de talla fácil', desc:'Para que el ajuste sea el correcto.'}, {icon:Truck, title:'Envío gratis', desc:'Sin costo a todo México.'}, {icon:MessageSquare, title:'Soporte WhatsApp', desc:'Personas reales que responden.'}].map(({icon: Icon, title, desc}) => (
-              <div key={title} className="bg-white border border-brand-smoke/30 rounded-2xl p-7 text-center hover:border-brand-amber/30 transition-colors shadow-sm">
-                <div className="h-12 w-12 rounded-full bg-brand-carbon/5 border border-brand-carbon/10 flex items-center justify-center mx-auto mb-4"><Icon size={20} className="text-brand-carbon"/></div>
-                <h3 className="font-sora font-bold text-brand-carbon text-sm mb-2">{title}</h3>
-                <p className="text-brand-steel text-xs font-inter">{desc}</p>
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-10">
+            {[
+              {step:'1', title:'Ajusta las correas', desc:'Coloca a la altura lumbar y ajusta hasta sentirlo firme.'},
+              {step:'2', title:'Ponlo bajo tu chamarra', desc:'El perfil bajo lo hace discreto bajo cualquier chamarra.'},
+              {step:'3', title:'Sale a rodar', desc:'Notarás la diferencia al bajarte.'},
+            ].map(({step, title, desc}) => (
+              <div key={step} className="flex flex-col items-center text-center group">
+                <div className="h-10 w-10 rounded-full bg-brand-amber text-brand-carbon font-sora font-bold text-base flex items-center justify-center mb-4 amber-glow group-hover:scale-105 transition-transform">{step}</div>
+                <h3 className="font-sora font-bold text-brand-offwhite text-base mb-1.5">{title}</h3>
+                <p className="text-brand-steel text-sm font-inter leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-white/[0.06] my-10" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {icon:RotateCcw, title:'30 días de prueba', desc:'Si no te convence, lo resolvemos.'},
+              {icon:Ruler, title:'Cambio de talla fácil', desc:'Para que el ajuste sea el correcto.'},
+              {icon:Truck, title:'Envío gratis', desc:'Sin costo a todo México.'},
+              {icon:MessageSquare, title:'Soporte WhatsApp', desc:'Personas reales que responden.'},
+            ].map(({icon: Icon, title, desc}) => (
+              <div key={title} className="bg-brand-carbon border border-white/[0.07] rounded-xl p-5 flex items-center gap-4 hover:border-brand-amber/20 transition-colors">
+                <div className="h-10 w-10 rounded-full bg-brand-amber/10 border border-brand-amber/20 flex items-center justify-center flex-shrink-0"><Icon size={17} className="text-brand-amber"/></div>
+                <div>
+                  <h3 className="font-sora font-semibold text-brand-offwhite text-sm">{title}</h3>
+                  <p className="text-brand-steel text-xs font-inter mt-0.5">{desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 10. FAQ ── */}
+      {/* ── 8. FAQ ── */}
       <section id="faq" style={{backgroundColor:'#1D2125'}} className="border-t border-white/[0.06] py-20 lg:py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">

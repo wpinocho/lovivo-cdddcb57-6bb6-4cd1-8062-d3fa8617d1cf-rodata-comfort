@@ -12,100 +12,53 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic. Benefit-first, not material/spec-first.
 
-## Pending Changes (Session 14) — TO IMPLEMENT
+## Recent Changes (Session 14) — IMPLEMENTED ✅
 
-### ProductPageUI.tsx changes:
+### ProductPageUI.tsx — All changes applied:
 
-#### 1. Shorten product panel description
-Replace the long paragraph:
-```
-"En la moto vas inclinado hacia adelante — esa postura pone tu zona lumbar bajo tensión constante, hora tras hora. No es lo mismo que una silla de oficina. El Rodata One está diseñado para esa postura — no para el gym, no para la oficina."
-```
-With exactly:
-```
-"El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda."
-```
+1. **Short description:** "El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda."
+2. **Removed ALL em dashes "—"** across the entire file:
+   - Feature 01: `durante horas —` → `durante horas,`
+   - Feature 02: `faja de gimnasio —` → `faja de gimnasio,`
+   - Feature 03: `transpirable — construcción` → `transpirable: construcción`
+   - Bullets: `Flexible — se mueve` → `Flexible: se mueve`, `Ajuste en segundos — y` → `Ajuste en segundos y`
+   - Lifestyle Break: `no avisa — simplemente` → `no avisa. Simplemente`
+   - City quote: `— Carlos M., CDMX` → `Carlos M., CDMX`
+   - Size selector: `— {waist}` → `· {waist}`
+   - CTA button: `Comprar ahora — precio` → `Comprar ahora · precio`
+3. **Removed "En tres pasos" section** (was section 6, before City Lifestyle)
+4. **Removed standalone Guarantee section** (was section 9, after Reviews)
+5. **Added combined "Steps + Trust" section** after Reviews (before FAQ):
+   - Background: `#1D2125`
+   - Eyebrow: "Simple de usar · Compra sin riesgo"
+   - H2: "Listo en segundos. Sin riesgo."
+   - 3 compact steps (smaller h-10 w-10 amber circles, centered)
+   - Divider
+   - 4 dark trust badge cards (horizontal layout, icon left + text right)
 
-#### 2. Remove ALL em dashes "—" throughout the entire ProductPageUI.tsx
-Replace with proper punctuation alternatives. Key locations:
-- Feature 01 desc JSX: `durante horas — esa postura` → `durante horas, esa postura`
-- Feature 01 desc JSX: `soporte firme que distribuye esa tensión` (no dash here already)
-- Feature 02 desc JSX: `una faja de gimnasio — es flexible` → `una faja de gimnasio. Es flexible`
-- Feature 02 desc JSX: `se mueve contigo mientras manejas, sin restricciones` (ok)
-- Feature 02 desc JSX: `lo mantiene exactamente en el mismo lugar desde que arrancas hasta que bajas` (ok)
-- Lifestyle Break section: `no avisa — simplemente llega` → `no avisa. Simplemente llega`
-- City quote cite: `— Carlos M., CDMX` → `Carlos M., CDMX` (remove the dash from cite)
-- Any other dashes found in the file
-
-#### 3. Remove "En tres pasos" section (currently section 6, before City Lifestyle)
-Delete it from its current position.
-
-#### 4. Remove standalone "Guarantee" section (currently section 9, after Reviews)
-Delete it from its current position.
-
-#### 5. Add combined section AFTER Reviews (between Reviews and FAQ)
-**New combined section: "Fácil de ponerte. Sin riesgo de comprarlo."**
-
-Layout concept:
-- Background: `#1D2125` (graphite)
-- Border top/bottom: `border-white/[0.06]`
-- Padding: `py-16 lg:py-20`
-- Centered header:
-  - Eyebrow (amber, small caps): "Simple de usar · Compra sin riesgo"
-  - H2: "Listo en segundos. Sin riesgo."
-
-- Top part: **3 steps** in compact horizontal grid (md:grid-cols-3)
-  - Each step: amber circle number (smaller, h-10 w-10), title, short desc
-  - Step 1: "Ajusta las correas" / "Coloca a la altura lumbar y ajusta hasta sentirlo firme."
-  - Step 2: "Ponlo bajo tu chamarra" / "El perfil bajo lo hace discreto bajo cualquier chamarra."
-  - Step 3: "Sale a rodar" / "Notarás la diferencia al bajarte."
-
-- Divider: `<div className="border-t border-white/[0.06] my-10" />`
-
-- Bottom part: **4 trust badges** in compact horizontal grid (sm:grid-cols-2 lg:grid-cols-4 gap-4)
-  - More compact style: horizontal layout within each card (icon left, text right) on dark bg
-  - No white card background, just dark cards with subtle border
-  - Cards: 30 días de prueba, Cambio de talla fácil, Envío gratis, Soporte WhatsApp
-  - Style: `bg-brand-carbon border border-white/[0.07] rounded-xl p-5 flex items-center gap-4`
-
-#### 6. New section order in ProductPageUI.tsx:
+### New section order in ProductPageUI.tsx:
 1. Main Product
 2. Stats Bar
 3. Lifestyle Break
 4. Features
 5. City Lifestyle Quote
 6. Reviews
-7. **NEW: Combined Steps + Trust** ← moved here
+7. **Combined: Steps + Trust** ← NEW
 8. FAQ
 9. Final CTA
 10. Sticky Bar
 
-## Recent Changes (Session 13) — IMPLEMENTED ✅
-### PDP Copy & Structure Improvements
+## Previous Changes (Session 13) — IMPLEMENTED ✅
+- Eyebrow: "Diseñado para la postura de manejo"
+- Features: bold keywords with `<strong>` nodes across all 3 features
+- Specs section: DELETED
 
-- **Eyebrow label:** "El soporte que cambia cómo llegas" → "Diseñado para la postura de manejo"
-- **Panel description:** Replaced question-lead with statement-first moto-specific copy + bold keywords
-- **Bullet 2:** "Soporte firme que no estorba ni bajo la chamarra" → "Flexible — se mueve contigo y no estorba el manejo ni bajo la chamarra"
-- **Feature descriptions:** Refactored `desc` field to `React.ReactNode`, added `<strong>` bold keywords across all 3 features
-  - Feature 01: postura inclinada en moto → tensión lumbar → soporte que distribuye sin restringir
-  - Feature 02: no rígido como faja → flexible, se mueve → doble correa mantiene posición
-  - Feature 03: textil negro mate + malla perforada → perfil bajo → no estorba bajo chamarra → no se deforma
-- **Specs section (section 5):** DELETED entirely — no conversion value
-- **"En tres pasos" section:** Condensed — padding reduced (`py-14 lg:py-16`), CTA button removed, descriptions made shorter/crisper
-
----
-
-## Previous Changes (Session 12)
-- Rewrote ProductPageUI.tsx FEATURES section copy → now fully benefit-focused (pain relief, ride longer, comfort), not material-focused
-- Updated 3 feature images to user-provided product photos:
-  - FEAT_IMG_1: back shot of rider wearing RODATA (studio grey bg) → Feature 01 "Termina cada rodada sin el dolor de siempre"
-  - FEAT_IMG_2: rider on motorcycle at sunset with RODATA → Feature 02 "Rueda horas sin detenerte a ajustar nada"
-  - FEAT_IMG_3: macro close-up of straps/mesh panel → Feature 03 "Bajo la chamarra, sin que lo notes" (this one CAN talk about materials per user)
-- Updated product panel eyebrow + description + bullets → now pain-problem focused
-- Updated "How to wear" section title/descriptions → clearer, more benefit language
-- Updated section headline "Ingeniería de soporte" → "Por qué funciona / Diseñado para que dures más en el camino"
-- Updated Lifestyle Break copy → "Deja de bajar a estirar. Empieza a llegar mejor."
-- Updated Final CTA → "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
+## Previous Changes (Session 12) — IMPLEMENTED ✅
+- Features copy: benefit-focused (pain relief, ride longer, comfort)
+- Feature images: real user product photos
+- Product panel: pain-problem focused copy
+- Lifestyle Break: "Deja de bajar a estirar. Empieza a llegar mejor."
+- Final CTA: "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -125,17 +78,17 @@ Layout concept:
 | `supabase/...dzkdrl1lt2.webp` | PDP Feature 03 (FEAT_IMG_3) | Macro close-up correas y malla panel RODATA |
 | `product-images/.../review-1.webp` through `review-5.webp` | Review cards in both pages | Product-images bucket (public access) |
 
-## Product Detail Page (ProductPageUI.tsx) — Sections (UPDATED)
-1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel. NEW: short description + bold keywords + flexible bullet
+## Product Detail Page (ProductPageUI.tsx) — Final Section Order
+1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
 2. **Stats Bar** — +800 riders, 4.9★, 100% México
-3. **Lifestyle Break** — Full-bleed highway image. "Deja de bajar a estirar. Empieza a llegar mejor."
-4. **Feature Breakdown** — 3 alternating full-width sections.
+3. **Lifestyle Break** — Full-bleed highway image
+4. **Feature Breakdown** — 3 alternating full-width sections
 5. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
-6. **Reviews** — 5 cards with real customer photos (aspect 4/3) + "Compra verificada" badge
-7. **Combined: Steps + Trust** — Compact 3 steps + 4 guarantee cards in one dark section
+6. **Reviews** — 5 cards with real customer photos
+7. **Combined: Steps + Trust** — Compact 3 steps + 4 guarantee cards, dark bg
 8. **FAQ** — 6 accordion items
-9. **Final CTA** — "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
-10. **Sticky Bottom Bar** — Shows when main CTA scrolls out
+9. **Final CTA**
+10. **Sticky Bottom Bar**
 
 ## Landing Page (IndexUI.tsx) — 11 Sections
 1. Hero (user photo + light overlay), 2. Benefits Bar, 3. Problem Section, 4. How It Works,
