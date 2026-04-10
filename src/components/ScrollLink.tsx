@@ -14,6 +14,17 @@ export const ScrollLink = ({ to, children, className }: ScrollLinkProps) => {
     // Extract base path and hash
     const [path, hash] = to.split('#')
     const targetPath = path || '/'
+
+    // Hash-only link (e.g. "#section") — always scroll within current page
+    if (!path && hash) {
+      e.preventDefault()
+      const element = document.getElementById(hash)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+        window.history.pushState(null, '', `#${hash}`)
+      }
+      return
+    }
     
     // If we're already on the same page, manually scroll
     if (location.pathname === targetPath && hash) {
