@@ -12,47 +12,34 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic. Benefit-first, not material/spec-first.
 
-## Recent Changes (Session 15) — IMPLEMENTED ✅
+## Recent Changes (Session 16) — IMPLEMENTED ✅
+
+### EcommerceTemplate.tsx — navLinks prop fixed:
+- Extracted `DEFAULT_NAV_LINKS` as a module-level constant (homepage links)
+- Removed the hardcoded `navLinks` const inside the component (was overriding the prop)
+- Added `NavLink` interface and `navLinks?: NavLink[]` prop to `EcommerceTemplateProps`
+- Component now uses `resolvedNavLinks = navLinks ?? DEFAULT_NAV_LINKS` for both desktop and mobile nav
+- Both desktop nav and mobile dropdown use `resolvedNavLinks`
 
 ### WhatsApp number updated:
-- Old: `5215500000000` → New: `525531215386`
-- Updated in: `EcommerceTemplate.tsx` (footer) + `ProductPageUI.tsx` (product panel)
+- All instances now use `525531215386`
 
-### EcommerceTemplate.tsx — navLinks prop added:
-- New optional prop `navLinks?: NavLink[]` added to `EcommerceTemplateProps`
-- Default navLinks (for homepage): Cómo funciona → `/#como-funciona`, Opiniones → `/#opiniones`, FAQ → `/#faq`
-- Product page can now pass custom navLinks that anchor to PDP sections
+### ProductPageUI.tsx — passes PDP-specific navLinks:
+- `Por qué funciona → #por-que-funciona`
+- `Opiniones → #opiniones`
+- `FAQ → #faq`
+- These are hash-only anchors so they scroll within the PDP without redirecting to homepage
 
-### ProductPageUI.tsx — PDP-specific nav + section IDs:
-- Added `id="por-que-funciona"` to Features section (section 4)
-- Sections `id="opiniones"` and `id="faq"` already existed
-- EcommerceTemplate now receives custom navLinks: `Por qué funciona → #por-que-funciona`, `Opiniones → #opiniones`, `FAQ → #faq`
-- These are hash-only links so they scroll within the PDP without redirecting to homepage
+## Previous Changes (Session 14-15) — IMPLEMENTED ✅
 
-## Previous Changes (Session 14) — IMPLEMENTED ✅
-
-### ProductPageUI.tsx — All changes applied:
-
-1. **Short description:** "El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda."
-2. **Removed ALL em dashes "—"** across the entire file
-3. **Removed "En tres pasos" section** (was section 6, before City Lifestyle)
-4. **Removed standalone Guarantee section** (was section 9, after Reviews)
-5. **Added combined "Steps + Trust" section** after Reviews (before FAQ):
-   - Background: `#1D2125`
-   - Eyebrow: "Simple de usar · Compra sin riesgo"
-   - H2: "Listo en segundos. Sin riesgo."
-   - 3 compact steps (smaller h-10 w-10 amber circles, centered)
-   - Divider
-   - 4 dark trust badge cards (horizontal layout, icon left + text right)
-
-### New section order in ProductPageUI.tsx:
+### Section order in ProductPageUI.tsx:
 1. Main Product
 2. Stats Bar
 3. Lifestyle Break
 4. Features (id="por-que-funciona")
 5. City Lifestyle Quote
 6. Reviews (id="opiniones")
-7. **Combined: Steps + Trust**
+7. Combined: Steps + Trust
 8. FAQ (id="faq")
 9. Final CTA
 10. Sticky Bar
@@ -74,24 +61,6 @@ Full premium landing page + premium product detail page are built. The store tar
 | `supabase/...xhxki05535d.webp` | PDP Feature 02 (FEAT_IMG_2) | Rider on motorcycle at sunset, RODATA visible |
 | `supabase/...dzkdrl1lt2.webp` | PDP Feature 03 (FEAT_IMG_3) | Macro close-up correas y malla panel RODATA |
 | `product-images/.../review-1.webp` through `review-5.webp` | Review cards in both pages | Product-images bucket (public access) |
-
-## Product Detail Page (ProductPageUI.tsx) — Final Section Order
-1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
-2. **Stats Bar** — +800 riders, 4.9★, 100% México
-3. **Lifestyle Break** — Full-bleed highway image
-4. **Feature Breakdown** (id="por-que-funciona") — 3 alternating full-width sections
-5. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
-6. **Reviews** (id="opiniones") — 5 cards with real customer photos
-7. **Combined: Steps + Trust** — Compact 3 steps + 4 guarantee cards, dark bg
-8. **FAQ** (id="faq") — 6 accordion items
-9. **Final CTA**
-10. **Sticky Bottom Bar**
-
-## Landing Page (IndexUI.tsx) — 11 Sections
-1. Hero (user photo + light overlay), 2. Benefits Bar, 3. Problem Section, 4. How It Works,
-5. Lifestyle Grid ("Parte del equipo"), 6. For Whom, 7. Comparison Table,
-8. **Testimonials** — 3 cards with real customer photos (aspect 4/3) + verified badge,
-9. Guarantee, 10. FAQ, 11. Final CTA
 
 ## Product Info
 - Title: Soporte Lumbar Rodata One

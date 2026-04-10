@@ -10,6 +10,11 @@ import { useCartUISafe } from '@/components/CartProvider'
 import { useCart } from '@/contexts/CartContext'
 import { ScrollLink } from '@/components/ScrollLink'
 
+interface NavLink {
+  label: string
+  href: string
+}
+
 interface EcommerceTemplateProps {
   children: ReactNode
   pageTitle?: string
@@ -20,9 +25,16 @@ interface EcommerceTemplateProps {
   layout?: 'default' | 'full-width' | 'centered'
   hideFloatingCartOnMobile?: boolean
   noPadding?: boolean
+  navLinks?: NavLink[]
 }
 
 const BUY_URL = '/productos/soporte-lumbar-rodata-one'
+
+const DEFAULT_NAV_LINKS: NavLink[] = [
+  { label: 'Cómo funciona', href: '/#como-funciona' },
+  { label: 'Opiniones', href: '/#opiniones' },
+  { label: 'FAQ', href: '/#faq' },
+]
 
 export const EcommerceTemplate = ({
   children,
@@ -34,6 +46,7 @@ export const EcommerceTemplate = ({
   layout = 'default',
   hideFloatingCartOnMobile = false,
   noPadding = false,
+  navLinks,
 }: EcommerceTemplateProps) => {
   const cartUI = useCartUISafe()
   const openCart = cartUI?.openCart ?? (() => {})
@@ -41,11 +54,7 @@ export const EcommerceTemplate = ({
   const totalItems = getTotalItems()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const navLinks = [
-    { label: 'Cómo funciona', href: '/#como-funciona' },
-    { label: 'Opiniones', href: '/#opiniones' },
-    { label: 'FAQ', href: '/#faq' },
-  ]
+  const resolvedNavLinks = navLinks ?? DEFAULT_NAV_LINKS
 
   const header = (
     <div className={headerClassName}>
@@ -75,7 +84,7 @@ export const EcommerceTemplate = ({
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            {resolvedNavLinks.map((link) => (
               <ScrollLink
                 key={link.href}
                 to={link.href}
