@@ -148,7 +148,16 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   const handlePrimary = logic.handleBuyNow ?? logic.handleAddToCart
 
   return (
-    <EcommerceTemplate layout="full-width" noPadding hideFloatingCartOnMobile>
+    <EcommerceTemplate
+      layout="full-width"
+      noPadding
+      hideFloatingCartOnMobile
+      navLinks={[
+        { label: 'Por qué funciona', href: '#por-que-funciona' },
+        { label: 'Opiniones', href: '#opiniones' },
+        { label: 'FAQ', href: '#faq' },
+      ]}
+    >
 
       {/* ── 1. MAIN PRODUCT ── */}
       <section style={{ backgroundColor: '#111315' }}>
@@ -303,7 +312,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   </div>
                 ))}
               </div>
-              <a href="https://wa.me/5215500000000?text=Hola,%20tengo%20una%20pregunta%20sobre%20el%20Rodata%20One" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366] text-xs font-inter hover:underline">
+              <a href="https://wa.me/525531215386?text=Hola,%20tengo%20una%20pregunta%20sobre%20el%20Rodata%20One" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366] text-xs font-inter hover:underline">
                 <MessageSquare size={13}/>¿Tienes dudas? Escríbenos por WhatsApp
               </a>
             </div>
@@ -341,7 +350,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
       </section>
 
       {/* ── 4. FEATURES ── */}
-      <section style={{backgroundColor:'#111315'}} className="py-20 lg:py-28">
+      <section id="por-que-funciona" style={{backgroundColor:'#111315'}} className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Por qué funciona</span>

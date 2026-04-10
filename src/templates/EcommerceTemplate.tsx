@@ -125,7 +125,7 @@ export const EcommerceTemplate = ({
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/[0.08] mt-3 pt-3 pb-2 space-y-1">
-            {navLinks.map((link) => (
+            {resolvedNavLinks.map((link) => (
               <ScrollLink
                 key={link.href}
                 to={link.href}

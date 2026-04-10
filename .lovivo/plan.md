@@ -12,20 +12,29 @@ Full premium landing page + premium product detail page are built. The store tar
 - **Fonts:** Sora (headings) + Inter (body)
 - **Tone:** Premium, technical, masculine, motorcycle lifestyle — NOT medical/orthopedic. Benefit-first, not material/spec-first.
 
-## Recent Changes (Session 14) — IMPLEMENTED ✅
+## Recent Changes (Session 15) — IMPLEMENTED ✅
+
+### WhatsApp number updated:
+- Old: `5215500000000` → New: `525531215386`
+- Updated in: `EcommerceTemplate.tsx` (footer) + `ProductPageUI.tsx` (product panel)
+
+### EcommerceTemplate.tsx — navLinks prop added:
+- New optional prop `navLinks?: NavLink[]` added to `EcommerceTemplateProps`
+- Default navLinks (for homepage): Cómo funciona → `/#como-funciona`, Opiniones → `/#opiniones`, FAQ → `/#faq`
+- Product page can now pass custom navLinks that anchor to PDP sections
+
+### ProductPageUI.tsx — PDP-specific nav + section IDs:
+- Added `id="por-que-funciona"` to Features section (section 4)
+- Sections `id="opiniones"` and `id="faq"` already existed
+- EcommerceTemplate now receives custom navLinks: `Por qué funciona → #por-que-funciona`, `Opiniones → #opiniones`, `FAQ → #faq`
+- These are hash-only links so they scroll within the PDP without redirecting to homepage
+
+## Previous Changes (Session 14) — IMPLEMENTED ✅
 
 ### ProductPageUI.tsx — All changes applied:
 
 1. **Short description:** "El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda."
-2. **Removed ALL em dashes "—"** across the entire file:
-   - Feature 01: `durante horas —` → `durante horas,`
-   - Feature 02: `faja de gimnasio —` → `faja de gimnasio,`
-   - Feature 03: `transpirable — construcción` → `transpirable: construcción`
-   - Bullets: `Flexible — se mueve` → `Flexible: se mueve`, `Ajuste en segundos — y` → `Ajuste en segundos y`
-   - Lifestyle Break: `no avisa — simplemente` → `no avisa. Simplemente`
-   - City quote: `— Carlos M., CDMX` → `Carlos M., CDMX`
-   - Size selector: `— {waist}` → `· {waist}`
-   - CTA button: `Comprar ahora — precio` → `Comprar ahora · precio`
+2. **Removed ALL em dashes "—"** across the entire file
 3. **Removed "En tres pasos" section** (was section 6, before City Lifestyle)
 4. **Removed standalone Guarantee section** (was section 9, after Reviews)
 5. **Added combined "Steps + Trust" section** after Reviews (before FAQ):
@@ -40,25 +49,13 @@ Full premium landing page + premium product detail page are built. The store tar
 1. Main Product
 2. Stats Bar
 3. Lifestyle Break
-4. Features
+4. Features (id="por-que-funciona")
 5. City Lifestyle Quote
-6. Reviews
-7. **Combined: Steps + Trust** ← NEW
-8. FAQ
+6. Reviews (id="opiniones")
+7. **Combined: Steps + Trust**
+8. FAQ (id="faq")
 9. Final CTA
 10. Sticky Bar
-
-## Previous Changes (Session 13) — IMPLEMENTED ✅
-- Eyebrow: "Diseñado para la postura de manejo"
-- Features: bold keywords with `<strong>` nodes across all 3 features
-- Specs section: DELETED
-
-## Previous Changes (Session 12) — IMPLEMENTED ✅
-- Features copy: benefit-focused (pain relief, ride longer, comfort)
-- Feature images: real user product photos
-- Product panel: pain-problem focused copy
-- Lifestyle Break: "Deja de bajar a estirar. Empieza a llegar mejor."
-- Final CTA: "¿Cuántas rodadas más vas a terminar con dolor de espalda?"
 
 ## Image Assets (Current)
 | File | Usage | Notes |
@@ -82,11 +79,11 @@ Full premium landing page + premium product detail page are built. The store tar
 1. **Main Product** — Dark #111315 bg, sticky gallery + full buy panel
 2. **Stats Bar** — +800 riders, 4.9★, 100% México
 3. **Lifestyle Break** — Full-bleed highway image
-4. **Feature Breakdown** — 3 alternating full-width sections
+4. **Feature Breakdown** (id="por-que-funciona") — 3 alternating full-width sections
 5. **City Lifestyle Quote** — Full-bleed CDMX image + rider blockquote
-6. **Reviews** — 5 cards with real customer photos
+6. **Reviews** (id="opiniones") — 5 cards with real customer photos
 7. **Combined: Steps + Trust** — Compact 3 steps + 4 guarantee cards, dark bg
-8. **FAQ** — 6 accordion items
+8. **FAQ** (id="faq") — 6 accordion items
 9. **Final CTA**
 10. **Sticky Bottom Bar**
 
@@ -105,7 +102,6 @@ Full premium landing page + premium product detail page are built. The store tar
 
 ## Next Steps / Known Issues
 - Connect Stripe payment gateway (Dashboard)
-- Update WhatsApp number from 5215500000000 to real number (EcommerceTemplate.tsx + ProductPageUI.tsx)
 - Replace placeholder testimonials text with real rider reviews post-launch
 - `/lifestyle-3.jpg` — verify if it has wrong branding
 - **IMPORTANT:** Always save user images to `product-images` bucket (via image--optimize), NOT `message-images`. The `message-images` bucket has access restrictions.
