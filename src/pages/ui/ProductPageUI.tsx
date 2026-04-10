@@ -288,6 +288,14 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 </div>
               </div>
 
+              {/* Urgency / Stock signal */}
+              {logic.inStock && (
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                  <span className="text-brand-smoke text-xs font-inter">En stock · Envío en 24–48 hrs</span>
+                </div>
+              )}
+
               {/* CTAs */}
               <div ref={ctaRef} className="flex flex-col gap-3">
                 {logic.inStock ? (
@@ -296,6 +304,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       <ShoppingCart size={18}/>Comprar ahora · {logic.formatMoney(logic.currentPrice)}
                     </button>
                     <button onClick={logic.handleAddToCart} className="btn-outline-light font-sora w-full">Agregar al carrito</button>
+                    <p className="text-brand-steel text-[11px] font-inter text-center">
+                      🔒 Pago seguro · Envío gratis · 30 días de prueba
+                    </p>
                   </>
                 ) : (
                   <button disabled className="btn-amber-lg font-sora w-full opacity-50 cursor-not-allowed">Agotado temporalmente</button>
