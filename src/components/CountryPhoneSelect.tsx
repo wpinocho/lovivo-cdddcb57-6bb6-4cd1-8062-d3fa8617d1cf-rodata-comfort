@@ -86,7 +86,7 @@ export const CountryPhoneSelect = ({
           onBlur={handleBlur}
           placeholder={placeholder}
           className={cn(
-            "rounded-l-none",
+            "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel",
             hasValidationError && "border-red-500 focus:border-red-500",
             className
           )}

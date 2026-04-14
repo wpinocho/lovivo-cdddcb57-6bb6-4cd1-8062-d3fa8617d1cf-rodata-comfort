@@ -68,8 +68,8 @@ function PaymentMethodSelector({
         return (
           <label
             key={method}
-            className={`flex items-center gap-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-              isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/30'
+            className={`flex items-center gap-3 border rounded-lg p-4 cursor-pointer transition-colors bg-[#111315] ${
+              isSelected ? 'border-brand-amber bg-brand-amber/5' : 'border-white/[0.12] hover:border-white/[0.25]'
             }`}
           >
             <input
@@ -78,13 +78,13 @@ function PaymentMethodSelector({
               value={method}
               checked={isSelected}
               onChange={() => onSelect(method)}
-              className="w-4 h-4 accent-primary"
+              className="w-4 h-4 accent-amber-400"
             />
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2 flex-1 text-brand-offwhite">
               {config.icon}
               <div>
-                <div className="font-medium text-sm">{config.label}</div>
-                <div className="text-xs text-muted-foreground">{config.description}</div>
+                <div className="font-medium text-sm text-brand-offwhite">{config.label}</div>
+                <div className="text-xs text-brand-steel">{config.description}</div>
               </div>
             </div>
           </label>
@@ -483,7 +483,7 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
-      <div className="text-sm text-muted-foreground text-center">
+      <div className="text-sm text-brand-steel text-center">
         🔒 Todas las transacciones son seguras y encriptadas.
       </div>
 
@@ -496,18 +496,18 @@ function PaymentForm({
 
       {/* Card payment form */}
       {selectedMethod === 'card' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm">
+        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
           <CardContent className="p-0 sm:p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary"></div>
-                <span className="font-medium">Tarjeta de crédito</span>
+                <div className="w-4 h-4 rounded-full border-2 border-brand-amber bg-brand-amber"></div>
+                <span className="font-medium text-brand-offwhite">Tarjeta de crédito</span>
               </div>
               <img src="/lovable-uploads/43c70209-0949-4d87-9c23-50bea4ff2d48.png" alt="Tarjetas aceptadas" className="h-6" />
             </div>
 
             <div className="mb-3">
-              <label htmlFor="cardholder-name" className="block text-sm text-muted-foreground mb-1">
+              <label htmlFor="cardholder-name" className="block text-sm text-brand-steel mb-1">
                 Nombre del titular de la tarjeta
               </label>
               <input
@@ -516,16 +516,16 @@ function PaymentForm({
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
                 placeholder="Nombre como aparece en la tarjeta"
-                className="w-full border rounded-lg px-3 py-2.5 text-base bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full border border-white/[0.15] rounded-lg px-3 py-2.5 text-base bg-[#0d0f11] text-brand-offwhite placeholder:text-brand-steel focus:outline-none focus:ring-2 focus:ring-brand-amber/30 focus:border-brand-amber/40"
               />
             </div>
 
-            <div className="border rounded-lg px-2 py-3 sm:p-4 bg-background">
+            <div className="border border-white/[0.15] rounded-lg px-2 py-3 sm:p-4 bg-[#0d0f11]">
               <CardElement
                 options={{
                   style: {
-                    base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } },
-                    invalid: { color: '#9e2146' },
+                    base: { fontSize: '16px', color: '#e8eaed', iconColor: '#9ca3af', '::placeholder': { color: '#6b7280' } },
+                    invalid: { color: '#f87171' },
                   },
                   hidePostalCode: true,
                 }}
@@ -537,17 +537,17 @@ function PaymentForm({
 
       {/* OXXO info */}
       {selectedMethod === 'oxxo' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm">
+        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-start gap-3">
-              <Store className="h-8 w-8 text-primary shrink-0 mt-0.5" />
+              <Store className="h-8 w-8 text-brand-amber shrink-0 mt-0.5" />
               <div className="space-y-2">
-                <p className="font-medium">Pago en efectivo en OXXO</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-brand-offwhite">Pago en efectivo en OXXO</p>
+                <p className="text-sm text-brand-steel">
                   Se generará un voucher con un código de barras que podrás presentar en cualquier tienda OXXO para completar tu pago.
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  ⏱ Tienes <strong>3 días</strong> para realizar el pago antes de que expire.
+                <p className="text-sm text-brand-steel">
+                  ⏱ Tienes <strong className="text-brand-offwhite">3 días</strong> para realizar el pago antes de que expire.
                 </p>
               </div>
             </div>
@@ -557,16 +557,16 @@ function PaymentForm({
 
       {/* SPEI info */}
       {selectedMethod === 'spei' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm">
+        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-start gap-3">
-              <Building2 className="h-8 w-8 text-primary shrink-0 mt-0.5" />
+              <Building2 className="h-8 w-8 text-brand-amber shrink-0 mt-0.5" />
               <div className="space-y-2">
-                <p className="font-medium">Transferencia bancaria SPEI</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-brand-offwhite">Transferencia bancaria SPEI</p>
+                <p className="text-sm text-brand-steel">
                   Se generarán los datos de la cuenta (CLABE) para que realices la transferencia desde tu banca en línea o app bancaria.
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-brand-steel">
                   ⚡ La confirmación del pago es generalmente instantánea.
                 </p>
               </div>
@@ -582,7 +582,7 @@ function PaymentForm({
       <Button
         onClick={handlePayment}
         disabled={!stripe || loading || !amountCents}
-        className="w-full h-12 text-lg font-semibold"
+        className="w-full h-12 text-lg font-semibold font-sora bg-brand-amber text-brand-carbon hover:bg-brand-amber/90"
         size="lg"
       >
         {loading ? (
@@ -593,11 +593,11 @@ function PaymentForm({
         ) : buttonText}
       </Button>
 
-      <div className="text-xs text-muted-foreground text-center">
+      <div className="text-xs text-brand-steel text-center">
         Al hacer clic en "{selectedMethod === 'oxxo' ? 'Generar Voucher OXXO' : selectedMethod === 'spei' ? 'Ver datos de transferencia' : 'Completar Compra'}", aceptas nuestros{" "}
-        <a href="/terminos-y-condiciones" target="_blank" className="underline hover:text-foreground">términos y condiciones</a>
+        <a href="/terminos-y-condiciones" target="_blank" className="underline hover:text-brand-offwhite">términos y condiciones</a>
         {" "}y{" "}
-        <a href="/aviso-de-privacidad" target="_blank" className="underline hover:text-foreground">aviso de privacidad</a>.
+        <a href="/aviso-de-privacidad" target="_blank" className="underline hover:text-brand-offwhite">aviso de privacidad</a>.
       </div>
     </div>
   )
