@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
@@ -67,27 +66,23 @@ export const CountryPhoneSelect = ({
           <div className="w-6 h-4 bg-gray-200 animate-pulse rounded mr-2"></div>
           <span className="text-sm">+52</span>
         </div>
-        <Input
+        <input
           type="tel"
+          autoComplete="tel"
           value={value.replace(/^\+\d+\s?/, '').trim()}
           onChange={(e) => {
-            setHasValidationError(false) // Reset validation error when user types
-            // Solo permitir números, espacios y guiones
+            setHasValidationError(false)
             const inputValue = e.target.value.replace(/[^\d\s\-]/g, '')
             const digitsOnly = inputValue.replace(/[^\d]/g, '')
-            
-            // Prevenir más de 15 dígitos
-            if (digitsOnly.length > MAX_PHONE_LENGTH) {
-              return
-            }
-            
+            if (digitsOnly.length > MAX_PHONE_LENGTH) return
             onChange(`+52 ${inputValue}`)
           }}
           onBlur={handleBlur}
           placeholder={placeholder}
+          style={{ backgroundColor: '#0d0f11', color: '#F5F7F8' }}
           className={cn(
-            "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel dark-autofill",
-            hasValidationError && "border-red-500 focus:border-red-500",
+            "dark-autofill flex h-10 w-full rounded-r-md border border-l-0 px-3 py-2 text-base focus:outline-none focus:ring-0 placeholder:text-[#5E6670] transition-colors",
+            hasValidationError ? "border-red-500" : "border-white/[0.15] focus:border-amber-500/50",
             className
           )}
         />
@@ -151,28 +146,24 @@ export const CountryPhoneSelect = ({
           </Command>
         </PopoverContent>
       </Popover>
-      <Input
+      <input
         type="tel"
+        autoComplete="tel"
         value={value.replace(/^\+\d+\s?/, '').trim()}
         onChange={(e) => {
-          setHasValidationError(false) // Reset validation error when user types
-          // Solo permitir números, espacios y guiones
+          setHasValidationError(false)
           const inputValue = e.target.value.replace(/[^\d\s\-]/g, '')
           const digitsOnly = inputValue.replace(/[^\d]/g, '')
-          
-          // Prevenir más de 15 dígitos
-          if (digitsOnly.length > MAX_PHONE_LENGTH) {
-            return
-          }
-          
+          if (digitsOnly.length > MAX_PHONE_LENGTH) return
           const currentCountryCode = currentCountry?.phone_code || '+52'
           onChange(`${currentCountryCode} ${inputValue}`)
         }}
         onBlur={handleBlur}
         placeholder={placeholder}
+        style={{ backgroundColor: '#0d0f11', color: '#F5F7F8' }}
         className={cn(
-          "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus:border-brand-amber/50 dark-autofill",
-          hasValidationError && "border-red-500 focus:border-red-500",
+          "dark-autofill flex h-10 w-full rounded-r-md border border-l-0 px-3 py-2 text-base focus:outline-none focus:ring-0 placeholder:text-[#5E6670] transition-colors",
+          hasValidationError ? "border-red-500" : "border-white/[0.15] focus:border-amber-500/50",
           className
         )}
       />
