@@ -240,4 +240,19 @@ html {
   .amber-glow:hover {
     box-shadow: 0 6px 32px rgba(201, 139, 46, 0.5);
   }
+
+  /*
+    Dark input autofill override.
+    Chrome ignores background-color on autofill — only box-shadow inset works.
+    Apply .dark-autofill to any input that lives on a dark (#0d0f11) background.
+  */
+  .dark-autofill:-webkit-autofill,
+  .dark-autofill:-webkit-autofill:hover,
+  .dark-autofill:-webkit-autofill:focus,
+  .dark-autofill:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0d0f11 inset !important;
+    -webkit-text-fill-color: #F5F7F8 !important;
+    caret-color: #F5F7F8;
+    transition: background-color 9999s ease-in-out 0s;
+  }
 }

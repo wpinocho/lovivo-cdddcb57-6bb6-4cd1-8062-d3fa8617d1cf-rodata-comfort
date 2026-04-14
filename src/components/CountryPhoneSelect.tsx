@@ -86,7 +86,7 @@ export const CountryPhoneSelect = ({
           onBlur={handleBlur}
           placeholder={placeholder}
           className={cn(
-            "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel",
+            "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel dark-autofill",
             hasValidationError && "border-red-500 focus:border-red-500",
             className
           )}
@@ -171,7 +171,7 @@ export const CountryPhoneSelect = ({
         onBlur={handleBlur}
         placeholder={placeholder}
         className={cn(
-          "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus:border-brand-amber/50",
+          "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus:border-brand-amber/50 dark-autofill",
           hasValidationError && "border-red-500 focus:border-red-500",
           className
         )}

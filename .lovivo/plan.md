@@ -16,9 +16,13 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
   - Submit button: `bg-brand-amber text-brand-carbon`
   - Footer legal text: `text-brand-steel`
   - `CountryPhoneSelect`: button trigger AND phone input BOTH `bg-[#0d0f11] border-white/[0.15] text-brand-offwhite`, placeholder `text-brand-steel`, focus `border-brand-amber/50` ✅ FIXED
+- **Browser autofill fix (DONE ✅):**
+  - Root cause: Chrome autofill ignores `background-color` CSS, only respects `box-shadow inset`
+  - Fix: Added `.dark-autofill` CSS utility class in `index.css` using `-webkit-box-shadow: 0 0 0 1000px #0d0f11 inset !important` + `-webkit-text-fill-color: #F5F7F8`
+  - Applied `.dark-autofill` to phone number Input in `CountryPhoneSelect.tsx` (both loading and normal state)
 
 ## Known Issues
-- None currently
+- Other checkout inputs (email, name, address, etc.) could also show autofill in white if Chrome autofills them — apply `.dark-autofill` class to those inputs too if it becomes a problem
 
 ## Key Files
 - `src/pages/ui/ProductPageUI.tsx` — main PDP (urgency signal added)
@@ -26,7 +30,8 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/ScrollLink.tsx` — handles anchor scroll logic
 - `src/components/StripePayment.tsx` — payment form ✅ dark theme complete
-- `src/components/CountryPhoneSelect.tsx` — phone input ✅ dark theme complete (both trigger button + number input)
+- `src/components/CountryPhoneSelect.tsx` — phone input ✅ dark theme + autofill fix complete
+- `src/index.css` — design system + `.dark-autofill` utility class
 
 ---
 
