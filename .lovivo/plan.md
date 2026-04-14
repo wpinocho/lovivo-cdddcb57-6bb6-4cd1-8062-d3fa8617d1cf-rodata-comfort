@@ -15,7 +15,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
   - SPEI panel: same treatment as OXXO
   - Submit button: `bg-brand-amber text-brand-carbon`
   - Footer legal text: `text-brand-steel`
-  - `CountryPhoneSelect`: button trigger and loading div `bg-[#0d0f11] border-white/[0.15] text-brand-offwhite`, phone input same dark tokens, ChevronDown `text-brand-steel`
+  - `CountryPhoneSelect`: button trigger AND phone input BOTH `bg-[#0d0f11] border-white/[0.15] text-brand-offwhite`, placeholder `text-brand-steel`, focus `border-brand-amber/50` ✅ FIXED
 
 ## Known Issues
 - None currently
@@ -26,7 +26,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/ScrollLink.tsx` — handles anchor scroll logic
 - `src/components/StripePayment.tsx` — payment form ✅ dark theme complete
-- `src/components/CountryPhoneSelect.tsx` — phone input ✅ dark theme complete
+- `src/components/CountryPhoneSelect.tsx` — phone input ✅ dark theme complete (both trigger button + number input)
 
 ---
 

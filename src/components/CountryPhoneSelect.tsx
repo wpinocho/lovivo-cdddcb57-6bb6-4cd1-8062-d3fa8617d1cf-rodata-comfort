@@ -105,7 +105,7 @@ export const CountryPhoneSelect = ({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="flex items-center px-3 border-r-0 rounded-r-none bg-muted hover:bg-muted/80"
+            className="flex items-center px-3 border-r-0 rounded-r-none bg-[#0d0f11] hover:bg-[#161a1e] border-white/[0.15] text-brand-offwhite"
           >
             <img 
               src={currentCountry?.flag_url} 
@@ -171,7 +171,7 @@ export const CountryPhoneSelect = ({
         onBlur={handleBlur}
         placeholder={placeholder}
         className={cn(
-          "rounded-l-none",
+          "rounded-l-none bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus:border-brand-amber/50",
           hasValidationError && "border-red-500 focus:border-red-500",
           className
         )}
