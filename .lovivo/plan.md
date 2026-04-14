@@ -1,7 +1,7 @@
 # Rodata.mx — Plan
 
 ## Current State
-Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid traffic.
+Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar now dark-themed. Store is ready for paid traffic.
 
 ## Recent Changes
 - Added urgency/stock signal above CTA on PDP: pulsing green dot + "En stock · Envío en 24–48 hrs"
@@ -14,6 +14,19 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
   - Fix 1: Replaced shadcn `<Input>` with raw `<input>` tag + `style={{ backgroundColor: '#0d0f11', color: '#F5F7F8' }}` — inline styles always win for non-autofill state
   - Fix 2: Moved `input.dark-autofill:-webkit-autofill` CSS rule OUTSIDE of `@layer utilities` to global scope, with higher specificity selector `input.dark-autofill`
   - Added `autoComplete="tel"` for proper browser autofill UX
+- **Cart Sidebar dark rebrand (DONE ✅):**
+  - SheetContent: bg `#111315`, border subtle white
+  - SheetHeader: dark border, Sora font, off-white title
+  - Cards/items: bg `#1D2125`, dark border
+  - Product thumbnails: dark bg placeholder `#111315`
+  - Qty buttons: dark bg + subtle border + off-white icons
+  - Prices: amber `#C9840A`, strikethrough in gray
+  - Badges (Paquete, Suscripción, Regalo): dark bg `#2A2F35` + amber/gray text
+  - Delete buttons: red `#EF4444`
+  - Discount input: raw `<input>` with `#0d0f11` bg + amber focus ring
+  - Applied coupon: amber border + amber tint bg
+  - Total: off-white label + amber value
+  - Empty cart state: styled with dark colors
 
 ## Known Issues
 - Other checkout inputs (email, name, address, etc.) may also show autofill in white if Chrome autofills them. Apply same pattern (inline style + dark-autofill class on raw `<input>`) if it becomes a problem.
@@ -25,6 +38,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Store is ready for paid
 - `src/components/ScrollLink.tsx` — handles anchor scroll logic
 - `src/components/StripePayment.tsx` — payment form ✅ dark theme complete
 - `src/components/CountryPhoneSelect.tsx` — phone input ✅ raw `<input>` + inline style + global dark-autofill rule
+- `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
 - `src/index.css` — design system; `input.dark-autofill` rule is GLOBAL (outside @layer)
 
 ---
