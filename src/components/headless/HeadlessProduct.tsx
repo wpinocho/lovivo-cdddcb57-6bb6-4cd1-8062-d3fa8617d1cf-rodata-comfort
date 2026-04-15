@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type Product as ProductType, type SellingPlan } from '@/lib/supabase'
 import { STORE_ID } from '@/lib/config'
 import { useCart } from '@/contexts/CartContext'
+import type { CartProductItem } from '@/contexts/CartContext'
 import { useCartUI } from '@/components/CartProvider'
 import { useToast } from '@/hooks/use-toast'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -10,6 +11,7 @@ import { trackViewContent, trackAddToCart, tracking } from '@/lib/tracking-utils
 import { isVariantAvailable } from '@/lib/utils'
 import { useSellingPlans } from '@/hooks/useSellingPlans'
 import { calcSubscriptionPrice } from '@/lib/subscription-utils'
+import { useCheckout } from '@/hooks/useCheckout'
 
 /**
  * FORBIDDEN HEADLESS COMPONENT - HeadlessProduct
@@ -39,6 +41,8 @@ export const useProductLogic = () => {
   const { toast } = useToast()
   const { formatMoney, currencyCode } = useSettings()
   const { plans: sellingPlans } = useSellingPlans(product?.id)
+  const { checkoutWithItems } = useCheckout()
+  const [isBuyingNow, setIsBuyingNow] = useState(false)
 
   useEffect(() => {
     if (slug) {
@@ -274,7 +278,7 @@ export const useProductLogic = () => {
     setTimeout(() => openCart(), 300)
   }
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return
     
     const variants = (product as any).variants
@@ -287,18 +291,6 @@ export const useProductLogic = () => {
         description: "Elige una variante disponible.",
       })
       return
-    }
-    
-    for (let i = 0; i < quantity; i++) {
-      const added = addItem(product, variantToAdd, selectedPlan || undefined)
-      if (!added) {
-        toast({
-          title: "Solo un plan de suscripción por carrito",
-          description: "Elimina la suscripción actual para agregar una diferente.",
-          variant: "destructive"
-        })
-        return
-      }
     }
     
     const currentP = getCurrentPrice()
@@ -314,8 +306,31 @@ export const useProductLogic = () => {
       currency: tracking.getCurrencyFromSettings(currencyCode),
       num_items: quantity
     })
-    
-    navigate('/pagar')
+
+    setIsBuyingNow(true)
+    try {
+      // Construir items localmente — SIN leer el estado del carrito de React
+      // Esto elimina la race condition: addItem() es async por setState,
+      // pero checkoutWithItems() no depende del estado actualizado
+      const buyNowItems: CartProductItem[] = [{
+        key: `${product.id}${variantToAdd ? `:${variantToAdd.id}` : ''}${selectedPlan ? `:${selectedPlan.id}` : ''}`,
+        type: 'product' as const,
+        product,
+        variant: variantToAdd,
+        sellingPlan: selectedPlan || undefined,
+        quantity,
+      }]
+
+      // Crear la orden directamente y guardar en localStorage
+      // Cuando /pagar carga, useCheckoutState ya tiene orderId + checkoutToken
+      await checkoutWithItems(buyNowItems, { currencyCode })
+      navigate('/pagar')
+    } catch (error) {
+      // El error ya fue mostrado con toast dentro de checkoutWithItems
+      console.error('Buy Now error:', error)
+    } finally {
+      setIsBuyingNow(false)
+    }
   }
 
   const handleNavigateBack = () => navigate(-1)
@@ -376,6 +391,9 @@ export const useProductLogic = () => {
     // Cart info
     totalItems: getTotalItems(),
     
+    // Buy Now state
+    isBuyingNow,
+
     // Actions
     handleAddToCart,
     handleBuyNow,

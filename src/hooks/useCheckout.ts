@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
+import type { CartItem } from '@/contexts/CartContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { createCheckoutFromCart, createSampleOrder, updateCheckout, type CheckoutUpdatePayload } from '@/lib/checkout'
 import { cartToApiItems } from '@/lib/cart-utils'
@@ -108,6 +109,59 @@ export const useCheckout = () => {
           description: errorMessage,
           variant: "destructive",
         })
+      }
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Función para Buy Now: acepta items directamente sin leer el estado del carrito
+  // Evita la race condition de addItem() → checkout() cuando React no ha re-renderizado
+  const checkoutWithItems = async (items: CartItem[], options: CheckoutOptions = {}): Promise<CheckoutResponse> => {
+    setIsLoading(true)
+    try {
+      if (items.length === 0) throw new Error('El carrito está vacío')
+
+      const order = await createCheckoutFromCart(
+        items,
+        options.customerInfo,
+        options.discountCode,
+        options.shippingAddress,
+        options.billingAddress,
+        options.notes,
+        options.currencyCode || currencyCode
+      )
+
+      // Guardar en localStorage para que /pagar encuentre orderId y checkoutToken
+      saveCheckoutState({
+        order_id: order.order_id,
+        checkout_token: order.checkout_token,
+        store_id: STORE_ID,
+        discount_code: options.discountCode,
+        order: order.order
+      })
+
+      setLastOrder(order)
+
+      if (order.unavailable_items && order.unavailable_items.length > 0) {
+        toast({
+          title: "Items out of stock",
+          description: `${order.unavailable_items.length} item(s) removed from your order due to insufficient stock`,
+          variant: "destructive",
+        })
+      }
+
+      // NO clearCart() — Buy Now no agrega al carrito real,
+      // otros productos en carrito deben permanecer
+      return order
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+      if (errorMessage.includes("don't exist") || errorMessage.includes("not active")) {
+        clearCart()
+        toast({ title: "Carrito desactualizado", description: "Los productos ya no están disponibles." })
+      } else {
+        toast({ title: "Error al procesar la orden", description: errorMessage, variant: "destructive" })
       }
       throw error
     } finally {
@@ -510,6 +564,7 @@ export const useCheckout = () => {
   return {
     // Checkout inicial
     checkout,
+    checkoutWithItems,
     createSample,
     
     // Estado del checkout
