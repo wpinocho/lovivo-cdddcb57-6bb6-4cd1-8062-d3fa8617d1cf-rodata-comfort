@@ -30,6 +30,8 @@ export const useCheckoutLogic = () => {
     isInitialized,
     orderId,
     checkoutToken,
+    checkout,
+    hasItems,
     updateShippingAddress,
     updateBillingAddress,
     updateDiscountCode,
@@ -137,6 +139,25 @@ export const useCheckoutLogic = () => {
   }, []);
 
   const hasTrackedCheckout = useRef(false);
+  const hasAutoCreated = useRef(false);
+
+  // Auto-create checkout when arriving via "Comprar ahora" (no active order but cart has items)
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (hasActiveCheckout) return;
+    if (!hasItems) return;
+    if (hasAutoCreated.current) return;
+    hasAutoCreated.current = true;
+
+    checkout({ currencyCode }).then((order) => {
+      try {
+        sessionStorage.setItem('checkout_order', JSON.stringify(order));
+        sessionStorage.setItem('checkout_order_id', String(order.order_id));
+      } catch {}
+    }).catch((err) => {
+      console.error('Auto-checkout creation failed:', err);
+    });
+  }, [isInitialized, hasActiveCheckout, hasItems]);
 
   useEffect(() => {
     // Espera a que el estado de checkout se inicialice
