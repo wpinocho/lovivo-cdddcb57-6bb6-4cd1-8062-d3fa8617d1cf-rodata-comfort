@@ -4,29 +4,11 @@
 Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar now dark-themed. Store is ready for paid traffic.
 
 ## Recent Changes
-- Added urgency/stock signal above CTA on PDP: pulsing green dot + "En stock · Envío en 24–48 hrs"
-- Added security line below CTA buttons: "🔒 Pago seguro · Envío gratis · 30 días de prueba"
-- Full checkout dark rebrand: bg `#111315`, form panels `#1D2125`, inputs oscuros, font-sora headings, amber accents, security badge with Lock icon before Stripe, amber quantity badges, dark mobile summary
-- **Checkout dark polish (DONE ✅):** all panels, badges, OXXO/SPEI, card panel fully dark
-- **Phone input autofill definitive fix (DONE ✅):**
-  - Root cause 1: `Input` shadcn component has `bg-background` (light cream) that can conflict with `bg-[#0d0f11]` via class merging
-  - Root cause 2: `.dark-autofill` inside `@layer utilities` — in CSS cascade layers, `!important` inside a layer has LOWER priority than `!important` in global (unlayered) CSS, including browser UA autofill styles
-  - Fix 1: Replaced shadcn `<Input>` with raw `<input>` tag + `style={{ backgroundColor: '#0d0f11', color: '#F5F7F8' }}` — inline styles always win for non-autofill state
-  - Fix 2: Moved `input.dark-autofill:-webkit-autofill` CSS rule OUTSIDE of `@layer utilities` to global scope, with higher specificity selector `input.dark-autofill`
-  - Added `autoComplete="tel"` for proper browser autofill UX
-- **Cart Sidebar dark rebrand (DONE ✅):**
-  - SheetContent: bg `#111315`, border subtle white
-  - SheetHeader: dark border, Sora font, off-white title
-  - Cards/items: bg `#1D2125`, dark border
-  - Product thumbnails: dark bg placeholder `#111315`
-  - Qty buttons: dark bg + subtle border + off-white icons
-  - Prices: amber `#C9840A`, strikethrough in gray
-  - Badges (Paquete, Suscripción, Regalo): dark bg `#2A2F35` + amber/gray text
-  - Delete buttons: red `#EF4444`
-  - Discount input: raw `<input>` with `#0d0f11` bg + amber focus ring
-  - Applied coupon: amber border + amber tint bg
-  - Total: off-white label + amber value
-  - Empty cart state: styled with dark colors
+- Added urgency/stock signal above CTA on PDP
+- Added security line below CTA buttons
+- Full checkout dark rebrand
+- Phone input autofill fix
+- Cart Sidebar dark rebrand (DONE ✅)
 
 ## Known Issues
 - Other checkout inputs (email, name, address, etc.) may also show autofill in white if Chrome autofills them. Apply same pattern (inline style + dark-autofill class on raw `<input>`) if it becomes a problem.
@@ -35,11 +17,64 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar now dark-t
 - `src/pages/ui/ProductPageUI.tsx` — main PDP (urgency signal added)
 - `src/pages/ui/CheckoutUI.tsx` — checkout (dark brand rebrand done ✅)
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
-- `src/components/ScrollLink.tsx` — handles anchor scroll logic
-- `src/components/StripePayment.tsx` — payment form ✅ dark theme complete
-- `src/components/CountryPhoneSelect.tsx` — phone input ✅ raw `<input>` + inline style + global dark-autofill rule
+- `src/components/StripePayment.tsx` — payment form ✅
+- `src/components/CountryPhoneSelect.tsx` — phone input ✅
 - `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
-- `src/index.css` — design system; `input.dark-autofill` rule is GLOBAL (outside @layer)
+- `src/index.css` — design system
+- `src/adapters/CheckoutAdapter.tsx` — checkout logic
+- `src/hooks/useCheckout.ts` — checkout hook with `checkout()` fn
+
+---
+
+## 🐛 BUG FIX: "Comprar Ahora" llega al checkout con carrito vacío
+
+### Root Cause
+- **CartSidebar flow** (working): calls `checkout()` → creates backend order → saves to sessionStorage → navigates to `/pagar`
+- **Buy Now flow** (broken): `handleBuyNow` in `HeadlessProduct.tsx` calls `addItem()` + `navigate('/pagar')` directly — never calls `checkout()` to create the backend order
+- When CheckoutUI mounts, `hasActiveCheckout` is false → `useOrderItems` has no order to read from → shows empty
+
+### Fix: Auto-create checkout in CheckoutAdapter
+File: `src/adapters/CheckoutAdapter.tsx`
+
+1. Add `checkout` and `hasItems` to the destructure from `useCheckout()` (line ~29-39):
+   ```
+   const {
+     hasActiveCheckout,
+     isInitialized,
+     orderId,
+     checkoutToken,
+     checkout,        // ← ADD THIS
+     hasItems,        // ← ADD THIS
+     updateShippingAddress,
+     ...
+   } = useCheckout();
+   ```
+
+2. Add a new `useEffect` (place it right after the isInitialized tracking useEffect, around line 168):
+   ```javascript
+   const hasAutoCreated = useRef(false);
+   
+   useEffect(() => {
+     if (!isInitialized) return;
+     if (hasActiveCheckout) return;
+     if (!hasItems) return;
+     if (hasAutoCreated.current) return;
+     hasAutoCreated.current = true;
+     
+     checkout({ currencyCode }).then((order) => {
+       try {
+         sessionStorage.setItem('checkout_order', JSON.stringify(order));
+         sessionStorage.setItem('checkout_order_id', String(order.order_id));
+       } catch {}
+     }).catch((err) => {
+       console.error('Auto-checkout creation failed:', err);
+     });
+   }, [isInitialized, hasActiveCheckout, hasItems]);
+   ```
+
+This mirrors exactly what CartSidebar does but triggered automatically when the checkout page loads with cart items but no active order.
+
+Note: `currencyCode` is already available via `useSettings()` destructure at the top of `useCheckoutLogic`.
 
 ---
 
