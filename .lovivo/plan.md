@@ -10,6 +10,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - Phone input autofill fix
 - Cart Sidebar dark rebrand (DONE ✅)
 - **BUG FIX: "Comprar Ahora" → checkout vacío — RESUELTO ✅**
+- **Precio actualizado: MX$749 → MX$699** (compare_at_price: MX$999) ✅
 
 ## ✅ BUG RESUELTO: "Comprar Ahora" → checkout vacío
 
