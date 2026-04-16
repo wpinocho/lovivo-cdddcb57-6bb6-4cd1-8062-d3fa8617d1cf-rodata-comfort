@@ -358,7 +358,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
 
               <Link to={buyUrl}>
                 <button className="btn-amber amber-glow font-sora">
-                  Comprar ahora — MX$749
+                  Comprar ahora — MX$699
                   <ArrowRight size={16} />
                 </button>
               </Link>
@@ -479,7 +479,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
           <div className="mt-10 text-center">
             <Link to={buyUrl}>
               <button className="btn-amber-lg amber-glow font-sora">
-                Comprar Rodata One — MX$749
+                Comprar Rodata One — MX$699
                 <ArrowRight size={16} />
               </button>
             </Link>
@@ -710,7 +710,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
 
           {/* Price */}
           <div className="flex items-baseline justify-center gap-3 mb-8">
-            <span className="font-sora font-bold text-brand-offwhite text-4xl">MX$749</span>
+            <span className="font-sora font-bold text-brand-offwhite text-4xl">MX$699</span>
             <span className="text-brand-steel text-xl line-through font-inter">MX$999</span>
           </div>
 
