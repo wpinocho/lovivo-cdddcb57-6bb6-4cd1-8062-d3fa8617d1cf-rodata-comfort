@@ -115,7 +115,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-8">
-              <span className="font-sora font-bold text-brand-offwhite text-4xl">MX$749</span>
+              <span style={{ letterSpacing: '0px' }} className="font-sora font-bold text-brand-offwhite text-4xl">MX$699</span>
               <span className="text-brand-steel text-xl line-through font-inter">MX$999</span>
               <span className="bg-brand-amber/15 border border-brand-amber/30 text-brand-amber text-xs font-semibold px-2.5 py-1 rounded font-sora">
                 25% OFF
