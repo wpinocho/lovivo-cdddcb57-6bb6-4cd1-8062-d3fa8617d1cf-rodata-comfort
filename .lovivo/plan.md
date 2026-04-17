@@ -13,8 +13,22 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
-- **BUG FIX: PDP Express Checkout botón desaparecía ✅**
-- **FIX PENDIENTE: GPay antes que Link en ExpressCheckoutElement ← SIGUIENTE**
+- **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
+
+## ✅ COMPLETADO: Express Checkout — Orden de botones y altura
+
+### Fix aplicado en `StripePayment.tsx`
+Dentro del objeto `options` del `<ExpressCheckoutElement>`:
+```
+layout: { overflow: 'auto', maxColumns: 2, maxRows: 1 },
+buttonHeight: 44,
+paymentMethodOrder: ['applePay', 'googlePay', 'link'],
+```
+- `paymentMethodOrder`: Apple Pay primero, luego GPay, luego Link
+- `maxRows: 1`: fuerza una sola fila (GPay visible sin necesidad de expandir)
+- `buttonHeight: 44`: altura consistente con el resto del formulario
+
+---
 
 ## ✅ COMPLETADO: Stripe Elements Dark Theme
 
@@ -26,37 +40,6 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - Modo `'dark'`: usa `theme: 'night'` + tokens dark de rodata.mx hardcodeados
 - Modo `'light'`: lee CSS vars de `:root` en runtime (para stores futuras en modo claro)
 - `StripePayment.tsx`: reemplazado bloque de appearance inline por `getStripeAppearance('dark')`
-
----
-
-## 🔧 PENDIENTE: Excluir Link del ExpressCheckoutElement → GPay primero
-
-### Problema
-El `ExpressCheckoutElement` en `StripePayment.tsx` (línea ~639-673) renderiza tanto Link como Google Pay.
-Stripe prioriza Link automáticamente → aparece como botón verde grande.
-Google Pay queda oculto bajo el colapsable "Más información".
-
-Además, Link ya está manejado por separado mediante `LinkAuthenticationElement` (línea ~683),
-por lo que tenerlo también en el ExpressCheckoutElement es redundante.
-
-### Fix
-En el objeto `options` del `<ExpressCheckoutElement>` (línea ~653), agregar:
-
-```
-paymentMethods: {
-  link: 'never',
-  googlePay: 'always',
-  applePay: 'always',
-},
-```
-
-Esto excluye Link del ExpressCheckoutElement (ya está en LinkAuthenticationElement abajo)
-y fuerza GPay / Apple Pay como los únicos métodos visibles arriba del formulario.
-
-### Archivo a modificar
-- `src/components/StripePayment.tsx` — dentro de `options={(() => { ... })()}` del `<ExpressCheckoutElement>`, aproximadamente en línea 653-671.
-
-Agregar `paymentMethods` al objeto de opciones devuelto, junto con `buttonType`, `layout`, `emailRequired`, etc.
 
 ---
 
@@ -106,7 +89,7 @@ if (intentOrder) {
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ (Express Checkout + CTAs ordenados)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅ (dark brand rebrand done + Express Checkout integrado)
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
-- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance) — **PENDIENTE: paymentMethods link:'never'**
+- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance + paymentMethodOrder)
 - `src/lib/stripe-appearance.ts` — ✅ helper getStripeAppearance('dark'|'light')
 - `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP ✅ (settings-gated, no lazy observer)
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅

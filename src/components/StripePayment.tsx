@@ -658,7 +658,10 @@ function PaymentForm({
                 layout: {
                   overflow: 'auto',
                   maxColumns: 2,
+                  maxRows: 1,
                 },
+                buttonHeight: 44,
+                paymentMethodOrder: ['applePay', 'googlePay', 'link'],
                 emailRequired: true,
                 phoneNumberRequired: true,
                 ...(allowedCountries && allowedCountries.length > 0 ? {
