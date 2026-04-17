@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,12 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { CartAppliedRules } from "@/components/ui/CartAppliedRules";
 import { useNavigate } from "react-router-dom";
 import StripePayment from "@/components/StripePayment";
-import { CountryPhoneSelect } from "@/components/CountryPhoneSelect";
 import { HeadlessCheckout } from "@/components/headless/HeadlessCheckout";
 import { BrandLogoLeft } from "@/components/BrandLogoLeft";
 import { useURLCheckoutParams } from "@/hooks/useURLCheckoutParams";
 import { useTokenCheckout } from "@/hooks/useTokenCheckout";
 import { formatMoney } from "@/lib/money";
+import { countryNameToCode, countryCodeToName } from "@/lib/country-codes";
 
 // ── Dark theme utility constants ─────────────────────────────────────────────
 const INP = "bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus-visible:ring-brand-amber/20 focus-visible:border-brand-amber/40"
@@ -28,7 +28,10 @@ export default function CheckoutUI() {
   const { params, hasParams } = useURLCheckoutParams();
   const { isLoadingToken, tokenError, hasToken } = useTokenCheckout();
   const navigate = useNavigate();
-  const { paymentMethods, stripeAccountId, chargeType } = useSettings();
+  const { paymentMethods, stripeAccountId, chargeType, isLoading: isSettingsLoading } = useSettings();
+  const [linkAuthenticated, setLinkAuthenticated] = useState(false);
+  // Track whether the on-page Stripe AddressElement has a complete address.
+  const [addressElementComplete, setAddressElementComplete] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -57,12 +60,52 @@ export default function CheckoutUI() {
   return (
     <HeadlessCheckout>
       {(logic) => {
-        // Aplicar parámetros de URL cuando se monta el componente
         useEffect(() => {
           if (hasParams && params) {
             logic.applyURLParams(params);
           }
         }, [hasParams, params]);
+
+        // Convert available country names to ISO codes for Stripe AddressElement
+        const allowedCountries = useMemo(() => {
+          if (!logic.availableCountries || logic.availableCountries.length === 0) return undefined;
+          return logic.availableCountries
+            .map((c: any) => c.code || countryNameToCode(c.name))
+            .filter(Boolean);
+        }, [logic.availableCountries]);
+
+        // Delivery methods slot rendered inside StripePayment (between AddressElement and PaymentElement)
+        const deliveryMethodSlot = !logic.usePickup && logic.deliveryExpectations && logic.deliveryExpectations.length > 0 ? (
+          <div className="space-y-2">
+            <h3 className="text-sm font-sora font-semibold text-brand-offwhite">Métodos de envío</h3>
+            {Array.isArray(logic.deliveryExpectations) && logic.deliveryExpectations.map((method: any, index: number) => (
+              <div key={index} className="border border-white/[0.1] rounded-xl bg-[#111315]">
+                <label className="flex items-center justify-between p-4 cursor-pointer">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="delivery-method"
+                      value={index}
+                      checked={logic.selectedDeliveryMethod?.type === method.type}
+                      onChange={() => {
+                        logic.setSelectedDeliveryMethod(method);
+                        logic.setShippingCost(method.hasPrice && method.price ? parseFloat(method.price) : 0);
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <div>
+                      <div className="font-medium text-brand-offwhite">{method.type}</div>
+                      <div className="text-sm text-brand-steel">{method.description}</div>
+                    </div>
+                  </div>
+                  <div className="font-semibold text-brand-amber">
+                    {method.hasPrice && method.price ? formatMoney(parseFloat(method.price), logic.currencyCode) : 'GRATIS'}
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+        ) : null;
 
         return (
           <div className="min-h-screen bg-[#111315]">
@@ -81,31 +124,6 @@ export default function CheckoutUI() {
 
                 {/* ── Left: Checkout form ── */}
                 <div className="space-y-8 bg-[#1D2125] border border-white/[0.08] p-3 sm:p-6 rounded-xl">
-
-                  {/* Contact */}
-                  <section>
-                    <h2 className="text-xl font-sora font-semibold text-brand-offwhite mb-4">Contacto</h2>
-                    <div className="space-y-4">
-                      <Input
-                        type="email"
-                        value={logic.email}
-                        onChange={e => logic.setEmail(e.target.value)}
-                        onBlur={() => logic.saveClientData(true)}
-                        placeholder="Correo electrónico"
-                        className={`w-full ${INP}`}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="subscribe"
-                          checked={logic.subscribeNews}
-                          onCheckedChange={checked => logic.setSubscribeNews(checked as boolean)}
-                        />
-                        <Label htmlFor="subscribe" className="text-sm text-brand-smoke cursor-pointer">
-                          Envíame noticias y ofertas por correo
-                        </Label>
-                      </div>
-                    </div>
-                  </section>
 
                   {/* Pickup Locations */}
                   {logic.pickupLocations && logic.pickupLocations.length > 0 && (
@@ -179,208 +197,128 @@ export default function CheckoutUI() {
                     </section>
                   )}
 
-                  {/* Delivery Section */}
-                  {!logic.usePickup && (
-                    <section>
-                      <h2 className="text-xl font-sora font-semibold text-brand-offwhite mb-4">Entrega</h2>
-                      <div className="space-y-4">
-
-                        {/* Country */}
-                        <Select
-                          value={logic.address.country}
-                          onValueChange={value => {
-                            const next = { ...logic.address, country: value };
-                            logic.setAddress(next);
-                          }}
-                        >
-                          <SelectTrigger className={SEL_T}>
-                            <SelectValue placeholder="País / Región" />
-                          </SelectTrigger>
-                          <SelectContent className={SEL_C}>
-                            {Array.isArray(logic.availableCountries) && logic.availableCountries.length > 0 ?
-                              logic.availableCountries.map((country: any) => (
-                                <SelectItem key={country.name} value={country.name} className={SEL_I}>
-                                  {country.name}
-                                </SelectItem>
-                              )) : (
-                                <SelectItem value="México" className={SEL_I}>México</SelectItem>
-                              )
-                            }
-                          </SelectContent>
-                        </Select>
-
-                        {/* Nombre y Apellidos */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <Input
-                            id="firstName"
-                            value={logic.firstName}
-                            onChange={e => logic.setFirstName(e.target.value)}
-                            onBlur={() => logic.saveClientData(true)}
-                            placeholder="Nombre"
-                            className={INP}
-                          />
-                          <Input
-                            id="lastName"
-                            value={logic.lastName}
-                            onChange={e => logic.setLastName(e.target.value)}
-                            onBlur={() => logic.saveClientData(true)}
-                            placeholder="Apellidos"
-                            className={INP}
-                          />
-                        </div>
-
-                        {/* Dirección */}
-                        <Input
-                          id="address"
-                          value={logic.address.line1}
-                          onChange={e => logic.setAddress({ ...logic.address, line1: e.target.value })}
-                          placeholder="Dirección"
-                          className={INP}
-                        />
-
-                        {/* Colonia */}
-                        <Input
-                          value={logic.address.line2}
-                          onChange={e => logic.setAddress({ ...logic.address, line2: e.target.value })}
-                          placeholder="Colonia, apartamento, suite, etc. (opcional)"
-                          className={INP}
-                        />
-
-                        {/* CP, Ciudad, Estado */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <Input
-                            id="postal"
-                            value={logic.address.postal_code}
-                            onChange={e => logic.setAddress({ ...logic.address, postal_code: e.target.value })}
-                            placeholder="Código postal"
-                            className={INP}
-                          />
-                          <Input
-                            id="city"
-                            value={logic.address.city}
-                            onChange={e => logic.setAddress({ ...logic.address, city: e.target.value })}
-                            placeholder="Ciudad"
-                            className={INP}
-                          />
-                          <Select
-                            value={logic.address.state}
-                            onValueChange={value => {
-                              const next = { ...logic.address, state: value };
-                              logic.setAddress(next);
-                            }}
-                          >
-                            <SelectTrigger className={SEL_T}>
-                              <SelectValue placeholder="Estado" />
-                            </SelectTrigger>
-                            <SelectContent className={SEL_C}>
-                              {Array.isArray(logic.availableStates) && logic.availableStates.length > 0 ?
-                                logic.availableStates.sort((a: string, b: string) => a.localeCompare(b, 'es')).map((state: string) => (
-                                  <SelectItem key={state} value={state} className={SEL_I}>
-                                    {state}
-                                  </SelectItem>
-                                )) : (
-                                  <SelectItem value="Ciudad de México" className={SEL_I}>Ciudad de México</SelectItem>
-                                )
-                              }
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Teléfono */}
-                        <div>
-                          <CountryPhoneSelect
-                            value={logic.phone}
-                            onChange={logic.setPhone}
-                            onBlur={() => logic.saveClientData(true)}
-                            placeholder="55 3121 5386"
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Métodos de envío */}
-                  {!logic.usePickup && logic.deliveryExpectations && logic.deliveryExpectations.length > 0 && (
-                    <section>
-                      <h3 className="text-lg font-sora font-semibold text-brand-offwhite mb-4">Métodos de envío</h3>
-                      <div className="space-y-2">
-                        {Array.isArray(logic.deliveryExpectations) && logic.deliveryExpectations.map((method: any, index: number) => (
-                          <div key={index} className="border border-white/[0.1] rounded-xl bg-[#111315]">
-                            <label className="flex items-center justify-between p-4 cursor-pointer">
-                              <div className="flex items-center space-x-3">
-                                <input
-                                  type="radio"
-                                  name="delivery-method"
-                                  value={index}
-                                  checked={logic.selectedDeliveryMethod?.type === method.type}
-                                  onChange={() => {
-                                    logic.setSelectedDeliveryMethod(method);
-                                    logic.setShippingCost(method.hasPrice && method.price ? parseFloat(method.price) : 0);
-                                  }}
-                                  className="w-4 h-4"
-                                />
-                                <div>
-                                  <div className="font-medium text-brand-offwhite">{method.type}</div>
-                                  <div className="text-sm text-brand-steel">{method.description}</div>
-                                </div>
-                              </div>
-                              <div className="font-semibold text-brand-amber">
-                                {method.hasPrice && method.price ? formatMoney(parseFloat(method.price), logic.currencyCode) : 'GRATIS'}
-                              </div>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Pago */}
+                  {/* Pago — Stripe handles email, address, delivery methods, and payment */}
                   <section>
-                    <h3 className="text-lg font-sora font-semibold text-brand-offwhite mb-3">Pago</h3>
                     <div className="flex items-center gap-2 text-brand-steel text-[11px] font-inter mb-4 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2">
                       <Lock size={11} className="text-brand-amber flex-shrink-0" />
                       Pago 100% seguro · Cifrado SSL · Procesado por Stripe
                     </div>
-                    <StripePayment
-                      amountCents={Math.round(logic.finalTotal * 100)}
-                      currency={logic.currencyCode.toLowerCase()}
-                      description={`Pedido #${logic.orderId ?? 's/n'}`}
-                      metadata={{
-                        order_id: logic.orderId ?? '',
-                        ...(logic.discount?.code ? { discount_code: logic.discount.code } : {})
-                      }}
-                      email={logic.email}
-                      name={`${logic.firstName} ${logic.lastName}`.trim()}
-                      phone={logic.phone}
-                      orderId={logic.orderId}
-                      checkoutToken={logic.checkoutToken}
-                      onValidationRequired={logic.validateCheckoutFields}
-                      expectedTotal={Math.round(logic.finalTotal * 100)}
-                      deliveryFee={Math.round((logic.shippingFromCheckout || logic.shippingCost) * 100)}
-                      shippingAddress={logic.usePickup ? null : {
-                        ...logic.address,
-                        first_name: logic.firstName,
-                        last_name: logic.lastName
-                      }}
-                      billingAddress={logic.usePickup ? logic.billingAddress : (logic.useSameAddress ? {
-                        ...logic.address,
-                        first_name: logic.firstName,
-                        last_name: logic.lastName
-                      } : logic.billingAddress)}
-                      items={logic.orderItems}
-                      deliveryExpectations={logic.usePickup ?
-                        [{ type: "pickup", description: "Recoger en tienda" }] :
-                        (logic.selectedDeliveryMethod ? [logic.selectedDeliveryMethod] : [])
+
+                    {(() => {
+                      const isStripeReady =
+                        !isSettingsLoading &&
+                        logic.isInitialized &&
+                        logic.hasActiveCheckout &&
+                        logic.orderId &&
+                        logic.checkoutToken &&
+                        logic.summaryItems.length > 0 &&
+                        logic.finalTotal > 0;
+
+                      if (!isStripeReady) {
+                        return (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-6 w-6 animate-spin text-brand-amber" />
+                          </div>
+                        );
                       }
-                      pickupLocations={logic.usePickup ?
-                        (logic.selectedPickupLocation ? [logic.selectedPickupLocation] : []) :
-                        []
-                      }
-                      billingSlot={<BillingCheckboxSection logic={logic} />}
-                      paymentMethods={paymentMethods}
-                      stripeAccountId={stripeAccountId}
-                      chargeType={chargeType}
-                    />
+
+                      // Stable key — does NOT include finalTotal to avoid remounting
+                      // the Elements provider (would kill Apple Pay / Google Pay / Link session).
+                      // Amount is updated in-place via elements.update({ amount }) inside StripePayment.
+                      const stripeKey = [
+                        logic.orderId,
+                        logic.checkoutToken,
+                        logic.currencyCode,
+                        JSON.stringify(paymentMethods),
+                        stripeAccountId,
+                        chargeType,
+                      ].join('|');
+
+                      return (
+                        <StripePayment
+                          key={stripeKey}
+                          amountCents={Math.round(logic.finalTotal * 100)}
+                          currency={logic.currencyCode.toLowerCase()}
+                          description={`Pedido #${logic.orderId ?? 's/n'}`}
+                          metadata={{
+                            order_id: logic.orderId ?? '',
+                            ...(logic.discount?.code ? { discount_code: logic.discount.code } : {})
+                          }}
+                          email={logic.email}
+                          name={`${logic.firstName} ${logic.lastName}`.trim()}
+                          phone={logic.phone}
+                          orderId={logic.orderId}
+                          checkoutToken={logic.checkoutToken}
+                          onValidationRequired={logic.validateCheckoutFields}
+                          expectedTotal={Math.round(logic.finalTotal * 100)}
+                          deliveryFee={Math.round((logic.shippingFromCheckout || logic.shippingCost) * 100)}
+                          shippingAddress={logic.usePickup ? null : {
+                            ...logic.address,
+                            first_name: logic.firstName,
+                            last_name: logic.lastName
+                          }}
+                          billingAddress={logic.usePickup ? logic.billingAddress : (logic.useSameAddress ? {
+                            ...logic.address,
+                            first_name: logic.firstName,
+                            last_name: logic.lastName
+                          } : logic.billingAddress)}
+                          items={logic.orderItems}
+                          deliveryExpectations={logic.usePickup ?
+                            [{ type: "pickup", description: "Recoger en tienda" }] :
+                            (logic.deliveryExpectations || [])
+                          }
+                          pickupLocations={logic.usePickup ?
+                            (logic.selectedPickupLocation ? [logic.selectedPickupLocation] : []) :
+                            []
+                          }
+                          billingSlot={<BillingCheckboxSection logic={logic} />}
+                          deliveryMethodSlot={deliveryMethodSlot}
+                          showAddressElement={!logic.usePickup}
+                          addressElementComplete={addressElementComplete}
+                          allowedCountries={allowedCountries}
+                          onAddressChange={(addressValue: any, complete: boolean) => {
+                            setAddressElementComplete(complete);
+                            const { address, name, phone } = addressValue;
+
+                            const nameParts = (name || '').split(' ');
+                            const first = nameParts[0] || '';
+                            const last = nameParts.slice(1).join(' ') || '';
+
+                            logic.setFirstName(first);
+                            logic.setLastName(last);
+
+                            if (phone) {
+                              logic.setPhone(phone);
+                            }
+
+                            const countryName = countryCodeToName(address.country);
+
+                            logic.setAddress({
+                              country: countryName,
+                              countryCode: address.country,
+                              line1: address.line1 || '',
+                              line2: address.line2 || '',
+                              city: address.city || '',
+                              state: address.state || '',
+                              postal_code: address.postal_code || '',
+                            });
+
+                            if (complete && first) {
+                              logic.saveClientData(true);
+                            }
+                          }}
+                          shippingError={logic.shippingError}
+                          paymentMethods={paymentMethods}
+                          stripeAccountId={stripeAccountId}
+                          chargeType={chargeType}
+                          onEmailChange={(email: string) => {
+                            logic.setEmail(email);
+                            logic.saveClientData(true, email);
+                          }}
+                          onLinkAuthChange={setLinkAuthenticated}
+                        />
+                      );
+                    })()}
                   </section>
                 </div>
 
@@ -444,7 +382,7 @@ export default function CheckoutUI() {
                         </Button>
                       </div>
                     ) : (
-                      Array.isArray(logic.summaryItems) && logic.summaryItems.map(item => (
+                      Array.isArray(logic.summaryItems) && logic.summaryItems.map((item: any) => (
                         <div key={item.key} className="flex items-center space-x-4">
                           <div className="relative">
                             <img
@@ -586,7 +524,7 @@ export default function CheckoutUI() {
               </div>
             </main>
           </div>
-        )
+        );
       }}
     </HeadlessCheckout>
   );
@@ -663,13 +601,16 @@ function MobileOrderSummary({ logic }: { logic: any }) {
               <span>{formatMoney(logic.finalTotal, logic.currencyCode)}</span>
             </div>
           </div>
+
+          {/* Cupón mobile */}
+          <MobileCouponSection logic={logic} />
         </div>
       )}
     </div>
   );
 }
 
-/* ─── Billing address as checkbox (Shopify-style) ─── */
+/* ─── Billing address (shown inside StripePayment as billingSlot) ─── */
 function BillingCheckboxSection({ logic }: { logic: any }) {
   const INP_B = "bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus-visible:ring-brand-amber/20"
   const SEL_TB = "bg-[#0d0f11] border-white/[0.15] text-brand-offwhite"
@@ -776,6 +717,64 @@ function BillingCheckboxSection({ logic }: { logic: any }) {
             </Select>
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+}
+
+/* ─── Mobile Coupon Section (collapsible) ─── */
+function MobileCouponSection({ logic }: { logic: any }) {
+  const [open, setOpen] = useState(false);
+  const INP_M = "bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus-visible:ring-brand-amber/20"
+
+  return (
+    <div className="pt-2 border-t border-white/[0.08]">
+      {!logic.discount ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="text-xs text-brand-amber font-medium flex items-center gap-1"
+          >
+            <Tag className="h-3 w-3" />
+            ¿Tienes un cupón?
+            {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+          {open && (
+            <div className="flex gap-2 mt-2">
+              <Input
+                placeholder="Código de descuento"
+                value={logic.couponCode}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => logic.setCouponCode(e.target.value.toUpperCase())}
+                className={`text-sm h-9 ${INP_M}`}
+                onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') logic.validateCoupon(); }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logic.validateCoupon}
+                disabled={logic.isValidatingCoupon || !logic.couponCode.trim()}
+                className="h-9 shrink-0 border-white/[0.15] bg-transparent text-brand-smoke hover:bg-white/[0.06] hover:text-brand-offwhite disabled:opacity-40"
+              >
+                {logic.isValidatingCoupon ? '...' : 'Aplicar'}
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center justify-between text-xs bg-brand-amber/10 border border-brand-amber/20 p-2 rounded-lg">
+          <span className="text-brand-smoke font-medium">
+            Cupón: {logic.couponCode}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logic.removeCoupon}
+            className="text-brand-steel hover:text-brand-smoke p-1 h-auto"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
       )}
     </div>
   );
