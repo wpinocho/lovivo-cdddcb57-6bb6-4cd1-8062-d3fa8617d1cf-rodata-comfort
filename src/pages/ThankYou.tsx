@@ -185,16 +185,18 @@ const ThankYou = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {order.shipping_address ? (
+              {order.shipping_address && (order.shipping_address.line1 || order.shipping_address.address1) ? (
                 <div>
                   <h4 className="font-medium mb-2">Dirección de Envío:</h4>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>{order.shipping_address.first_name} {order.shipping_address.last_name}</p>
-                    <p>{order.shipping_address.address1}</p>
-                    {order.shipping_address.address2 && <p>{order.shipping_address.address2}</p>}
-                    <p>{order.shipping_address.city}, {order.shipping_address.province}</p>
-                    <p>{order.shipping_address.zip} {order.shipping_address.country}</p>
-                    {order.shipping_address.phone && <p>Teléfono: {order.shipping_address.phone}</p>}
+                    <p>{order.shipping_address.name || `${order.shipping_address.first_name || ''} ${order.shipping_address.last_name || ''}`.trim()}</p>
+                    <p>{order.shipping_address.line1 || order.shipping_address.address1}</p>
+                    {(order.shipping_address.line2 || order.shipping_address.address2) && (
+                      <p>{order.shipping_address.line2 || order.shipping_address.address2}</p>
+                    )}
+                    <p>{order.shipping_address.city}, {order.shipping_address.state || order.shipping_address.province}</p>
+                    <p>{order.shipping_address.postal_code || order.shipping_address.zip} {order.shipping_address.country}</p>
+                    {order.shipping_address.phone && <p>Tel: {order.shipping_address.phone}</p>}
                   </div>
                 </div>
               ) : (

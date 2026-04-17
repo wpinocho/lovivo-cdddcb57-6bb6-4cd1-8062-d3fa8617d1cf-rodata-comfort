@@ -290,6 +290,7 @@ function PaymentForm({
       const hasSubscription = paymentItems.some((it: any) => it.selling_plan_id)
 
       let client_secret: string | undefined
+      let intentOrder: any = null
 
       if (hasSubscription) {
         const subscriptionItems = paymentItems.filter((it: any) => it.selling_plan_id)
@@ -316,6 +317,7 @@ function PaymentForm({
         const data = await callEdge("payments-create-intent", payload)
         if (handleUnavailableItems(data)) return
         client_secret = data?.client_secret
+        intentOrder = data?.order ?? null
       }
 
       if (!client_secret) {
@@ -324,7 +326,7 @@ function PaymentForm({
 
       // --- Confirm based on selected method ---
       if (selectedMethod === 'card') {
-        await confirmCard(client_secret, paymentItems, totalCents)
+        await confirmCard(client_secret, paymentItems, totalCents, intentOrder)
       } else if (selectedMethod === 'oxxo') {
         await confirmOxxo(client_secret)
       } else if (selectedMethod === 'spei') {
@@ -338,7 +340,7 @@ function PaymentForm({
     }
   }
 
-  const confirmCard = async (clientSecret: string, paymentItems: any[], totalCents: number) => {
+  const confirmCard = async (clientSecret: string, paymentItems: any[], totalCents: number, intentOrder?: any) => {
     const card = elements!.getElement(CardElement)!
     const result = await stripe!.confirmCardPayment(clientSecret, {
       payment_method: {
@@ -368,12 +370,17 @@ function PaymentForm({
         custom_parameters: { payment_method: 'stripe', checkout_token: checkoutToken }
       })
       // Save order data for ThankYou page before clearing
+      // Prefer intentOrder (fresh from edge, includes shipping_address) over stale localStorage cache
       try {
-        const checkoutData = localStorage.getItem(`checkout:${STORE_ID}`)
-        if (checkoutData) {
-          const parsed = JSON.parse(checkoutData)
-          if (parsed.order) {
-            localStorage.setItem('completed_order', JSON.stringify(parsed.order))
+        if (intentOrder) {
+          localStorage.setItem('completed_order', JSON.stringify(intentOrder))
+        } else {
+          const checkoutData = localStorage.getItem(`checkout:${STORE_ID}`)
+          if (checkoutData) {
+            const parsed = JSON.parse(checkoutData)
+            if (parsed.order) {
+              localStorage.setItem('completed_order', JSON.stringify(parsed.order))
+            }
           }
         }
       } catch {}
