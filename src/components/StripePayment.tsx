@@ -587,6 +587,17 @@ function PaymentForm({
 
       const pi = result.paymentIntent
       if (pi?.status === 'succeeded') {
+        trackPurchase({
+          products: paymentItems.map((item: any) => tracking.createTrackingProduct({
+            id: item.product_id, title: item.product_name || item.title,
+            price: item.price / 100, category: 'product',
+            variant: item.variant_id ? { id: item.variant_id } : undefined
+          })),
+          value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
+          order_id: orderId,
+          custom_parameters: { payment_method: 'express_checkout', checkout_token: checkoutToken }
+        })
+
         // intentOrder fix: persist order from edge function for ThankYou page
         try {
           if (intentOrder) {

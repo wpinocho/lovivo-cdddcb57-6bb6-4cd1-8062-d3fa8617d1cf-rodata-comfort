@@ -15,6 +15,28 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
 - **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
 - **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
+- **trackPurchase en Express Checkout handler — RESUELTO ✅** (PostHog + Meta Pixel se disparan al pagar con GPay/Apple Pay)
+
+## ✅ COMPLETADO: trackPurchase en Express Checkout
+
+### Cambio aplicado en `StripePayment.tsx`
+Dentro del handler `onConfirm` del `ExpressCheckoutElement`, inmediatamente después de `if (pi?.status === 'succeeded') {`:
+```ts
+trackPurchase({
+  products: paymentItems.map((item: any) => tracking.createTrackingProduct({
+    id: item.product_id, title: item.product_name || item.title,
+    price: item.price / 100, category: 'product',
+    variant: item.variant_id ? { id: item.variant_id } : undefined
+  })),
+  value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
+  order_id: orderId,
+  custom_parameters: { payment_method: 'express_checkout', checkout_token: checkoutToken }
+})
+```
+- `payment_method: 'express_checkout'` diferencia GPay/Apple Pay del flujo Stripe normal (`'stripe'`)
+- Todos los parámetros (`paymentItems`, `totalCents`, `checkoutToken`, etc.) ya estaban en scope
+
+---
 
 ## ✅ COMPLETADO: Fix validación checkout con Stripe AddressElement
 
@@ -38,9 +60,6 @@ layout: { overflow: 'auto', maxColumns: 2, maxRows: 1 },
 buttonHeight: 44,
 paymentMethodOrder: ['applePay', 'googlePay', 'link'],
 ```
-- `paymentMethodOrder`: Apple Pay primero, luego GPay, luego Link
-- `maxRows: 1`: fuerza una sola fila (GPay visible sin necesidad de expandir)
-- `buttonHeight: 44`: altura consistente con el resto del formulario
 
 ---
 
@@ -103,7 +122,7 @@ if (intentOrder) {
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ (Express Checkout + CTAs ordenados)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅ (dark brand rebrand done + Express Checkout integrado + validación custom)
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
-- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance + paymentMethodOrder)
+- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance + paymentMethodOrder + trackPurchase en express)
 - `src/lib/stripe-appearance.ts` — ✅ helper getStripeAppearance('dark'|'light')
 - `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP ✅ (settings-gated, no lazy observer)
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅
