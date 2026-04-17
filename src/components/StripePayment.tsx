@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState, useCallback, useEffect } from "react"
 import { loadStripe } from "@stripe/stripe-js"
-import { Elements, CardElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { Elements, PaymentElement, LinkAuthenticationElement, AddressElement, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { supabase } from "@/lib/supabase"
 import { callEdge } from "@/lib/edge"
 import { STORE_ID, STRIPE_PUBLISHABLE_KEY } from "@/lib/config"
+import { countryNameToCode } from "@/lib/country-codes"
 import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "@/contexts/CartContext"
@@ -13,9 +13,28 @@ import { useCheckoutState } from "@/hooks/useCheckoutState"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackPurchase, tracking } from "@/lib/tracking-utils"
 import type { PaymentMethods } from "@/lib/supabase"
-import { CreditCard, Store, Building2 } from "lucide-react"
 
-type PaymentMethodType = 'card' | 'oxxo' | 'spei'
+/** Build Stripe payment_method_types array from store_settings.payment_methods */
+function buildPaymentMethodTypes(pm?: PaymentMethods): string[] {
+  const types: string[] = ['link'] // Link always enabled for autofill
+  if (!pm || pm.card !== false) types.unshift('card')
+  if (pm?.oxxo) types.push('oxxo')
+  if (pm?.spei) types.push('customer_balance')
+  return types
+}
+
+interface StripeAddressValue {
+  name: string
+  address: {
+    line1: string
+    line2: string | null
+    city: string
+    state: string
+    postal_code: string
+    country: string // 2-letter ISO code
+  }
+  phone?: string
+}
 
 interface StripePaymentProps {
   amountCents: number
@@ -36,67 +55,45 @@ interface StripePaymentProps {
   deliveryExpectations?: any[]
   pickupLocations?: any[]
   billingSlot?: React.ReactNode
+  deliveryMethodSlot?: React.ReactNode
   paymentMethods?: PaymentMethods
   stripeAccountId?: string | null
   chargeType?: string | null
+  onEmailChange?: (email: string) => void
+  onAddressChange?: (address: StripeAddressValue, complete: boolean) => void
+  allowedCountries?: string[]
+  defaultAddress?: Partial<StripeAddressValue>
+  showAddressElement?: boolean
+  /**
+   * Whether the on-page AddressElement currently has a complete address.
+   * - true  → Express Checkout wallet runs in silent mode (uses form address).
+   * - false → wallet must request shipping address from user (form is empty/incomplete).
+   */
+  addressElementComplete?: boolean
+  shippingError?: string | null
+  onLinkAuthChange?: (authenticated: boolean) => void
 }
 
-// Stripe is now initialized dynamically in the wrapper component
-
-const METHOD_CONFIG: Record<PaymentMethodType, { icon: React.ReactNode; label: string; description: string }> = {
-  card: { icon: <CreditCard className="h-5 w-5" />, label: 'Tarjeta de crédito/débito', description: 'Visa, Mastercard, AMEX' },
-  oxxo: { icon: <Store className="h-5 w-5" />, label: 'Pago en OXXO', description: 'Paga en efectivo en cualquier OXXO' },
-  spei: { icon: <Building2 className="h-5 w-5" />, label: 'Transferencia SPEI', description: 'Transferencia bancaria inmediata' },
-}
-
-function PaymentMethodSelector({
-  available,
-  selected,
-  onSelect,
-}: {
-  available: PaymentMethodType[]
-  selected: PaymentMethodType
-  onSelect: (m: PaymentMethodType) => void
-}) {
-  if (available.length <= 1) return null
-
-  return (
-    <div className="space-y-2">
-      {available.map((method) => {
-        const config = METHOD_CONFIG[method]
-        const isSelected = selected === method
-        return (
-          <label
-            key={method}
-            className={`flex items-center gap-3 border rounded-lg p-4 cursor-pointer transition-colors bg-[#111315] ${
-              isSelected ? 'border-brand-amber bg-brand-amber/5' : 'border-white/[0.12] hover:border-white/[0.25]'
-            }`}
-          >
-            <input
-              type="radio"
-              name="payment-method"
-              value={method}
-              checked={isSelected}
-              onChange={() => onSelect(method)}
-              className="w-4 h-4 accent-amber-400"
-            />
-            <div className="flex items-center gap-2 flex-1 text-brand-offwhite">
-              {config.icon}
-              <div>
-                <div className="font-medium text-sm text-brand-offwhite">{config.label}</div>
-                <div className="text-xs text-brand-steel">{config.description}</div>
-              </div>
-            </div>
-          </label>
-        )
-      })}
-    </div>
-  )
+/** Build Stripe ExpressCheckoutElement shippingRates from store deliveryExpectations */
+function buildShippingRates(deliveryExpectations: any[] | undefined) {
+  if (!Array.isArray(deliveryExpectations) || deliveryExpectations.length === 0) return undefined
+  return deliveryExpectations
+    .filter((m: any) => m && m.type !== 'pickup')
+    .map((m: any, idx: number) => {
+      const priceNum = m.hasPrice && m.price ? parseFloat(m.price) : 0
+      const amountCents = Math.max(0, Math.round((isFinite(priceNum) ? priceNum : 0) * 100))
+      return {
+        id: `${m.type || 'shipping'}-${idx}`,
+        displayName: m.type || 'Envío',
+        amount: amountCents,
+        deliveryEstimate: m.description ? m.description.slice(0, 22) : undefined,
+      }
+    })
 }
 
 function PaymentForm({
   amountCents,
-  currency = "usd",
+  currency = "mxn",
   description,
   metadata,
   email,
@@ -113,32 +110,42 @@ function PaymentForm({
   deliveryExpectations = [],
   pickupLocations = [],
   billingSlot,
+  deliveryMethodSlot,
   paymentMethods,
+  onEmailChange,
+  onAddressChange,
+  allowedCountries,
+  defaultAddress,
+  showAddressElement = false,
+  addressElementComplete = false,
+  shippingError,
+  onLinkAuthChange,
 }: StripePaymentProps) {
   const stripe = useStripe()
   const elements = useElements()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [cardholderName, setCardholderName] = useState(name || "")
+  const [linkAuthenticated, setLinkAuthenticated] = useState(false)
   const navigate = useNavigate()
   const { clearCart } = useCart()
   const { updateOrderCache, getFreshOrder, getOrderSnapshot } = useCheckoutState()
   const { currencyCode } = useSettings()
 
-  // Determine available methods
-  const availableMethods = useMemo<PaymentMethodType[]>(() => {
-    const methods: PaymentMethodType[] = []
-    if (!paymentMethods || paymentMethods.card !== false) methods.push('card')
-    if (paymentMethods?.oxxo) methods.push('oxxo')
-    if (paymentMethods?.spei) methods.push('spei')
-    return methods.length > 0 ? methods : ['card']
-  }, [paymentMethods])
-
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>(availableMethods[0])
+  // Per Stripe deferred-mode docs: when the amount changes (e.g., user picks a
+  // shipping method, applies a coupon, or qty changes), update the Elements
+  // amount in-place. Remounting <Elements> would kill open wallet sessions.
+  useEffect(() => {
+    if (!elements) return
+    try {
+      elements.update({ amount: Math.max(amountCents || 50, 50) })
+    } catch (err) {
+      console.warn('elements.update(amount) failed:', err)
+    }
+  }, [elements, amountCents])
 
   const amountLabel = useMemo(() => {
     const amt = (amountCents || 0) / 100
-    const cur = (currency || "usd").toUpperCase()
+    const cur = (currency || "mxn").toUpperCase()
     return `${cur} $${amt.toFixed(2)}`
   }, [amountCents, currency])
 
@@ -181,7 +188,6 @@ function PaymentForm({
   }
 
   const buildPayload = (paymentItems: any[], totalCents: number) => ({
-    payment_method: selectedMethod,
     store_id: STORE_ID,
     order_id: orderId,
     checkout_token: checkoutToken,
@@ -195,6 +201,7 @@ function PaymentForm({
     customer: { email, name, phone },
     capture_method: "automatic",
     use_stripe_connect: true,
+    payment_method_types: buildPaymentMethodTypes(paymentMethods),
     validation_data: {
       shipping_address: shippingAddress ? {
         line1: shippingAddress.line1 || "",
@@ -245,8 +252,8 @@ function PaymentForm({
         item.variant_name ? `${item.product_name} (${item.variant_name})` : item.product_name
       ).join(', ')
       toast({
-        title: "Items Out of Stock",
-        description: `The following items are out of stock: ${unavailableNames}. Please remove them from your cart to complete your order.`,
+        title: "Productos agotados",
+        description: `Los siguientes productos ya no están disponibles: ${unavailableNames}. Retíralos de tu carrito para completar tu compra.`,
         variant: "destructive"
       })
       updateOrderCache(normalizeOrderFromResponse(data))
@@ -257,26 +264,11 @@ function PaymentForm({
 
   const handlePayment = async () => {
     if (!stripe || !elements) {
-      toast({ title: "Error", description: "Stripe is not ready", variant: "destructive" })
+      toast({ title: "Error", description: "Stripe no está listo", variant: "destructive" })
       return
     }
 
     if (onValidationRequired && !onValidationRequired()) return
-
-    // For card, ensure card element is present
-    if (selectedMethod === 'card') {
-      const card = elements.getElement(CardElement)
-      if (!card) {
-        toast({ title: "Error", description: "Ingresa los datos de tu tarjeta", variant: "destructive" })
-        return
-      }
-    }
-
-    // For OXXO and SPEI, name and email are required
-    if ((selectedMethod === 'oxxo' || selectedMethod === 'spei') && (!name || !email)) {
-      toast({ title: "Datos requeridos", description: "Nombre y correo son necesarios para este método de pago.", variant: "destructive" })
-      return
-    }
 
     if (deliveryExpectations?.[0]?.type === "pickup" && (!pickupLocations || pickupLocations.length === 0)) {
       toast({ title: "Punto de recogida requerido", description: "Por favor selecciona un punto de recogida antes de continuar.", variant: "destructive" })
@@ -285,6 +277,15 @@ function PaymentForm({
 
     try {
       setLoading(true)
+
+      // 1. Validate the payment form
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
+        return
+      }
+
+      // 2. Create PaymentIntent on backend
       const paymentItems = buildPaymentItems()
       const totalCents = Math.max(0, Math.floor(amountCents || 0))
       const hasSubscription = paymentItems.some((it: any) => it.selling_plan_id)
@@ -311,6 +312,7 @@ function PaymentForm({
         const data = await callEdge('subscription-create', subPayload)
         if (handleUnavailableItems(data)) return
         client_secret = data?.client_secret
+        intentOrder = data?.order ?? null
       } else {
         const payload = buildPayload(paymentItems, totalCents)
         console.log('🔍 StripePayment payload:', JSON.stringify(payload, null, 2))
@@ -324,141 +326,121 @@ function PaymentForm({
         throw new Error("No se recibió client_secret del servidor")
       }
 
-      // --- Confirm based on selected method ---
-      if (selectedMethod === 'card') {
-        await confirmCard(client_secret, paymentItems, totalCents, intentOrder)
-      } else if (selectedMethod === 'oxxo') {
-        await confirmOxxo(client_secret)
-      } else if (selectedMethod === 'spei') {
-        await confirmSpei(client_secret)
+      // 3. Confirm payment with the selected method (PaymentElement handles method selection)
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret: client_secret,
+        confirmParams: {
+          return_url: `${window.location.origin}/gracias/${orderId}`,
+          receipt_email: email || undefined,
+          payment_method_data: {
+            billing_details: {
+              name: name || undefined,
+              email: email || undefined,
+              phone: phone || undefined,
+              address: shippingAddress ? {
+                line1: shippingAddress.line1 || '',
+                line2: shippingAddress.line2 || '',
+                city: shippingAddress.city || '',
+                state: shippingAddress.state || '',
+                postal_code: shippingAddress.postal_code || '',
+                country: countryNameToCode(shippingAddress.country || ''),
+              } : undefined,
+            },
+          },
+        },
+        redirect: 'if_required',
+      })
+
+      if (result.error) {
+        toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
+        return
+      }
+
+      const pi = result.paymentIntent
+      const nextAction = pi?.next_action as any
+
+      if (pi?.status === 'succeeded') {
+        // Payment succeeded (card, Link, etc.)
+        trackPurchase({
+          products: paymentItems.map((item: any) => tracking.createTrackingProduct({
+            id: item.product_id, title: item.product_name || item.title,
+            price: item.price / 100, category: 'product',
+            variant: item.variant_id ? { id: item.variant_id } : undefined
+          })),
+          value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
+          order_id: orderId,
+          custom_parameters: { payment_method: 'stripe', checkout_token: checkoutToken }
+        })
+
+        // Save order data for ThankYou page before clearing.
+        // Prefer the order returned by payments-create-intent (already includes
+        // shipping_address persisted from DB). Fallback to the checkout snapshot.
+        try {
+          if (intentOrder) {
+            localStorage.setItem('completed_order', JSON.stringify(intentOrder))
+          } else {
+            const checkoutData = localStorage.getItem(`checkout:${STORE_ID}`)
+            if (checkoutData) {
+              const parsed = JSON.parse(checkoutData)
+              if (parsed.order) {
+                localStorage.setItem('completed_order', JSON.stringify(parsed.order))
+              }
+            }
+          }
+        } catch {}
+
+        clearCart()
+        navigate(`/gracias/${orderId}`)
+        toast({ title: "¡Pago exitoso!", description: "Tu compra ha sido procesada correctamente." })
+      } else if (pi?.status === 'requires_action') {
+        // Handle OXXO voucher
+        if (nextAction?.oxxo_display_details) {
+          const details = nextAction.oxxo_display_details
+          sessionStorage.setItem('pending_payment', JSON.stringify({
+            method: 'oxxo',
+            orderId,
+            voucherUrl: details.hosted_voucher_url,
+            number: details.number,
+            expiresAfter: details.expires_after,
+            amount: (amountCents || 0) / 100,
+            currency: (currency || 'mxn').toUpperCase(),
+          }))
+          clearCart()
+          navigate(`/pago-pendiente/${orderId}`)
+        }
+        // Handle SPEI / bank transfer
+        else if (nextAction?.display_bank_transfer_instructions) {
+          const instructions = nextAction.display_bank_transfer_instructions
+          const speiAddr = instructions.financial_addresses?.find((a: any) => a.type === 'spei')?.spei
+          sessionStorage.setItem('pending_payment', JSON.stringify({
+            method: 'spei',
+            orderId,
+            hostedUrl: instructions.hosted_instructions_url,
+            clabe: speiAddr?.clabe || '',
+            bankName: speiAddr?.bank_name || '',
+            amount: (instructions.amount_remaining || amountCents || 0) / 100,
+            currency: (currency || 'mxn').toUpperCase(),
+          }))
+          clearCart()
+          navigate(`/pago-pendiente/${orderId}`)
+        }
+        // Generic requires_action (e.g. 3D Secure handled by Stripe)
+        else {
+          toast({ title: "Acción requerida", description: "Por favor completa la verificación del pago." })
+        }
+      } else if (pi?.status === 'processing') {
+        // SPEI / bank transfer might be in processing state
+        clearCart()
+        navigate(`/pago-pendiente/${orderId}`)
+      } else {
+        toast({ title: "Estado del pago", description: `Estado: ${pi?.status ?? "desconocido"}` })
       }
     } catch (err: any) {
       console.error("Error en el proceso de pago:", err)
       handlePaymentError(err)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const confirmCard = async (clientSecret: string, paymentItems: any[], totalCents: number, intentOrder?: any) => {
-    const card = elements!.getElement(CardElement)!
-    const result = await stripe!.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card,
-        billing_details: {
-          email: email || undefined,
-          name: name || undefined,
-          phone: phone || undefined,
-        },
-      },
-    })
-
-    if (result.error) {
-      toast({ title: "Payment failed", description: result.error.message || "Error processing payment", variant: "destructive" })
-      return
-    }
-
-    if (result.paymentIntent?.status === "succeeded") {
-      trackPurchase({
-        products: paymentItems.map((item: any) => tracking.createTrackingProduct({
-          id: item.product_id, title: item.product_name || item.title,
-          price: item.price / 100, category: 'product',
-          variant: item.variant_id ? { id: item.variant_id } : undefined
-        })),
-        value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
-        order_id: orderId,
-        custom_parameters: { payment_method: 'stripe', checkout_token: checkoutToken }
-      })
-      // Save order data for ThankYou page before clearing
-      // Prefer intentOrder (fresh from edge, includes shipping_address) over stale localStorage cache
-      try {
-        if (intentOrder) {
-          localStorage.setItem('completed_order', JSON.stringify(intentOrder))
-        } else {
-          const checkoutData = localStorage.getItem(`checkout:${STORE_ID}`)
-          if (checkoutData) {
-            const parsed = JSON.parse(checkoutData)
-            if (parsed.order) {
-              localStorage.setItem('completed_order', JSON.stringify(parsed.order))
-            }
-          }
-        }
-      } catch {}
-      clearCart()
-      navigate(`/gracias/${orderId}`)
-      toast({ title: "Payment successful!", description: "Your purchase has been processed successfully." })
-    } else {
-      toast({ title: "Payment status", description: `Status: ${result.paymentIntent?.status ?? "unknown"}` })
-    }
-  }
-
-  const confirmOxxo = async (clientSecret: string) => {
-    const result = await (stripe as any).confirmOxxoPayment(clientSecret, {
-      payment_method: {
-        billing_details: {
-          name: name || '',
-          email: email || '',
-        },
-      },
-    })
-
-    if (result.error) {
-      toast({ title: "Error con OXXO", description: result.error.message || "No se pudo generar el voucher", variant: "destructive" })
-      return
-    }
-
-    const pi = result.paymentIntent
-    if (pi?.status === 'requires_action' && pi.next_action?.oxxo_display_details) {
-      const details = pi.next_action.oxxo_display_details
-      sessionStorage.setItem('pending_payment', JSON.stringify({
-        method: 'oxxo',
-        orderId,
-        voucherUrl: details.hosted_voucher_url,
-        number: details.number,
-        expiresAfter: details.expires_after,
-        amount: (amountCents || 0) / 100,
-        currency: (currency || 'mxn').toUpperCase(),
-      }))
-      clearCart()
-      navigate(`/pago-pendiente/${orderId}`)
-    } else {
-      toast({ title: "Estado del pago", description: `Status: ${pi?.status ?? "unknown"}` })
-    }
-  }
-
-  const confirmSpei = async (clientSecret: string) => {
-    const result = await (stripe as any).confirmCustomerBalancePayment(clientSecret, {
-      payment_method: { type: 'customer_balance' },
-      payment_method_options: {
-        customer_balance: {
-          funding_type: 'bank_transfer',
-          bank_transfer: { type: 'mx_bank_transfer' },
-        },
-      },
-    })
-
-    if (result.error) {
-      toast({ title: "Error con SPEI", description: result.error.message || "No se pudo generar la transferencia", variant: "destructive" })
-      return
-    }
-
-    const pi = result.paymentIntent
-    if (pi?.next_action?.display_bank_transfer_instructions) {
-      const instructions = pi.next_action.display_bank_transfer_instructions
-      const speiAddr = instructions.financial_addresses?.find((a: any) => a.type === 'spei')?.spei
-      sessionStorage.setItem('pending_payment', JSON.stringify({
-        method: 'spei',
-        orderId,
-        hostedUrl: instructions.hosted_instructions_url,
-        clabe: speiAddr?.clabe || '',
-        bankName: speiAddr?.bank_name || '',
-        amount: (instructions.amount_remaining || amountCents || 0) / 100,
-        currency: (currency || 'mxn').toUpperCase(),
-      }))
-      clearCart()
-      navigate(`/pago-pendiente/${orderId}`)
-    } else {
-      toast({ title: "Estado del pago", description: `Status: ${pi?.status ?? "unknown"}` })
     }
   }
 
@@ -472,124 +454,344 @@ function PaymentForm({
         if (handleUnavailableItems(parsed)) return
       } catch {}
     }
-    let errorMessage = "No se pudo procesar el pago"
-    if (err?.message) errorMessage = err.message
-    else if (typeof err === 'string') errorMessage = err
-    else if (err?.error) errorMessage = err.error
-    toast({ title: "Error de pago", description: errorMessage, variant: "destructive" })
+    const lowered = (message || "").toLowerCase()
+    if (lowered.includes("stripe_not_connected") || lowered.includes("stripe not connected")) {
+      toast({
+        title: "Pagos no configurados",
+        description: "Esta tienda aún no ha configurado un método de pago. Ve al dashboard de Lovivo para conectar Stripe y empezar a recibir pagos.",
+      })
+      return
+    }
+    toast({ title: "Error de pago", description: "No se pudo procesar el pago. Intenta de nuevo.", variant: "destructive" })
   }
 
-  const buttonText = useMemo(() => {
-    if (loading) return null
-    switch (selectedMethod) {
-      case 'oxxo': return `Generar Voucher OXXO - ${amountLabel}`
-      case 'spei': return `Ver datos de transferencia - ${amountLabel}`
-      default: return `Completar Compra - ${amountLabel}`
+  const handleExpressCheckoutConfirm = useCallback(async (ev?: any) => {
+    if (!stripe || !elements) return
+    try {
+      setLoading(true)
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
+        return
+      }
+
+      const walletShipping = ev?.shippingAddress
+      const walletBilling = ev?.billingDetails
+      const walletEmail = walletBilling?.email || ev?.email || email
+      const walletPhone = walletBilling?.phone || ev?.phone || phone
+      const walletName = walletBilling?.name || walletShipping?.name || name
+      const walletShipRate = ev?.shippingRate
+
+      const effectiveShippingAddress = walletShipping?.address ? {
+        first_name: (walletShipping.name || walletName || '').split(' ')[0] || '',
+        last_name: (walletShipping.name || walletName || '').split(' ').slice(1).join(' ') || '',
+        line1: walletShipping.address.line1 || '',
+        line2: walletShipping.address.line2 || '',
+        city: walletShipping.address.city || '',
+        state: walletShipping.address.state || '',
+        postal_code: walletShipping.address.postal_code || '',
+        country: walletShipping.address.country || '',
+        phone: walletPhone || '',
+      } : shippingAddress
+      const effectiveBillingAddress = walletBilling?.address ? {
+        first_name: (walletName || '').split(' ')[0] || '',
+        last_name: (walletName || '').split(' ').slice(1).join(' ') || '',
+        line1: walletBilling.address.line1 || '',
+        line2: walletBilling.address.line2 || '',
+        city: walletBilling.address.city || '',
+        state: walletBilling.address.state || '',
+        postal_code: walletBilling.address.postal_code || '',
+        country: walletBilling.address.country || '',
+        phone: walletPhone || '',
+      } : (billingAddress || effectiveShippingAddress)
+
+      if (showAddressElement && (!effectiveShippingAddress || !effectiveShippingAddress.line1)) {
+        toast({
+          title: "Falta dirección de envío",
+          description: "Por favor completa tu dirección antes de pagar.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const paymentItems = buildPaymentItems()
+      const walletShipCents = typeof walletShipRate?.amount === 'number' ? walletShipRate.amount : Math.round((deliveryFee || 0) * 100)
+      const totalCents = Math.max(0, Math.floor(amountCents || 0))
+
+      const basePayload = buildPayload(paymentItems, totalCents)
+      const payload = {
+        ...basePayload,
+        delivery_fee: walletShipCents,
+        receipt_email: walletEmail,
+        customer: { email: walletEmail, name: walletName, phone: walletPhone },
+        validation_data: {
+          ...basePayload.validation_data,
+          shipping_address: effectiveShippingAddress ? {
+            line1: effectiveShippingAddress.line1 || '',
+            line2: effectiveShippingAddress.line2 || '',
+            city: effectiveShippingAddress.city || '',
+            state: effectiveShippingAddress.state || '',
+            postal_code: effectiveShippingAddress.postal_code || '',
+            country: effectiveShippingAddress.country || '',
+            name: `${effectiveShippingAddress.first_name || ''} ${effectiveShippingAddress.last_name || ''}`.trim() || walletName || '',
+          } : null,
+          billing_address: effectiveBillingAddress ? {
+            line1: effectiveBillingAddress.line1 || '',
+            line2: effectiveBillingAddress.line2 || '',
+            city: effectiveBillingAddress.city || '',
+            state: effectiveBillingAddress.state || '',
+            postal_code: effectiveBillingAddress.postal_code || '',
+            country: effectiveBillingAddress.country || '',
+            name: `${effectiveBillingAddress.first_name || ''} ${effectiveBillingAddress.last_name || ''}`.trim() || walletName || '',
+          } : null,
+        },
+      }
+
+      const data = await callEdge("payments-create-intent", payload)
+      if (handleUnavailableItems(data)) return
+      const client_secret = data?.client_secret
+      const intentOrder = data?.order ?? null
+      if (!client_secret) throw new Error("No se recibió client_secret del servidor")
+
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret: client_secret,
+        confirmParams: {
+          return_url: `${window.location.origin}/gracias/${orderId}`,
+          payment_method_data: {
+            billing_details: {
+              name: walletName || undefined,
+              email: walletEmail || undefined,
+              phone: walletPhone || undefined,
+              address: effectiveShippingAddress ? {
+                line1: effectiveShippingAddress.line1 || '',
+                line2: effectiveShippingAddress.line2 || '',
+                city: effectiveShippingAddress.city || '',
+                state: effectiveShippingAddress.state || '',
+                postal_code: effectiveShippingAddress.postal_code || '',
+                country: (effectiveShippingAddress.country || '').length === 2
+                  ? effectiveShippingAddress.country
+                  : countryNameToCode(effectiveShippingAddress.country || ''),
+              } : undefined,
+            },
+          },
+        },
+        redirect: 'if_required',
+      })
+
+      if (result.error) {
+        toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
+        return
+      }
+
+      const pi = result.paymentIntent
+      if (pi?.status === 'succeeded') {
+        // intentOrder fix: persist order from edge function for ThankYou page
+        try {
+          if (intentOrder) {
+            localStorage.setItem('completed_order', JSON.stringify(intentOrder))
+          }
+        } catch {}
+        clearCart()
+        navigate(`/gracias/${orderId}`)
+        toast({ title: "¡Pago exitoso!", description: "Tu compra ha sido procesada correctamente." })
+      } else if (pi?.status === 'processing') {
+        clearCart()
+        navigate(`/pago-pendiente/${orderId}`)
+      }
+    } catch (err: any) {
+      console.error("Express checkout error:", err)
+      handlePaymentError(err)
+    } finally {
+      setLoading(false)
     }
-  }, [selectedMethod, amountLabel, loading])
+  }, [stripe, elements, amountCents, orderId, email, name, phone, shippingAddress, billingAddress, deliveryFee, navigate, clearCart])
+
+  const handleExpressShippingAddressChange = useCallback(async (ev: any) => {
+    try {
+      const country = (ev?.address?.country || '').toUpperCase()
+      if (allowedCountries && allowedCountries.length > 0 && country && !allowedCountries.includes(country)) {
+        ev.reject()
+        return
+      }
+      const builtRates = buildShippingRates(deliveryExpectations)
+      const rates = (builtRates && builtRates.length > 0)
+        ? builtRates
+        : [{ id: 'standard', displayName: 'Envío estándar', amount: 0 }]
+      ev.resolve({ shippingRates: rates })
+    } catch (err) {
+      console.error('shippingaddresschange error:', err)
+      try { ev.reject() } catch {}
+    }
+  }, [allowedCountries, deliveryExpectations])
+
+  const handleExpressShippingRateChange = useCallback(async (ev: any) => {
+    try { ev.resolve() } catch {}
+  }, [])
 
   return (
     <div className="space-y-6">
-      <div className="text-sm text-brand-steel text-center">
-        🔒 Todas las transacciones son seguras y encriptadas.
-      </div>
 
-      {/* Payment method selector */}
-      <PaymentMethodSelector
-        available={availableMethods}
-        selected={selectedMethod}
-        onSelect={setSelectedMethod}
+      {/* Express Checkout (Google Pay, Apple Pay) - only when Link is NOT authenticated */}
+      {!linkAuthenticated && (
+        <>
+          <ExpressCheckoutElement
+            onConfirm={handleExpressCheckoutConfirm}
+            onShippingAddressChange={showAddressElement ? handleExpressShippingAddressChange : undefined}
+            onShippingRateChange={showAddressElement ? handleExpressShippingRateChange : undefined}
+            options={(() => {
+              const builtRates = buildShippingRates(deliveryExpectations)
+              const rates = (builtRates && builtRates.length > 0)
+                ? builtRates
+                : [{ id: 'standard', displayName: 'Envío estándar', amount: 0 }]
+              const orderHasShippingAddress = Boolean(
+                shippingAddress && (shippingAddress.line1 || shippingAddress.address?.line1)
+              )
+              const formIsReady = addressElementComplete && orderHasShippingAddress
+              const wantsShipping = showAddressElement && !formIsReady
+              return {
+                buttonType: {
+                  googlePay: 'plain',
+                  applePay: 'plain',
+                },
+                layout: {
+                  overflow: 'auto',
+                  maxColumns: 2,
+                },
+                emailRequired: true,
+                phoneNumberRequired: true,
+                ...(allowedCountries && allowedCountries.length > 0 ? {
+                  allowedShippingCountries: allowedCountries,
+                } : {}),
+                ...(wantsShipping ? {
+                  shippingAddressRequired: true,
+                  shippingRates: rates,
+                } : {}),
+              } as any
+            })()}
+          />
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">o</span>
+            <Separator className="flex-1" />
+          </div>
+        </>
+      )}
+
+      {/* Link Authentication - email capture + Link recognition */}
+      <LinkAuthenticationElement
+        options={{
+          defaultValues: {
+            email: email || '',
+          },
+        }}
+        onChange={(event) => {
+          if (event.value?.email && onEmailChange) {
+            onEmailChange(event.value.email)
+          }
+          const authenticated = !!(event as any).authenticated
+          setLinkAuthenticated(authenticated)
+          if (onLinkAuthChange) {
+            onLinkAuthChange(authenticated)
+          }
+        }}
       />
 
-      {/* Card payment form */}
-      {selectedMethod === 'card' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
-          <CardContent className="p-0 sm:p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded-full border-2 border-brand-amber bg-brand-amber"></div>
-                <span className="font-medium text-brand-offwhite">Tarjeta de crédito</span>
-              </div>
-              <img src="/lovable-uploads/43c70209-0949-4d87-9c23-50bea4ff2d48.png" alt="Tarjetas aceptadas" className="h-6" />
-            </div>
+      {/* Shipping Address Element - replaces custom address inputs */}
+      {showAddressElement && (
+        <>
+          <AddressElement
+            options={{
+              mode: 'shipping',
+              fields: {
+                phone: 'always',
+              },
+              validation: {
+                phone: {
+                  required: 'always',
+                },
+              },
+              display: {
+                name: 'split',
+              },
+              defaultValues: defaultAddress ? {
+                firstName: defaultAddress.name?.split(' ')[0] || '',
+                lastName: defaultAddress.name?.split(' ').slice(1).join(' ') || '',
+                address: defaultAddress.address ? {
+                  line1: defaultAddress.address.line1 || '',
+                  line2: defaultAddress.address.line2 || '',
+                  city: defaultAddress.address.city || '',
+                  state: defaultAddress.address.state || '',
+                  postal_code: defaultAddress.address.postal_code || '',
+                  country: defaultAddress.address.country || 'MX',
+                } : { country: 'MX', line1: '', line2: '', city: '', state: '', postal_code: '' },
+                phone: defaultAddress.phone || '',
+              } : {
+                address: { country: 'MX', line1: '', line2: '', city: '', state: '', postal_code: '' },
+              },
+              ...(allowedCountries && allowedCountries.length > 0 ? {
+                allowedCountries,
+              } : {}),
+            }}
+            onChange={(event) => {
+              if (onAddressChange) {
+                const val = event.value as StripeAddressValue
+                onAddressChange(val, event.complete)
+              }
+            }}
+          />
 
-            <div className="mb-3">
-              <label htmlFor="cardholder-name" className="block text-sm text-brand-steel mb-1">
-                Nombre del titular de la tarjeta
-              </label>
-              <input
-                id="cardholder-name"
-                type="text"
-                value={cardholderName}
-                onChange={(e) => setCardholderName(e.target.value)}
-                placeholder="Nombre como aparece en la tarjeta"
-                className="w-full border border-white/[0.15] rounded-lg px-3 py-2.5 text-base bg-[#0d0f11] text-brand-offwhite placeholder:text-brand-steel focus:outline-none focus:ring-2 focus:ring-brand-amber/30 focus:border-brand-amber/40"
-              />
+          {/* Shipping coverage error banner */}
+          {shippingError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive mt-0.5 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <p className="text-sm text-destructive">{shippingError}</p>
             </div>
+          )}
 
-            <div className="border border-white/[0.15] rounded-lg px-2 py-3 sm:p-4 bg-[#0d0f11]">
-              <CardElement
-                options={{
-                  style: {
-                    base: { fontSize: '16px', color: '#e8eaed', iconColor: '#9ca3af', '::placeholder': { color: '#6b7280' } },
-                    invalid: { color: '#f87171' },
-                  },
-                  hidePostalCode: true,
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Delivery method slot - rendered between address and payment */}
+          {deliveryMethodSlot}
+        </>
       )}
 
-      {/* OXXO info */}
-      {selectedMethod === 'oxxo' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start gap-3">
-              <Store className="h-8 w-8 text-brand-amber shrink-0 mt-0.5" />
-              <div className="space-y-2">
-                <p className="font-medium text-brand-offwhite">Pago en efectivo en OXXO</p>
-                <p className="text-sm text-brand-steel">
-                  Se generará un voucher con un código de barras que podrás presentar en cualquier tienda OXXO para completar tu pago.
-                </p>
-                <p className="text-sm text-brand-steel">
-                  ⏱ Tienes <strong className="text-brand-offwhite">3 días</strong> para realizar el pago antes de que expire.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Unified Payment Element - shows card, OXXO, SPEI, wallets automatically */}
+      <PaymentElement
+        options={{
+          layout: {
+            type: 'accordion',
+            defaultCollapsed: false,
+            radios: true,
+            spacedAccordionItems: false,
+          },
+          fields: {
+            billingDetails: {
+              name: 'never',
+              email: 'never',
+              phone: 'never',
+              address: 'never',
+            },
+          },
+          defaultValues: {
+            billingDetails: {
+              name: name || undefined,
+              email: email || undefined,
+              phone: phone || undefined,
+            },
+          },
+          business: {
+            name: 'Lovivo',
+          },
+        }}
+      />
 
-      {/* SPEI info */}
-      {selectedMethod === 'spei' && (
-        <Card className="border-0 shadow-none sm:border sm:shadow-sm bg-[#111315] sm:border-white/[0.12]">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start gap-3">
-              <Building2 className="h-8 w-8 text-brand-amber shrink-0 mt-0.5" />
-              <div className="space-y-2">
-                <p className="font-medium text-brand-offwhite">Transferencia bancaria SPEI</p>
-                <p className="text-sm text-brand-steel">
-                  Se generarán los datos de la cuenta (CLABE) para que realices la transferencia desde tu banca en línea o app bancaria.
-                </p>
-                <p className="text-sm text-brand-steel">
-                  ⚡ La confirmación del pago es generalmente instantánea.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Billing address slot (only for card) */}
-      {selectedMethod === 'card' && billingSlot}
+      {/* Billing address slot */}
+      {billingSlot}
 
       {/* Submit button */}
       <Button
         onClick={handlePayment}
-        disabled={!stripe || loading || !amountCents}
-        className="w-full h-12 text-lg font-semibold font-sora bg-brand-amber text-brand-carbon hover:bg-brand-amber/90"
+        disabled={!stripe || loading || !amountCents || !!shippingError}
+        className="w-full h-12 text-lg font-semibold"
         size="lg"
       >
         {loading ? (
@@ -597,14 +799,13 @@ function PaymentForm({
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
             <span>Procesando...</span>
           </div>
-        ) : buttonText}
+        ) : `Completar Compra - ${amountLabel}`}
       </Button>
 
-      <div className="text-xs text-brand-steel text-center">
-        Al hacer clic en "{selectedMethod === 'oxxo' ? 'Generar Voucher OXXO' : selectedMethod === 'spei' ? 'Ver datos de transferencia' : 'Completar Compra'}", aceptas nuestros{" "}
-        <a href="/terminos-y-condiciones" target="_blank" className="underline hover:text-brand-offwhite">términos y condiciones</a>
-        {" "}y{" "}
-        <a href="/aviso-de-privacidad" target="_blank" className="underline hover:text-brand-offwhite">aviso de privacidad</a>.
+      <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
+        <a href="/terminos-y-condiciones" target="_blank" className="underline hover:text-foreground">Condiciones</a>
+        <span>|</span>
+        <a href="/aviso-de-privacidad" target="_blank" className="underline hover:text-foreground">Privacidad</a>
       </div>
     </div>
   )
@@ -614,12 +815,54 @@ export default function StripePayment(props: StripePaymentProps) {
   const stripePromise = useMemo(() => {
     const opts = props.chargeType === 'direct' && props.stripeAccountId
       ? { stripeAccount: props.stripeAccountId }
-      : {};
-    return loadStripe(STRIPE_PUBLISHABLE_KEY, opts);
-  }, [props.stripeAccountId, props.chargeType]);
+      : {}
+    return loadStripe(STRIPE_PUBLISHABLE_KEY, opts)
+  }, [props.stripeAccountId, props.chargeType])
+
+  const elementsOptions = useMemo(() => {
+    const style = getComputedStyle(document.documentElement)
+    const hsl = (v: string) => {
+      const raw = style.getPropertyValue(v).trim()
+      return raw ? `hsl(${raw})` : undefined
+    }
+    const radius = style.getPropertyValue('--radius').trim()
+    const inputBorder = style.getPropertyValue('--input').trim()
+    const ringVal = style.getPropertyValue('--ring').trim()
+
+    const opts = {
+      mode: 'payment' as const,
+      amount: Math.max(props.amountCents || 50, 50),
+      currency: (props.currency || 'mxn').toLowerCase(),
+      paymentMethodTypes: buildPaymentMethodTypes(props.paymentMethods),
+      appearance: {
+        theme: 'stripe' as const,
+        variables: {
+          colorPrimary: hsl('--primary'),
+          colorBackground: hsl('--background'),
+          colorText: hsl('--foreground'),
+          colorDanger: hsl('--destructive'),
+          colorTextSecondary: hsl('--muted-foreground'),
+          borderRadius: radius || '8px',
+          fontSizeBase: '16px',
+        },
+        rules: {
+          '.Input': {
+            border: inputBorder ? `1px solid hsl(${inputBorder})` : undefined,
+            backgroundColor: hsl('--background'),
+          },
+          '.Input:focus': {
+            borderColor: ringVal ? `hsl(${ringVal})` : undefined,
+            boxShadow: ringVal ? `0 0 0 1px hsl(${ringVal})` : undefined,
+          },
+        },
+      },
+    }
+    console.log('🔍 Stripe Elements options:', JSON.stringify(opts))
+    return opts
+  }, [props.amountCents, props.currency, props.paymentMethods])
 
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={stripePromise} options={elementsOptions}>
       <PaymentForm {...props} />
     </Elements>
   )
