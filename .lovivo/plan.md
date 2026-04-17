@@ -12,19 +12,40 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **Precio actualizado: MX$749 → MX$699** (compare_at_price: MX$999) ✅
 - **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
+- **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
+
+## ✅ COMPLETADO: Stripe Elements Dark Theme
+
+### Root Cause
+`getComputedStyle(document.documentElement)` leía variables de `:root` (tema claro → `--background: 200 18% 97%` ≈ blanco), porque la página de checkout usa fondos oscuros hardcodeados (`bg-[#111315]`) sin agregar `.dark` al `<html>`.
+
+### Solución
+- Creado `src/lib/stripe-appearance.ts` con `getStripeAppearance('dark' | 'light')`
+- Modo `'dark'`: usa `theme: 'night'` + tokens dark de rodata.mx hardcodeados
+- Modo `'light'`: lee CSS vars de `:root` en runtime (para stores futuras en modo claro)
+- `StripePayment.tsx`: reemplazado bloque de appearance inline por `getStripeAppearance('dark')`
+
+### Tokens dark mapeados
+| Stripe variable | Valor |
+|---|---|
+| colorBackground | hsl(214 10% 13%) — graphite |
+| colorText | hsl(200 18% 97%) — offwhite |
+| colorPrimary | hsl(34 62% 48%) — amber |
+| colorTextSecondary | hsl(210 13% 60%) |
+| colorDanger | hsl(0 72% 50%) |
+| borderRadius | 0.375rem |
+| fontFamily | Inter |
+
+---
 
 ## ✅ COMPLETADO: Migración Express Checkout (Stripe PaymentElement + Apple Pay / Google Pay)
 
 ### Pasos completados
 1. ✅ `src/lib/country-codes.ts` — mapeo bidireccional ISO ↔ nombre en español
 2. ✅ `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP (lazy-load vía IntersectionObserver)
-3. ✅ `src/components/StripePayment.tsx` — PaymentElement + LinkAuthenticationElement + AddressElement + ExpressCheckoutElement; fix de `intentOrder` preservado
+3. ✅ `src/components/StripePayment.tsx` — PaymentElement + LinkAuthenticationElement + AddressElement + ExpressCheckoutElement; fix de `intentOrder` preservado; dark appearance via `getStripeAppearance('dark')`
 4. ✅ `src/pages/ui/CheckoutUI.tsx` — integrado: `allowedCountries`, `deliveryMethodSlot`, `onAddressChange`, `onEmailChange`, `onLinkAuthChange`, `showAddressElement`, `addressElementComplete`, `stripeKey` estable, `isStripeReady` guard; dark theme 100% preservado
-5. ✅ `src/pages/ui/ProductPageUI.tsx` — Express Checkout insertado encima de los CTAs:
-   - Import de `ProductExpressCheckout` agregado
-   - Estado `expressAvailable` agregado
-   - Bloque Express Checkout + divider "o" condicional encima de "Comprar ahora"
-   - Orden de CTAs preservado: Express (si disponible) → "Comprar ahora" (primario, amber) → "Agregar al carrito" (secundario, outline)
+5. ✅ `src/pages/ui/ProductPageUI.tsx` — Express Checkout insertado encima de los CTAs
 
 ### CTA Order (PDP)
 1. `<ProductExpressCheckout>` — aparece solo si Apple Pay / Google Pay disponibles
@@ -67,7 +88,8 @@ if (intentOrder) {
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ (Express Checkout + CTAs ordenados)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅ (dark brand rebrand done + Express Checkout integrado)
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
-- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement)
+- `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance)
+- `src/lib/stripe-appearance.ts` — ✅ helper getStripeAppearance('dark'|'light')
 - `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP ✅
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅
 - `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
