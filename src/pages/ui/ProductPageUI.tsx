@@ -1,5 +1,6 @@
 // ProductPageUI v3 — rodata.mx premium PDP (rebuild trigger)
 import React, { useEffect, useState } from "react"
+import ProductExpressCheckout from "@/components/ProductExpressCheckout"
 import { useInView } from "react-intersection-observer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
@@ -115,6 +116,7 @@ interface ProductPageUIProps {
 export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showSizeGuide, setShowSizeGuide] = useState(false)
+  const [expressAvailable, setExpressAvailable] = useState(false)
   const { ref: ctaRef, inView: ctaInView } = useInView({ threshold: 0 })
 
   const productImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT, PRODUCT_WORN]
@@ -300,6 +302,22 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div ref={ctaRef} className="flex flex-col gap-3">
                 {logic.inStock ? (
                   <>
+                    {/* ── Express Checkout (Apple Pay / Google Pay) ── */}
+                    <ProductExpressCheckout
+                      product={logic.product}
+                      variant={logic.matchingVariant}
+                      sellingPlan={logic.selectedPlan ?? null}
+                      quantity={logic.quantity}
+                      unitPrice={logic.currentPrice}
+                      onAvailabilityChange={setExpressAvailable}
+                    />
+                    {expressAvailable && (
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-white/[0.1]" />
+                        <span className="text-brand-steel text-[10px] font-inter uppercase tracking-wider">o</span>
+                        <div className="flex-1 h-px bg-white/[0.1]" />
+                      </div>
+                    )}
                     <button onClick={handlePrimary} className="btn-amber-lg amber-glow font-sora w-full text-base">
                       <ShoppingCart size={18}/>Comprar ahora · {logic.formatMoney(logic.currentPrice)}
                     </button>
