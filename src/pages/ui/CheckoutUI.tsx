@@ -10,6 +10,7 @@ import { Tag, X, ShoppingBag, Loader2, RefreshCw, ChevronDown, ChevronUp, Lock }
 import { Badge } from "@/components/ui/badge";
 import { CartAppliedRules } from "@/components/ui/CartAppliedRules";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import StripePayment from "@/components/StripePayment";
 import { HeadlessCheckout } from "@/components/headless/HeadlessCheckout";
 import { BrandLogoLeft } from "@/components/BrandLogoLeft";
@@ -28,6 +29,7 @@ export default function CheckoutUI() {
   const { params, hasParams } = useURLCheckoutParams();
   const { isLoadingToken, tokenError, hasToken } = useTokenCheckout();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { paymentMethods, stripeAccountId, chargeType, isLoading: isSettingsLoading } = useSettings();
   const [linkAuthenticated, setLinkAuthenticated] = useState(false);
   // Track whether the on-page Stripe AddressElement has a complete address.
@@ -249,7 +251,33 @@ export default function CheckoutUI() {
                           phone={logic.phone}
                           orderId={logic.orderId}
                           checkoutToken={logic.checkoutToken}
-                          onValidationRequired={logic.validateCheckoutFields}
+                          onValidationRequired={() => {
+                            // When Stripe AddressElement manages address + phone,
+                            // trust its `complete` flag instead of re-validating those fields.
+                            if (!logic.usePickup) {
+                              const missing: string[] = [];
+                              const emailOk = !!logic.email?.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(logic.email);
+                              if (!emailOk) missing.push('email v\u00e1lido');
+                              if (!addressElementComplete) missing.push('direcci\u00f3n completa');
+                              if (
+                                Array.isArray(logic.deliveryExpectations) &&
+                                logic.deliveryExpectations.length > 0 &&
+                                !logic.selectedDeliveryMethod
+                              ) missing.push('m\u00e9todo de env\u00edo');
+                              if (missing.length > 0) {
+                                toast({
+                                  title: 'Campos requeridos',
+                                  description: `Por favor completa: ${missing.join(', ')}`,
+                                  variant: 'destructive',
+                                  duration: 5000,
+                                });
+                                return false;
+                              }
+                              return true;
+                            }
+                            // Pickup: use full manual validation
+                            return logic.validateCheckoutFields();
+                          }}
                           expectedTotal={Math.round(logic.finalTotal * 100)}
                           deliveryFee={Math.round((logic.shippingFromCheckout || logic.shippingCost) * 100)}
                           shippingAddress={logic.usePickup ? null : {

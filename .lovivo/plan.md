@@ -14,6 +14,20 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
 - **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
+- **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
+
+## ✅ COMPLETADO: Fix validación checkout con Stripe AddressElement
+
+### Root Cause
+`validateCheckoutFields` en `CheckoutAdapter` validaba campos de React state (`phone`, `address.state`, etc.) que ahora maneja el `AddressElement` de Stripe. Cuando Link pre-rellena la dirección sin que el usuario la toque, el `onChange` no necesariamente sincroniza el estado antes de que el usuario presione "Completar Compra", causando el error "Campos requeridos: teléfono, estado".
+
+### Fix aplicado en `CheckoutUI.tsx`
+- Reemplazado `onValidationRequired={logic.validateCheckoutFields}` por una función custom inline
+- Si `!logic.usePickup`: valida solo `email` (regex) + `addressElementComplete` (flag del `onChange` de Stripe AddressElement) + método de envío si aplica
+- Si `logic.usePickup`: sigue usando `logic.validateCheckoutFields()` completo (campos manuales)
+- Añadido `useToast` import en CheckoutUI para mostrar errores
+
+---
 
 ## ✅ COMPLETADO: Express Checkout — Orden de botones y altura
 
@@ -49,7 +63,7 @@ paymentMethodOrder: ['applePay', 'googlePay', 'link'],
 1. ✅ `src/lib/country-codes.ts` — mapeo bidireccional ISO ↔ nombre en español
 2. ✅ `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP; settings-gated mount (no IntersectionObserver)
 3. ✅ `src/components/StripePayment.tsx` — PaymentElement + LinkAuthenticationElement + AddressElement + ExpressCheckoutElement; fix de `intentOrder` preservado; dark appearance via `getStripeAppearance('dark')`
-4. ✅ `src/pages/ui/CheckoutUI.tsx` — integrado: `allowedCountries`, `deliveryMethodSlot`, `onAddressChange`, `onEmailChange`, `onLinkAuthChange`, `showAddressElement`, `addressElementComplete`, `stripeKey` estable, `isStripeReady` guard; dark theme 100% preservado
+4. ✅ `src/pages/ui/CheckoutUI.tsx` — integrado: `allowedCountries`, `deliveryMethodSlot`, `onAddressChange`, `onEmailChange`, `onLinkAuthChange`, `showAddressElement`, `addressElementComplete`, `stripeKey` estable, `isStripeReady` guard; dark theme 100% preservado; validación custom bypasa fields de Stripe AddressElement
 5. ✅ `src/pages/ui/ProductPageUI.tsx` — Express Checkout insertado encima de los CTAs
 
 ### CTA Order (PDP)
@@ -87,7 +101,7 @@ if (intentOrder) {
 
 ## Key Files
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ (Express Checkout + CTAs ordenados)
-- `src/pages/ui/CheckoutUI.tsx` — checkout ✅ (dark brand rebrand done + Express Checkout integrado)
+- `src/pages/ui/CheckoutUI.tsx` — checkout ✅ (dark brand rebrand done + Express Checkout integrado + validación custom)
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance + paymentMethodOrder)
 - `src/lib/stripe-appearance.ts` — ✅ helper getStripeAppearance('dark'|'light')
@@ -95,7 +109,7 @@ if (intentOrder) {
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅
 - `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
 - `src/index.css` — design system
-- `src/adapters/CheckoutAdapter.tsx` — checkout logic
+- `src/adapters/CheckoutAdapter.tsx` — checkout logic (validateCheckoutFields solo usada para pickup ahora)
 - `src/hooks/useCheckout.ts` — checkoutWithItems agregado
 - `src/hooks/useCheckoutState.ts` — manages localStorage state
 - `src/components/headless/HeadlessProduct.tsx` — handleBuyNow corregido ✅
