@@ -448,41 +448,27 @@ function PaymentRequestInner({
 }
 
 export default function ProductExpressCheckout(props: ProductExpressCheckoutProps) {
-  const { stripeAccountId, chargeType } = useSettings()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [shouldMount, setShouldMount] = useState(false)
+  const { stripeAccountId, chargeType, isLoading: settingsLoading } = useSettings()
 
-  // Lazy mount Stripe when the component scrolls into view to avoid
-  // loading Stripe.js on every product page eagerly.
-  useEffect(() => {
-    if (!containerRef.current) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setShouldMount(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '200px' },
-    )
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [])
-
+  // Wait until settings are fully loaded before creating the Stripe promise.
+  // This prevents stripePromise from being recreated when stripeAccountId /
+  // chargeType change from `undefined` → real value, which would remount
+  // <Elements> and re-run canMakePayment() with a different Stripe instance
+  // (causing the button to disappear on Connect stores).
   const stripePromise = useMemo<Promise<Stripe | null>>(() => {
+    if (settingsLoading) return Promise.resolve(null)
     const opts = chargeType === 'direct' && stripeAccountId
       ? { stripeAccount: stripeAccountId }
       : {}
     return loadStripe(STRIPE_PUBLISHABLE_KEY, opts)
-  }, [stripeAccountId, chargeType])
+  }, [settingsLoading, stripeAccountId, chargeType])
+
+  // Don't mount Elements until settings are ready — avoids a double-init race.
+  if (settingsLoading) return null
 
   return (
-    <div ref={containerRef} className="min-h-[1px]">
-      {shouldMount && (
-        <Elements stripe={stripePromise}>
-          <PaymentRequestInner {...props} />
-        </Elements>
-      )}
-    </div>
+    <Elements stripe={stripePromise}>
+      <PaymentRequestInner {...props} />
+    </Elements>
   )
 }

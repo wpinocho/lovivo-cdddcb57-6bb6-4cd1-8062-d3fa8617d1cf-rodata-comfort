@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { callEdge } from "@/lib/edge"
 import { STORE_ID, STRIPE_PUBLISHABLE_KEY } from "@/lib/config"
+import { getStripeAppearance } from "@/lib/stripe-appearance"
 import { countryNameToCode } from "@/lib/country-codes"
 import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from "react-router-dom"
@@ -819,47 +820,13 @@ export default function StripePayment(props: StripePaymentProps) {
     return loadStripe(STRIPE_PUBLISHABLE_KEY, opts)
   }, [props.stripeAccountId, props.chargeType])
 
-  const elementsOptions = useMemo(() => {
-    const style = getComputedStyle(document.documentElement)
-    const hsl = (v: string) => {
-      const raw = style.getPropertyValue(v).trim()
-      return raw ? `hsl(${raw})` : undefined
-    }
-    const radius = style.getPropertyValue('--radius').trim()
-    const inputBorder = style.getPropertyValue('--input').trim()
-    const ringVal = style.getPropertyValue('--ring').trim()
-
-    const opts = {
-      mode: 'payment' as const,
-      amount: Math.max(props.amountCents || 50, 50),
-      currency: (props.currency || 'mxn').toLowerCase(),
-      paymentMethodTypes: buildPaymentMethodTypes(props.paymentMethods),
-      appearance: {
-        theme: 'stripe' as const,
-        variables: {
-          colorPrimary: hsl('--primary'),
-          colorBackground: hsl('--background'),
-          colorText: hsl('--foreground'),
-          colorDanger: hsl('--destructive'),
-          colorTextSecondary: hsl('--muted-foreground'),
-          borderRadius: radius || '8px',
-          fontSizeBase: '16px',
-        },
-        rules: {
-          '.Input': {
-            border: inputBorder ? `1px solid hsl(${inputBorder})` : undefined,
-            backgroundColor: hsl('--background'),
-          },
-          '.Input:focus': {
-            borderColor: ringVal ? `hsl(${ringVal})` : undefined,
-            boxShadow: ringVal ? `0 0 0 1px hsl(${ringVal})` : undefined,
-          },
-        },
-      },
-    }
-    console.log('🔍 Stripe Elements options:', JSON.stringify(opts))
-    return opts
-  }, [props.amountCents, props.currency, props.paymentMethods])
+  const elementsOptions = useMemo(() => ({
+    mode: 'payment' as const,
+    amount: Math.max(props.amountCents || 50, 50),
+    currency: (props.currency || 'mxn').toLowerCase(),
+    paymentMethodTypes: buildPaymentMethodTypes(props.paymentMethods),
+    appearance: getStripeAppearance('dark'),
+  }), [props.amountCents, props.currency, props.paymentMethods])
 
   return (
     <Elements stripe={stripePromise} options={elementsOptions}>
