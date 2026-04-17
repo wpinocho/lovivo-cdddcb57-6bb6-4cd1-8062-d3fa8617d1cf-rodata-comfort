@@ -13,6 +13,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
+- **BUG FIX: PDP Express Checkout botón desaparecía ✅** — Root cause: `stripePromise` se recreaba cuando settings cargaban (chargeType/stripeAccountId undefined → real value), remontando `<Elements>` y re-corriendo `canMakePayment()` con nueva instancia Stripe Connect. Fix: esperar `!settingsLoading` antes de montar `<Elements>`, eliminado `IntersectionObserver` innecesario.
 
 ## ✅ COMPLETADO: Stripe Elements Dark Theme
 
@@ -42,7 +43,7 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 
 ### Pasos completados
 1. ✅ `src/lib/country-codes.ts` — mapeo bidireccional ISO ↔ nombre en español
-2. ✅ `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP (lazy-load vía IntersectionObserver)
+2. ✅ `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP; settings-gated mount (no IntersectionObserver)
 3. ✅ `src/components/StripePayment.tsx` — PaymentElement + LinkAuthenticationElement + AddressElement + ExpressCheckoutElement; fix de `intentOrder` preservado; dark appearance via `getStripeAppearance('dark')`
 4. ✅ `src/pages/ui/CheckoutUI.tsx` — integrado: `allowedCountries`, `deliveryMethodSlot`, `onAddressChange`, `onEmailChange`, `onLinkAuthChange`, `showAddressElement`, `addressElementComplete`, `stripeKey` estable, `isStripeReady` guard; dark theme 100% preservado
 5. ✅ `src/pages/ui/ProductPageUI.tsx` — Express Checkout insertado encima de los CTAs
@@ -90,7 +91,7 @@ if (intentOrder) {
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅ (intentOrder fix + PaymentElement + AddressElement + dark appearance)
 - `src/lib/stripe-appearance.ts` — ✅ helper getStripeAppearance('dark'|'light')
-- `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP ✅
+- `src/components/ProductExpressCheckout.tsx` — PaymentRequestButton en PDP ✅ (settings-gated, no lazy observer)
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅
 - `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
 - `src/index.css` — design system
