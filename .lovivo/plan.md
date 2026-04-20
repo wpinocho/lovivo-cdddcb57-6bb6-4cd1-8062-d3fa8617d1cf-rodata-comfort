@@ -16,43 +16,27 @@ Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-theme
 - **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
 - **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
 - **trackPurchase en Express Checkout handler — RESUELTO ✅** (PostHog + Meta Pixel se disparan al pagar con GPay/Apple Pay)
+- **BUG FIX: isValidPhone rechazaba E.164 sin espacio (+525531245632) — RESUELTO ✅**
 
 ---
 
-## 🐛 PENDING FIX: Phone no llega a clients-upsert
+## ✅ RESUELTO: Phone no llegaba a clients-upsert
 
-### Root Cause (CONFIRMED)
-El Stripe AddressElement retorna el teléfono en formato **E.164 sin espacio**, ej: `"+525531245632"`.
+### Root Cause
+`isValidPhone` usaba `/^\+\d+\s?/` (greedy) para quitar el prefijo de `+525531245632`.
+El `\d+` consumía TODOS los dígitos → `phoneWithoutPrefix = ''` → `digitsOnly.length = 0` → retornaba `false`.
+`normalizePhoneNumber` llama primero a `isValidPhone` → retornaba `null` → teléfono excluido del payload.
 
-La función `isValidPhone` en `CheckoutAdapter.tsx` (líneas 199-206) usa esta regex para quitar el prefijo:
-```js
-const phoneWithoutPrefix = phoneValue.replace(/^\+\d+\s?/, '').trim();
-```
-El `\d+` es GREEDY y consume TODOS los dígitos: `525531245632`. El resultado es un string vacío (`''`).
-Luego `digitsOnly.length = 0`, que falla el check `>= 4` → `isValidPhone` retorna `false`.
-
-`normalizePhoneNumber` llama primero a `isValidPhone`, que retorna `false`, entonces retorna `null` directamente.
-En `saveClientData`, `hasValidPhone = (normalizedPhone !== null)` = false → el teléfono NO se incluye en el payload.
-
-### Fix a aplicar en `src/adapters/CheckoutAdapter.tsx`
-
-**Reemplazar `isValidPhone` (líneas 199-206) con:**
+### Fix aplicado en `src/adapters/CheckoutAdapter.tsx`
+Reemplazada `isValidPhone` para contar el total de dígitos (incluye código de país):
 ```js
 const isValidPhone = (phoneValue: string) => {
   if (!phoneValue.trim()) return false;
-  // Count ALL digits (handles E.164 like +525531245632 AND local like 5531245632)
   const digitsOnly = phoneValue.replace(/[^\d]/g, '');
   return digitsOnly.length >= 7 && digitsOnly.length <= 15;
 };
 ```
-
-**Razón:** Contar el total de dígitos (incluyendo código de país) es más robusto. México = 2 (código) + 10 (local) = 12 dígitos → pasa el check. El mínimo de 7 excluye números claramente inválidos sin romper nada.
-
-**También verificar `normalizePhoneNumber` (líneas 209-225) para E.164:**
-La rama `if (match)` falla cuando no hay espacio entre código y número. El fallback `return \`+${digits}\`` sí funciona correctamente. Pero como `isValidPhone` retorna `false` antes de llegar a `normalizePhoneNumber`, el fix de `isValidPhone` es suficiente.
-
-### File to modify
-- `src/adapters/CheckoutAdapter.tsx` → reemplazar función `isValidPhone` (líneas 199-206)
+MX: +52 (2) + 10 local = 12 dígitos → pasa. Mínimo 7 excluye números claramente inválidos.
 
 ---
 
@@ -167,7 +151,7 @@ if (intentOrder) {
 - `src/lib/country-codes.ts` — mapeo ISO ↔ español ✅
 - `src/components/CartSidebar.tsx` — cart lateral ✅ dark theme complete
 - `src/index.css` — design system
-- `src/adapters/CheckoutAdapter.tsx` — checkout logic (isValidPhone bug → PENDING FIX)
+- `src/adapters/CheckoutAdapter.tsx` — checkout logic ✅ isValidPhone fix aplicado
 - `src/hooks/useCheckout.ts` — checkoutWithItems agregado
 - `src/hooks/useCheckoutState.ts` — manages localStorage state
 - `src/components/headless/HeadlessProduct.tsx` — handleBuyNow corregido ✅

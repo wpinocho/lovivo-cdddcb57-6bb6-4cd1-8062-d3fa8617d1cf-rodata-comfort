@@ -196,13 +196,12 @@ export const useCheckoutLogic = () => {
   };
 
   // Phone validation
+  // Counts ALL digits (including country code) to handle E.164 format like +525531245632
+  // MX = +52 (2 digits) + 10 local = 12 total → valid. Min 7 excludes clearly invalid numbers.
   const isValidPhone = (phoneValue: string) => {
     if (!phoneValue.trim()) return false;
-    
-    const phoneWithoutPrefix = phoneValue.replace(/^\+\d+\s?/, '').trim();
-    const digitsOnly = phoneWithoutPrefix.replace(/[^\d]/g, '');
-    
-    return digitsOnly.length >= 4 && digitsOnly.length <= 15;
+    const digitsOnly = phoneValue.replace(/[^\d]/g, '');
+    return digitsOnly.length >= 7 && digitsOnly.length <= 15;
   };
 
   // Normalize phone number
