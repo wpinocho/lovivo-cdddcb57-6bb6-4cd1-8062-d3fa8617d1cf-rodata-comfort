@@ -211,10 +211,16 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             {/* Gallery */}
             <div className="space-y-3 lg:sticky lg:top-[80px]">
               {/* Desktop main image */}
-              <div className="hidden md:block relative rounded-2xl overflow-hidden bg-brand-graphite aspect-square">
-                <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
-                {discountPct && <div className="absolute top-4 left-4 bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1 rounded-md font-sora">-{discountPct}%</div>}
-                <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">rodata.mx</div>
+              <div className="hidden md:block relative">
+                <div className="rounded-2xl overflow-hidden bg-brand-graphite aspect-square relative">
+                  <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                  <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">rodata.mx</div>
+                </div>
+                {discountPct && (
+                  <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg">
+                    -{discountPct}%
+                  </div>
+                )}
               </div>
 
               {/* Mobile gallery — scroll-snap nativo con fetchPriority */}
@@ -237,7 +243,11 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     </div>
                   ))}
                 </div>
-                {discountPct && <div className="absolute top-4 left-4 bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1 rounded-md font-sora pointer-events-none">-{discountPct}%</div>}
+                {discountPct && (
+                  <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg pointer-events-none">
+                    -{discountPct}%
+                  </div>
+                )}
               </div>
 
               {/* Desktop thumbnails */}
@@ -266,11 +276,13 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
 
               {/* Price + badge */}
               <div className="space-y-2">
-                <div className="flex items-baseline gap-3">
+                <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
                   {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
-                    <><span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>
-                    <span className="bg-brand-amber/15 border border-brand-amber/30 text-brand-amber text-xs font-semibold px-2.5 py-1 rounded font-sora">{discountPct}% OFF</span></>
+                    <>
+                      <span className="text-brand-steel/70 text-2xl line-through font-inter font-normal">{logic.formatMoney(logic.currentCompareAt)}</span>
+                      <span className="bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1.5 rounded-md font-sora tracking-wide">{discountPct}% OFF</span>
+                    </>
                   )}
                 </div>
                 {/* Launch offer badge */}
