@@ -66,12 +66,12 @@ export const EcommerceTemplate = ({
             <span>Envío gratis en México</span>
           </div>
           <div className="flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
-            <RotateCcw size={11} className="text-brand-amber shrink-0" />
-            <span>30 días de prueba</span>
+            <span className="text-brand-amber text-[11px]">♥</span>
+            <span><span className="text-brand-offwhite font-semibold">+800 riders</span> ya lo usan a diario</span>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
-            <Ruler size={11} className="text-brand-amber shrink-0" />
-            <span>Cambio de talla fácil</span>
+            <RotateCcw size={11} className="text-brand-amber shrink-0" />
+            <span>30 días de prueba</span>
           </div>
         </div>
       </div>

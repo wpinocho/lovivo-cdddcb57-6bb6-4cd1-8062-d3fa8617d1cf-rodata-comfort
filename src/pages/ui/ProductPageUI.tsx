@@ -422,18 +422,18 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="flex -space-x-2 flex-shrink-0">
                   {[
-                    `${SUPABASE_PROD}/avatar-carlos-v3.webp?width=80&quality=80`,
-                    `${SUPABASE_PROD}/avatar-jorge-v3.webp?width=80&quality=80`,
-                    `${SUPABASE_PROD}/avatar-andres-v3.webp?width=80&quality=80`,
-                  ].map((src, i) => (
-                    <div key={i} className="h-9 w-9 rounded-full border-2 border-brand-carbon overflow-hidden flex-shrink-0">
-                      <img src={src} alt="" className="w-full h-full object-cover object-center" loading="lazy" />
+                    { initial: 'C', hue: 'bg-brand-amber/20 border-brand-amber/40 text-brand-amber' },
+                    { initial: 'J', hue: 'bg-blue-500/20 border-blue-400/40 text-blue-300' },
+                    { initial: 'A', hue: 'bg-green-500/20 border-green-400/40 text-green-300' },
+                  ].map(({ initial, hue }, i) => (
+                    <div key={i} className={`h-9 w-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-sora font-bold text-xs ${hue}`} style={{ zIndex: 3 - i }}>
+                      {initial}
                     </div>
                   ))}
                 </div>
                 <p className="text-brand-smoke text-xs font-inter">
                   <span className="text-brand-offwhite font-semibold">Carlos M. ✓</span> y{' '}
-                  <span className="text-brand-offwhite font-semibold">+1,000 riders</span> ya lo usan a diario
+                  <span className="text-brand-offwhite font-semibold">+800 riders</span> ya lo usan a diario
                 </p>
               </div>
 
