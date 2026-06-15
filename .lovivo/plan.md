@@ -14,11 +14,13 @@
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Botones: btn-amber-lg (primario), btn-outline-light (secundario)
 - Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
+- **Avatar rule**: para headshots en círculos pequeños, generar con cara centrada ~55% del frame + `object-cover object-center`. NO usar object-contain (se ve raro con fondo).
 
 ## Active Plan
-**COMPLETADO ✅ — Avatares v2 headshots reales + copy fix**
+**COMPLETADO ✅ — Avatares v3: composición correcta para círculos**
 
 ## Recent Changes
+- **Avatares v3: regenerados con cara centrada al 55% del frame** — avatar-carlos-v3.webp, avatar-jorge-v3.webp, avatar-andres-v3.webp. `object-cover object-center` (2026-06-15) ✅
 - **Avatares v2: headshots bien centrados** — avatar-carlos-v2.webp, avatar-jorge-v2.webp, avatar-andres-v2.webp (cara completa, object-top, h-9 w-9) (2026-06-15) ✅
 - **Copy fix: "aman" → "ya lo usan a diario"** — más natural en MX (2026-06-15) ✅
 - **Social proof: avatares reales generados** — avatar-carlos.webp, avatar-jorge.webp, avatar-andres.webp (Mexican riders reales, Supabase URLs) (2026-06-15) ✅
@@ -32,23 +34,21 @@
 - **BUG FIX: "Comprar Ahora" → checkout vacío — RESUELTO ✅**
 - **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
-- **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
-- **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
 
 ## Image Inventory
 - LIFESTYLE_CITY: `/pdp-lifestyle-1.jpg`
 - LIFESTYLE_HIGHWAY: `render/image/public/message-images/.../1775768374485-uca4dkx21g.webp?width=1200&quality=75` ✅
 - FEAT_IMG_1-3: `render/image/public/message-images/.../1775777133671/72-*.webp?width=800&quality=75` ✅
 - REVIEW_IMG_1-5: `render/image/public/product-images/.../review-1-5.webp?width=600&quality=75` ✅
-- AVATAR_CARLOS_V2: `render/image/public/product-images/.../avatar-carlos-v2.webp?width=80&quality=80` ✅
-- AVATAR_JORGE_V2: `render/image/public/product-images/.../avatar-jorge-v2.webp?width=80&quality=80` ✅
-- AVATAR_ANDRES_V2: `render/image/public/product-images/.../avatar-andres-v2.webp?width=80&quality=80` ✅
+- AVATAR_CARLOS_V3: `render/image/public/product-images/.../avatar-carlos-v3.webp?width=80&quality=80` ✅ ACTIVO
+- AVATAR_JORGE_V3: `render/image/public/product-images/.../avatar-jorge-v3.webp?width=80&quality=80` ✅ ACTIVO
+- AVATAR_ANDRES_V3: `render/image/public/product-images/.../avatar-andres-v3.webp?width=80&quality=80` ✅ ACTIVO
 
 ## Known Issues
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround: CSS autofill override ya aplicado en index.css)
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.2 (avatares v2 + copy fix)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.3 (avatares v3)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅
