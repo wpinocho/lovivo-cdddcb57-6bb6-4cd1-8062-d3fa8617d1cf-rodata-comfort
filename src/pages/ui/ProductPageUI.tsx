@@ -1,30 +1,57 @@
-// ProductPageUI v3 — rodata.mx premium PDP (rebuild trigger)
-import React, { useEffect, useState } from "react"
+// ProductPageUI v4 — rodata.mx premium PDP
+import React, { useEffect, useRef, useState } from "react"
 import ProductExpressCheckout from "@/components/ProductExpressCheckout"
-import { useInView } from "react-intersection-observer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
 import {
   Star, Check, Ruler, Truck, RotateCcw, MessageSquare,
   ChevronRight, ArrowLeft, ShoppingCart, Plus, Minus,
-  ChevronDown, ChevronUp, SlidersHorizontal, Wind, Layers
+  ChevronDown, ChevronUp, SlidersHorizontal, Wind, Layers, Package
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
+// ── Image constants (with Supabase image transform for performance) ──
+const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
+const SUPABASE_PROD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf'
+
+// Avatares — resize=cover hace el crop a cuadrado en el servidor, no en el browser
+const AVATAR_CARLOS = `${SUPABASE_PROD}/avatar-carlos-v3.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_JORGE  = `${SUPABASE_PROD}/avatar-jorge-v3.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_ANDRES = `${SUPABASE_PROD}/avatar-andres-v3.webp?width=72&height=72&resize=cover&quality=80`
+
 const LIFESTYLE_CITY    = '/pdp-lifestyle-1.jpg'
-const LIFESTYLE_HIGHWAY = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775768374485-uca4dkx21g.webp'
-const FEATURES_ES       = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775767354281-gqxi2j4hklp.webp'
-const PRODUCT_WORN      = '/product-worn.jpg'
-const PRODUCT_FLAT      = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775767354281-gqxi2j4hklp.webp'
+const LIFESTYLE_HIGHWAY = `${SUPABASE_MSG}/1775768374485-uca4dkx21g.webp?width=1200&quality=75`
+const PRODUCT_FLAT      = `${SUPABASE_MSG}/1775767354281-gqxi2j4hklp.webp?width=800&quality=75`
 
-// Feature section images (user-provided)
-const FEAT_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133671-80hvv9dmxa.webp'
-const FEAT_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133672-xhxki05535d.webp'
-const FEAT_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775777133672-dzkdrl1lt2.webp'
+const FEAT_IMG_1 = `${SUPABASE_MSG}/1775777133671-80hvv9dmxa.webp?width=800&quality=75`
+const FEAT_IMG_2 = `${SUPABASE_MSG}/1775777133672-xhxki05535d.webp?width=800&quality=75`
+const FEAT_IMG_3 = `${SUPABASE_MSG}/1775777133672-dzkdrl1lt2.webp?width=800&quality=75`
 
+const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
+const REVIEW_IMG_2 = `${SUPABASE_PROD}/review-2.webp?width=600&quality=75`
+const REVIEW_IMG_3 = `${SUPABASE_PROD}/review-3.webp?width=600&quality=75`
+const REVIEW_IMG_4 = `${SUPABASE_PROD}/review-4.webp?width=600&quality=75`
+const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
+
+// ── Helpers ──
+/** Extracts the bare size key from a variant value like "S (60-75 cm)" → "S" */
+const getSizeKey = (value: string) =>
+  value.includes('(') ? value.split('(')[0].trim() : value
+
+/** Estimated delivery date (4 business days out) */
+const getDeliveryDate = () => {
+  const d = new Date()
+  let added = 0
+  while (added < 4) {
+    d.setDate(d.getDate() + 1)
+    if (d.getDay() !== 0 && d.getDay() !== 6) added++
+  }
+  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+// ── Data ──
 const SIZE_GUIDE = [
   { size: 'S',  waist: '60–75 cm',   recom: 'Cintura delgada' },
   { size: 'M',  waist: '75–90 cm',   recom: 'Talla promedio'  },
@@ -66,12 +93,6 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
     ), image: FEAT_IMG_3 },
 ]
 
-const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
-const REVIEW_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-2.webp'
-const REVIEW_IMG_3 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-3.webp'
-const REVIEW_IMG_4 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-4.webp'
-const REVIEW_IMG_5 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-5.webp'
-
 const REVIEWS = [
   { name: 'Carlos M.', city: 'CDMX',        stars: 5, initial: 'C', date: 'Mar 2025', photo: REVIEW_IMG_1, text: 'Trayecto CDMX–Querétaro y llegué mucho menos tenso. Ya es parte de mi equipo en cada salida.' },
   { name: 'Jorge R.',  city: 'Guadalajara', stars: 5, initial: 'J', date: 'Feb 2025', photo: REVIEW_IMG_2, text: 'Firme y cómodo. Cabe perfecto bajo la chamarra, no se nota y no estorba. La calidad se siente.' },
@@ -89,6 +110,7 @@ const FAQS = [
   { q: '¿Cómo funciona el cambio de talla?', a: 'Contáctanos por WhatsApp y te guiamos. Queremos que el ajuste sea el correcto para ti.' },
 ]
 
+// ── Sub-components ──
 const Stars = ({ count, size = 14 }: { count: number; size?: number }) => (
   <div className="flex gap-0.5">
     {[1,2,3,4,5].map(s => (
@@ -97,6 +119,7 @@ const Stars = ({ count, size = 14 }: { count: number; size?: number }) => (
   </div>
 )
 
+// ── Types ──
 interface ProductPageUIProps {
   logic: {
     product: any; loading: boolean; notFound: boolean
@@ -117,12 +140,31 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [expressAvailable, setExpressAvailable] = useState(false)
-  const { ref: ctaRef, inView: ctaInView } = useInView({ threshold: 0 })
+  const [showStickyBar, setShowStickyBar] = useState(false)
 
-  const productImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT, PRODUCT_WORN]
+  // Sticky bar: only shows AFTER the CTA has been visible at least once
+  const ctaRef = useRef<HTMLDivElement>(null)
+  const hasCTABeenVisible = useRef(false)
+
+  useEffect(() => {
+    const el = ctaRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) hasCTABeenVisible.current = true
+        if (hasCTABeenVisible.current) setShowStickyBar(!entry.isIntersecting)
+      },
+      { threshold: 0 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const productImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
   const displayImage = selectedImage ?? productImages[0]
   const discountPct = logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice
     ? Math.round((1 - logic.currentPrice / logic.currentCompareAt) * 100) : null
+  const deliveryDate = getDeliveryDate()
 
   useEffect(() => { setSelectedImage(null) }, [logic.matchingVariant])
   useEffect(() => { window.scrollTo(0, 0) }, [])
@@ -163,34 +205,52 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
 
       {/* ── 1. MAIN PRODUCT ── */}
       <section style={{ backgroundColor: '#111315' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-14">
-          <button onClick={logic.handleNavigateBack} className="flex items-center gap-1.5 text-brand-steel hover:text-brand-smoke text-xs font-inter mb-6 transition-colors">
-            <ArrowLeft size={13} />Volver
-          </button>
-
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-14">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+
             {/* Gallery */}
             <div className="space-y-3 lg:sticky lg:top-[80px]">
-              <div className="hidden md:block relative rounded-2xl overflow-hidden bg-brand-graphite aspect-square">
-                <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" />
-                {discountPct && <div className="absolute top-4 left-4 bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1 rounded-md font-sora">-{discountPct}%</div>}
-                <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">rodata.mx</div>
-              </div>
-              <div className="md:hidden relative">
-                {productImages.length > 1 ? (
-                  <Carousel className="w-full">
-                    <CarouselContent>
-                      {productImages.map((img, i) => (
-                        <CarouselItem key={i}><div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite"><img src={img} alt={`${logic.product.title} ${i+1}`} className="w-full h-full object-cover" /></div></CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="left-3" /><CarouselNext className="right-3" />
-                  </Carousel>
-                ) : (
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite"><img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" /></div>
+              {/* Desktop main image */}
+              <div className="hidden md:block relative">
+                <div className="rounded-2xl overflow-hidden bg-brand-graphite aspect-square relative">
+                  <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                  <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">rodata.mx</div>
+                </div>
+                {discountPct && (
+                  <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg">
+                    -{discountPct}%
+                  </div>
                 )}
-                {discountPct && <div className="absolute top-4 left-4 bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1 rounded-md font-sora">-{discountPct}%</div>}
               </div>
+
+              {/* Mobile gallery — scroll-snap nativo con fetchPriority */}
+              <div className="md:hidden relative">
+                <div
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-4 px-4 pb-1"
+                  style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                >
+                  {productImages.map((img, i) => (
+                    <div key={i} className="flex-shrink-0 w-[calc(100%-32px)] snap-center">
+                      <div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite">
+                        <img
+                          src={img}
+                          alt={`${logic.product.title} ${i + 1}`}
+                          className="w-full h-full object-cover"
+                          fetchPriority={i === 0 ? 'high' : 'auto'}
+                          loading={i === 0 ? 'eager' : 'lazy'}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {discountPct && (
+                  <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg pointer-events-none">
+                    -{discountPct}%
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop thumbnails */}
               {productImages.length > 1 && (
                 <div className="hidden md:flex gap-2 overflow-x-auto pb-1">
                   {productImages.map((img, i) => (
@@ -213,13 +273,24 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 <Stars count={5} size={15} />
                 <span className="text-brand-smoke text-sm font-inter">4.9 <span className="text-brand-steel">· 127 reseñas verificadas</span></span>
               </div>
-              <div className="flex items-baseline gap-3">
-                <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
-                {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
-                  <><span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>
-                  <span className="bg-brand-amber/15 border border-brand-amber/30 text-brand-amber text-xs font-semibold px-2.5 py-1 rounded font-sora">{discountPct}% OFF</span></>
-                )}
+
+              {/* Price + badge */}
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
+                  {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
+                    <>
+                      <span className="text-brand-steel/70 text-2xl line-through font-inter font-normal">{logic.formatMoney(logic.currentCompareAt)}</span>
+                      <span className="bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1.5 rounded-md font-sora tracking-wide">{discountPct}% OFF</span>
+                    </>
+                  )}
+                </div>
+                {/* Launch offer badge */}
+                <div className="inline-flex items-center gap-1.5 bg-brand-amber/10 border border-brand-amber/20 rounded-full px-3.5 py-1.5">
+                  <span className="text-brand-amber text-xs font-sora font-semibold">🏷 Oferta de Lanzamiento · Envío gratis incluido</span>
+                </div>
               </div>
+
               <div className="border-t border-white/[0.08] pt-5 space-y-3">
                 <p className="text-brand-smoke text-sm leading-relaxed font-inter">
                   El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda.
@@ -242,7 +313,11 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-brand-smoke text-sm font-sora font-semibold">
                           {option.name}
-                          {logic.selected[option.name] && <span className="text-brand-steel font-inter font-normal ml-2">· {SIZE_GUIDE.find(s => s.size === logic.selected[option.name])?.waist ?? logic.selected[option.name]}</span>}
+                          {logic.selected[option.name] && (
+                            <span className="text-brand-steel font-inter font-normal ml-2">
+                              · {SIZE_GUIDE.find(s => s.size === getSizeKey(logic.selected[option.name]))?.waist ?? logic.selected[option.name]}
+                            </span>
+                          )}
                         </p>
                         <button onClick={() => setShowSizeGuide(!showSizeGuide)} className="flex items-center gap-1 text-brand-amber text-xs font-inter underline underline-offset-2">
                           Guía de tallas {showSizeGuide ? <ChevronUp size={11}/> : <ChevronDown size={11}/>}
@@ -252,7 +327,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                         <div className="mb-3 rounded-xl overflow-hidden border border-white/[0.08]">
                           <div className="grid grid-cols-3 bg-brand-graphite px-4 py-2 text-[10px] font-sora text-brand-steel uppercase tracking-wider"><span>Talla</span><span>Cintura</span><span>Tipo</span></div>
                           {SIZE_GUIDE.map(sg => (
-                            <div key={sg.size} className={cn("grid grid-cols-3 px-4 py-2.5 text-xs font-inter border-t border-white/[0.06]", logic.selected[option.name] === sg.size ? "bg-brand-amber/10 text-brand-offwhite" : "text-brand-steel")}>
+                            <div key={sg.size} className={cn("grid grid-cols-3 px-4 py-2.5 text-xs font-inter border-t border-white/[0.06]", getSizeKey(logic.selected[option.name]) === sg.size ? "bg-brand-amber/10 text-brand-offwhite" : "text-brand-steel")}>
                               <span className="font-sora font-semibold text-brand-smoke">{sg.size}</span><span>{sg.waist}</span><span>{sg.recom}</span>
                             </div>
                           ))}
@@ -260,16 +335,17 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       )}
                       <div className="flex flex-wrap gap-2">
                         {option.values.map((value: string) => {
+                          const sizeKey = getSizeKey(value)
                           const isSelected = logic.selected[option.name] === value
                           const isAvailable = logic.isOptionValueAvailable(option.name, value)
-                          const sg = SIZE_GUIDE.find(s => s.size === value)
+                          const sg = SIZE_GUIDE.find(s => s.size === sizeKey)
                           return (
                             <button key={value} disabled={!isAvailable} onClick={() => logic.handleOptionSelect(option.name, value)}
                               className={cn("flex flex-col items-center min-w-[68px] px-3 py-2.5 rounded-xl border text-sm transition-all font-sora",
                                 isSelected ? "bg-brand-amber text-brand-carbon border-brand-amber font-bold shadow-[0_0_16px_rgba(201,139,46,0.3)]"
                                 : isAvailable ? "bg-brand-graphite border-white/[0.12] text-brand-smoke hover:border-brand-amber/50"
                                 : "opacity-40 cursor-not-allowed bg-brand-graphite border-white/[0.08] text-brand-steel")}>
-                              <span className="font-bold">{value}</span>
+                              <span className="font-bold">{sizeKey}</span>
                               {sg && <span className={cn("text-[10px] font-inter mt-0.5", isSelected ? "text-brand-carbon/70" : "text-brand-steel")}>{sg.waist}</span>}
                             </button>
                           )
@@ -302,7 +378,6 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div ref={ctaRef} className="flex flex-col gap-3">
                 {logic.inStock ? (
                   <>
-                    {/* ── Express Checkout (Apple Pay / Google Pay) ── */}
                     <ProductExpressCheckout
                       product={logic.product}
                       variant={logic.matchingVariant}
@@ -341,6 +416,41 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   </div>
                 ))}
               </div>
+
+              {/* Shipping & Returns accordion */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="shipping" className="border border-white/[0.08] rounded-xl bg-brand-graphite px-4 data-[state=open]:border-brand-amber/20 transition-colors">
+                  <AccordionTrigger className="font-sora font-semibold text-brand-smoke text-xs py-3.5 hover:no-underline hover:text-brand-offwhite [&>svg]:text-brand-amber">
+                    <div className="flex items-center gap-2">
+                      <Package size={13} className="text-brand-amber flex-shrink-0" />
+                      Envío y Devoluciones
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-brand-steel text-xs font-inter leading-relaxed pb-4 space-y-2">
+                    <p><span className="text-brand-smoke font-semibold">🚚 Envío gratis</span> a todo México. Sin costo mínimo de compra.</p>
+                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En 4 días hábiles · llega el {deliveryDate}.</p>
+                    <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos con el cambio sin costo.</p>
+                    <p><span className="text-brand-smoke font-semibold">✅ 30 días de prueba:</span> Si no queda como esperabas, lo resolvemos.</p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Social proof block */}
+              <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
+                <div className="flex -space-x-2 flex-shrink-0">
+                  {[AVATAR_CARLOS, AVATAR_JORGE, AVATAR_ANDRES].map((src, i) => (
+                    <div key={i} className="h-9 w-9 rounded-full overflow-hidden border-2 border-brand-graphite flex-shrink-0" style={{ zIndex: 3 - i }}>
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-brand-smoke text-xs font-inter">
+                  <span className="text-brand-offwhite font-semibold">Carlos M. ✓</span> y{' '}
+                  <span className="text-brand-offwhite font-semibold">+800 riders</span> ya lo usan a diario
+                </p>
+              </div>
+
+              {/* WhatsApp link */}
               <a href="https://wa.me/525531215386?text=Hola,%20tengo%20una%20pregunta%20sobre%20el%20Rodata%20One" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366] text-xs font-inter hover:underline">
                 <MessageSquare size={13}/>¿Tienes dudas? Escríbenos por WhatsApp
               </a>
@@ -405,9 +515,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-
-
-      {/* ── 7. CITY LIFESTYLE ── */}
+      {/* ── 5. CITY LIFESTYLE ── */}
       <section className="relative overflow-hidden" style={{minHeight:'40vh'}}>
         <img src={LIFESTYLE_CITY} alt="Rider urbano con Rodata One en CDMX" className="w-full h-full object-cover absolute inset-0" loading="lazy"/>
         <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, rgba(17,19,21,0.3) 0%, rgba(17,19,21,0.75) 100%)'}}/>
@@ -421,7 +529,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── 8. REVIEWS ── */}
+      {/* ── 6. REVIEWS ── */}
       <section id="opiniones" style={{backgroundColor:'#111315'}} className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
@@ -438,7 +546,6 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {REVIEWS.map(({name, city, stars, date, initial, text, photo}) => (
               <div key={name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col hover:border-brand-amber/20 transition-colors duration-300">
-                {/* Photo */}
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img src={photo} alt={`Foto de ${name} usando el Rodata One`} className="w-full h-full object-cover" loading="lazy"/>
                   <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, transparent 50%, rgba(17,19,21,0.7) 100%)'}}/>
@@ -446,7 +553,6 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     <Check size={10} className="text-brand-amber"/><span className="text-brand-amber text-[10px] font-inter font-medium">Compra verificada</span>
                   </div>
                 </div>
-                {/* Content */}
                 <div className="p-5 flex flex-col flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="h-9 w-9 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><span className="font-sora font-bold text-brand-amber text-sm">{initial}</span></div>
@@ -463,8 +569,6 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           </div>
         </div>
       </section>
-
-
 
       {/* ── 7. COMBINED: STEPS + TRUST ── */}
       <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-16 lg:py-20">
@@ -524,7 +628,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── 11. FINAL CTA ── */}
+      {/* ── 9. FINAL CTA ── */}
       <section style={{backgroundColor:'#111315'}} className="border-t border-white/[0.08] py-16 lg:py-20">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Rodata One</span>
@@ -538,9 +642,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── STICKY BAR ── */}
-      {logic.inStock && (
-        <div className={cn("fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md border-t border-white/[0.1] transition-transform duration-300 ease-out pb-[env(safe-area-inset-bottom)]", ctaInView ? "translate-y-full" : "translate-y-0")} style={{backgroundColor:'rgba(17,19,21,0.96)'}}>
+      {/* ── STICKY BAR (solo aparece después de que el CTA fue visible) ── */}
+      {logic.inStock && showStickyBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md border-t border-white/[0.1] transition-transform duration-300 ease-out pb-[env(safe-area-inset-bottom)]" style={{backgroundColor:'rgba(17,19,21,0.96)'}}>
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="hidden md:flex items-center justify-between gap-6">
               <div className="flex items-center gap-4 min-w-0">

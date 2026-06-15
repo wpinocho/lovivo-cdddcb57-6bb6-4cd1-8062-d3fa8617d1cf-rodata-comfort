@@ -1,116 +1,57 @@
 # Rodata.mx — Plan
 
-## Current State
-Premium moto lumbar support PDP + Checkout dark-branded. Cart sidebar dark-themed. Store is ready for paid traffic.
+## Brand & Context
+- Marca premium de soporte lumbar para motociclistas mexicanos
+- Producto único: Rodata One — soporte lumbar para motociclistas
+- Precio: MX$799 (compare_at: MX$999, 20% OFF)
+- Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
+- Audiencia: motociclistas MX que hacen trayectos medios/largos y sufren dolor lumbar
+- Store en producción: rodata.store
+
+## Design System
+- Dark theme: #111315 (fondo), #1D2125 (secciones alternas), #2A2E34 (graphite)
+- Amber: #C98B2E (brand-amber) — único acento
+- Typography: Sora (headings/bold), Inter (body/UI)
+- Botones: btn-amber-lg (primario), btn-outline-light (secundario)
+- Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
+- **Avatar rule**: Para círculos de 36px (w-9 h-9), usar Supabase `?width=72&height=72&resize=cover&quality=80` → la imagen llega ya cuadrada y centrada al browser → `object-cover` funciona perfecto sin zoom.
+
+## Active Plan
+**COMPLETADO ✅ — Badge descuento "half-outside" + precio tachado dinámico**
 
 ## Recent Changes
-- **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) — DB + IndexUI.tsx (4 ocurrencias) ✅
+- **Badge descuento half-outside + precio tachado dinámico** — COMPLETADO ✅ (2026-06-15)
+  - Desktop: wrapper externo sin overflow-hidden, badge con `absolute top-0 left-5 -translate-y-1/2 z-10`
+  - Mobile: mismo posicionamiento half-outside
+  - Precio tachado: `text-2xl line-through text-brand-steel/70` + badge `bg-brand-amber text-brand-carbon` (sólido, no transparente) — igual que referencia US
+- **Trust bar: 2 mensajes en móvil** — "Envío gratis a México | +800 riders felices" ✅ (2026-06-15)
+- **Avatar fix: resize=cover server-side** — `?width=72&height=72&resize=cover&quality=80` en Supabase ✅ (2026-06-15)
+- **Trust bar: "+800 riders ya lo usan a diario"** — ahora visible en móvil ✅ (2026-06-15)
+- **Avatares v3: regenerados con cara centrada al 55% del frame** ✅ (2026-06-15)
+- **Fecha entrega: 3 → 4 días hábiles** ✅ (2026-06-15)
+- **PDP MX v4 — 8 mejoras sincronizadas del repo US** ✅ (2026-06-15)
+- **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) ✅
 - Added urgency/stock signal above CTA on PDP
 - Added checkout dark rebrand
 - Phone input autofill fix
-- Cart Sidebar dark rebrand (DONE ✅)
+- Cart Sidebar dark rebrand ✅
 - **BUG FIX: "Comprar Ahora" → checkout vacío — RESUELTO ✅**
-- **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
-- **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
-- **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
-- **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
-- **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
-- **trackPurchase en Express Checkout handler — RESUELTO ✅**
-- **BUG FIX: isValidPhone rechazaba E.164 sin espacio (+525531245632) — RESUELTO ✅**
 
----
-
-## ✅ RESUELTO: Phone no llegaba a clients-upsert
-
-### Root Cause
-`isValidPhone` usaba `/^\+\d+\s?/` (greedy) para quitar el prefijo de `+525531245632`.
-El `\d+` consumía TODOS los dígitos → `phoneWithoutPrefix = ''` → `digitsOnly.length = 0` → retornaba `false`.
-`normalizePhoneNumber` llama primero a `isValidPhone` → retornaba `null` → teléfono excluido del payload.
-
-### Fix aplicado en `src/adapters/CheckoutAdapter.tsx`
-Reemplazada `isValidPhone` para contar el total de dígitos (incluye código de país):
-```js
-const isValidPhone = (phoneValue: string) => {
-  if (!phoneValue.trim()) return false;
-  const digitsOnly = phoneValue.replace(/[^\d]/g, '');
-  return digitsOnly.length >= 7 && digitsOnly.length <= 15;
-};
-```
-MX: +52 (2) + 10 local = 12 dígitos → pasa. Mínimo 7 excluye números claramente inválidos.
-
----
-
-## ✅ COMPLETADO: trackPurchase en Express Checkout
-
-### Cambio aplicado en `StripePayment.tsx`
-Dentro del handler `onConfirm` del `ExpressCheckoutElement`, inmediatamente después de `if (pi?.status === 'succeeded') {`:
-```ts
-trackPurchase({
-  products: paymentItems.map((item: any) => tracking.createTrackingProduct({
-    id: item.product_id, title: item.product_name || item.title,
-    price: item.price / 100, category: 'product',
-    variant: item.variant_id ? { id: item.variant_id } : undefined
-  })),
-  value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
-  order_id: orderId,
-  custom_parameters: { payment_method: 'express_checkout', checkout_token: checkoutToken }
-})
-```
-
----
-
-## ✅ COMPLETADO: Fix validación checkout con Stripe AddressElement
-
-### Fix aplicado en `CheckoutUI.tsx`
-- Reemplazado `onValidationRequired={logic.validateCheckoutFields}` por función custom inline
-- Si `!logic.usePickup`: valida solo `email` + `addressElementComplete` + método de envío
-- Si `logic.usePickup`: sigue usando `logic.validateCheckoutFields()` completo
-
----
-
-## ✅ COMPLETADO: Express Checkout — Orden de botones y altura
-
-### Fix aplicado en `StripePayment.tsx`
-```
-layout: { overflow: 'auto', maxColumns: 2, maxRows: 1 },
-buttonHeight: 44,
-paymentMethodOrder: ['applePay', 'googlePay', 'link'],
-```
-
----
-
-## ✅ COMPLETADO: Stripe Elements Dark Theme
-
-- Creado `src/lib/stripe-appearance.ts` con `getStripeAppearance('dark' | 'light')`
-- Modo `'dark'`: usa `theme: 'night'` + tokens dark de rodata.mx hardcodeados
-- `StripePayment.tsx`: reemplazado bloque de appearance inline por `getStripeAppearance('dark')`
-
----
-
-## ✅ COMPLETADO: Migración Express Checkout
-
-### CTA Order (PDP)
-1. `<ProductExpressCheckout>` — aparece solo si Apple Pay / Google Pay disponibles
-2. Divider "— o —" — solo si `expressAvailable === true`
-3. **Comprar ahora** (btn-amber-lg, primario)
-4. **Agregar al carrito** (btn-outline-light, secundario)
-
----
-
-## ✅ BUG RESUELTO: /gracias → dirección incorrecta
-
-- `StripePayment.tsx`: captura `intentOrder = data?.order` y lo guarda en localStorage
-- `ThankYou.tsx`: lectura de campos con fallback dual
-
----
+## Image Inventory
+- LIFESTYLE_CITY: `/pdp-lifestyle-1.jpg`
+- LIFESTYLE_HIGHWAY: `render/image/public/message-images/.../1775768374485-uca4dkx21g.webp?width=1200&quality=75` ✅
+- FEAT_IMG_1-3: `render/image/public/message-images/.../1775777133671/72-*.webp?width=800&quality=75` ✅
+- REVIEW_IMG_1-5: `render/image/public/product-images/.../review-1-5.webp?width=600&quality=75` ✅
+- AVATAR_*: `product-images/.../avatar-carlos-v3.webp?width=72&height=72&resize=cover&quality=80` ✅
 
 ## Known Issues
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround: CSS autofill override ya aplicado en index.css)
+- Avatares: si `avatar-carlos-v3.webp` no existe en `product-images` bucket, buscar en `message-images` o regenerar
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.6 (badge half-outside + precio tachado dinámico)
+- `src/templates/EcommerceTemplate.tsx` — ✅ trust bar 2 mensajes
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅
-- `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅
 - `src/lib/stripe-appearance.ts` — ✅
 - `src/components/ProductExpressCheckout.tsx` — ✅
@@ -120,9 +61,8 @@ paymentMethodOrder: ['applePay', 'googlePay', 'link'],
 - `src/adapters/CheckoutAdapter.tsx` — ✅ isValidPhone fix
 - `src/pages/ui/IndexUI.tsx` — ✅ precio actualizado a MX$799
 
----
-
-## PENDING: Post-Launch (nice to have)
+## PENDING / Future Sessions
 - Add a "También les encantó" section at bottom of cart/checkout (upsell)
 - Consider a post-purchase email sequence (set up from Dashboard)
 - Video testimonial section if user has video content
+- Monitor conversion rate after PDP v4 deploy

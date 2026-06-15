@@ -5,7 +5,7 @@ import { SocialLinks } from '@/components/SocialLinks'
 import { FloatingCart } from '@/components/FloatingCart'
 import { ProfileMenu } from '@/components/ProfileMenu'
 import { Link } from 'react-router-dom'
-import { ShoppingCart, Truck, RotateCcw, Ruler, Menu, X } from 'lucide-react'
+import { ShoppingCart, Truck, Menu, X } from 'lucide-react'
 import { useCartUISafe } from '@/components/CartProvider'
 import { useCart } from '@/contexts/CartContext'
 import { ScrollLink } from '@/components/ScrollLink'
@@ -60,18 +60,15 @@ export const EcommerceTemplate = ({
     <div className={headerClassName}>
       {/* Trust Bar */}
       <div className="bg-brand-graphite border-b border-white/[0.06] py-2 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 sm:gap-10">
-          <div className="hidden sm:flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
-            <Truck size={11} className="text-brand-amber shrink-0" />
-            <span>Envío gratis en México</span>
-          </div>
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 sm:gap-8">
           <div className="flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
-            <RotateCcw size={11} className="text-brand-amber shrink-0" />
-            <span>30 días de prueba</span>
+            <Truck size={11} className="text-brand-amber shrink-0" />
+            <span>Envío gratis a México</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
-            <Ruler size={11} className="text-brand-amber shrink-0" />
-            <span>Cambio de talla fácil</span>
+          <div className="w-px h-3 bg-white/20 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 text-brand-smoke text-xs font-medium">
+            <span className="text-brand-amber text-[11px]">♥</span>
+            <span><span className="text-brand-offwhite font-semibold">+800 riders</span> felices</span>
           </div>
         </div>
       </div>
