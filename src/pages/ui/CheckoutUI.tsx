@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tag, X, ShoppingBag, Loader2, RefreshCw, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { Tag, X, ShoppingBag, Loader2, RefreshCw, ChevronDown, ChevronUp, Lock, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CartAppliedRules } from "@/components/ui/CartAppliedRules";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,27 @@ import { useURLCheckoutParams } from "@/hooks/useURLCheckoutParams";
 import { useTokenCheckout } from "@/hooks/useTokenCheckout";
 import { formatMoney } from "@/lib/money";
 import { countryNameToCode, countryCodeToName } from "@/lib/country-codes";
+
+// ── Estimated delivery date ──────────────────────────────────────────────────
+function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let added = 0;
+  while (added < days) {
+    result.setDate(result.getDate() + 1);
+    const dow = result.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return result;
+}
+
+function getEstimatedDelivery(): string {
+  const today = new Date();
+  const earliest = addBusinessDays(today, 6);
+  const latest = addBusinessDays(today, 8);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
+  return `${fmt(earliest)} – ${fmt(latest)}`;
+}
 
 // ── Dark theme utility constants ─────────────────────────────────────────────
 const INP = "bg-[#0d0f11] border-white/[0.15] text-brand-offwhite placeholder:text-brand-steel focus-visible:ring-brand-amber/20 focus-visible:border-brand-amber/40"
@@ -545,6 +566,10 @@ export default function CheckoutUI() {
                           <span className="text-lg font-sora font-bold text-brand-offwhite">{formatMoney(logic.finalTotal, logic.currencyCode)}</span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2 mt-1 pt-3 border-t border-white/[0.08] text-xs text-brand-steel">
+                        <Truck size={12} className="text-brand-amber flex-shrink-0" />
+                        <span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -560,7 +585,7 @@ export default function CheckoutUI() {
 
 /* ─── Mobile Order Summary (collapsible) ─── */
 function MobileOrderSummary({ logic }: { logic: any }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   if (logic.summaryItems.length === 0) return null;
 
@@ -627,6 +652,10 @@ function MobileOrderSummary({ logic }: { logic: any }) {
             <div className="flex justify-between font-sora font-semibold pt-1 border-t border-white/[0.08] text-brand-offwhite">
               <span>Total</span>
               <span>{formatMoney(logic.finalTotal, logic.currencyCode)}</span>
+            </div>
+            <div className="flex items-center gap-2 pt-2 text-xs text-brand-steel">
+              <Truck size={11} className="text-brand-amber flex-shrink-0" />
+              <span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>
             </div>
           </div>
 
