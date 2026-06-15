@@ -20,27 +20,27 @@
 Optimización continua del storefront. No hay cambios pendientes críticos.
 
 ## Recent Changes
+- **Checkout bottom section v2** — COMPLETADO ✅ (2026-06-15)
+  - Envío: "Pendiente" → "Gratis" en resumen móvil
+  - `getEstimatedDelivery()`: ahora 4 días hábiles (un solo día, no rango) — coincide con PDP
+  - Display: "Llega el {fecha}" (con "el" agregado)
+  - Social proof arriba del botón: ★★★★★ 4.9 · +800 riders satisfechos
+  - Botón dos líneas: "Completar Compra" / "{monto}" — fondo amber sólido, h-14
+  - Trust badges: Envío gratis · Pago Seguro · Garantía 30 Días (con íconos amber)
+  - Métodos de pago: VISA | MC | AMEX | Apple Pay | G Pay | OXXO (badges borde)
+  - Links legales: Términos | Privacidad (style mejorado)
 - **Checkout UI mejoras** — COMPLETADO ✅ (2026-06-15)
-  - `getEstimatedDelivery()`: calcula rango 6–8 días hábiles desde hoy, formato es-MX
+  - `getEstimatedDelivery()`: calcula rango días hábiles desde hoy, formato es-MX
   - `addBusinessDays()` helper (salta sábados y domingos)
-  - Fila "Envío gratis · Llega {fecha}" con ícono Truck en desktop (debajo del Total)
-  - Fila "Envío gratis · Llega {fecha}" con ícono Truck en MobileOrderSummary
+  - Fila "Envío gratis · Llega {fecha}" con ícono Truck en desktop y mobile
   - Mobile summary ahora abre por defecto `useState(true)`
-  - Import `Truck` agregado a lucide-react
 - **Badge descuento half-outside + precio tachado dinámico** — COMPLETADO ✅ (2026-06-15)
-  - Desktop: wrapper externo sin overflow-hidden, badge con `absolute top-0 left-5 -translate-y-1/2 z-10`
-  - Mobile: mismo posicionamiento half-outside
-  - Precio tachado: `text-2xl line-through text-brand-steel/70` + badge `bg-brand-amber text-brand-carbon` (sólido, no transparente) — igual que referencia US
-- **Trust bar: 2 mensajes en móvil** — "Envío gratis a México | +800 riders felices" ✅ (2026-06-15)
-- **Avatar fix: resize=cover server-side** — `?width=72&height=72&resize=cover&quality=80` en Supabase ✅ (2026-06-15)
-- **Trust bar: "+800 riders ya lo usan a diario"** — ahora visible en móvil ✅ (2026-06-15)
-- **Avatares v3: regenerados con cara centrada al 55% del frame** ✅ (2026-06-15)
-- **Fecha entrega: 3 → 4 días hábiles** ✅ (2026-06-15)
+- **Trust bar: 2 mensajes en móvil** — "Envío gratis a México | +800 riders felices" ✅
+- **Avatar fix: resize=cover server-side** ✅ (2026-06-15)
 - **PDP MX v4 — 8 mejoras sincronizadas del repo US** ✅ (2026-06-15)
 - **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) ✅
 - Added urgency/stock signal above CTA on PDP
 - Added checkout dark rebrand
-- Phone input autofill fix
 - Cart Sidebar dark rebrand ✅
 - **BUG FIX: "Comprar Ahora" → checkout vacío — RESUELTO ✅**
 
@@ -56,10 +56,10 @@ Optimización continua del storefront. No hay cambios pendientes críticos.
 - Avatares: si `avatar-carlos-v3.webp` no existe en `product-images` bucket, buscar en `message-images` o regenerar
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.6 (badge half-outside + precio tachado dinámico)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.6
 - `src/templates/EcommerceTemplate.tsx` — ✅ trust bar 2 mensajes
-- `src/pages/ui/CheckoutUI.tsx` — ✅ v2 (delivery estimate + mobile open by default)
-- `src/components/StripePayment.tsx` — payment form ✅
+- `src/pages/ui/CheckoutUI.tsx` — ✅ v3 (4 días hábiles, Gratis, "Llega el")
+- `src/components/StripePayment.tsx` — ✅ v2 (social proof + botón 2L + trust badges + métodos pago)
 - `src/lib/stripe-appearance.ts` — ✅
 - `src/components/ProductExpressCheckout.tsx` — ✅
 - `src/lib/country-codes.ts` — ✅
@@ -72,4 +72,4 @@ Optimización continua del storefront. No hay cambios pendientes críticos.
 - Add a "También les encantó" section at bottom of cart/checkout (upsell)
 - Consider a post-purchase email sequence (set up from Dashboard)
 - Video testimonial section if user has video content
-- Monitor conversion rate after PDP v4 deploy
+- Monitor conversion rate after checkout v2 deploy

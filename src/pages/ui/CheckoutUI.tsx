@@ -568,7 +568,7 @@ export default function CheckoutUI() {
                       </div>
                       <div className="flex items-center gap-2 mt-1 pt-3 border-t border-white/[0.08] text-xs text-brand-steel">
                         <Truck size={12} className="text-brand-amber flex-shrink-0" />
-                        <span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>
+                        <span>Envío gratis · <span className="text-brand-smoke">Llega el {getEstimatedDelivery()}</span></span>
                       </div>
                     </div>
                   </div>
@@ -655,7 +655,7 @@ function MobileOrderSummary({ logic }: { logic: any }) {
             </div>
             <div className="flex items-center gap-2 pt-2 text-xs text-brand-steel">
               <Truck size={11} className="text-brand-amber flex-shrink-0" />
-              <span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>
+              <span>Envío gratis · <span className="text-brand-smoke">Llega el {getEstimatedDelivery()}</span></span>
             </div>
           </div>
 

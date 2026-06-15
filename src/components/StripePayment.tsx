@@ -3,6 +3,7 @@ import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, LinkAuthenticationElement, AddressElement, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { Truck, Lock, RefreshCw } from "lucide-react"
 import { callEdge } from "@/lib/edge"
 import { STORE_ID, STRIPE_PUBLISHABLE_KEY } from "@/lib/config"
 import { getStripeAppearance } from "@/lib/stripe-appearance"
@@ -802,25 +803,68 @@ function PaymentForm({
       {/* Billing address slot */}
       {billingSlot}
 
+      {/* Social proof */}
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <span className="text-brand-amber tracking-tight">★★★★★</span>
+        <span className="font-semibold text-brand-offwhite">4.9</span>
+        <span className="text-brand-steel">· +800 riders satisfechos</span>
+      </div>
+
       {/* Submit button */}
       <Button
         onClick={handlePayment}
         disabled={!stripe || loading || !amountCents || !!shippingError}
-        className="w-full h-12 text-lg font-semibold"
+        className="w-full h-14 bg-brand-amber hover:bg-brand-amber/90 text-brand-carbon font-bold rounded-xl"
         size="lg"
       >
         {loading ? (
           <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-carbon"></div>
             <span>Procesando...</span>
           </div>
-        ) : `Completar Compra - ${amountLabel}`}
+        ) : (
+          <div className="flex flex-col items-center leading-tight">
+            <span className="text-base font-bold">Completar Compra</span>
+            <span className="text-sm font-semibold opacity-90">{amountLabel}</span>
+          </div>
+        )}
       </Button>
 
-      <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-        <a href="/terminos-y-condiciones" target="_blank" className="underline hover:text-foreground">Condiciones</a>
+      {/* Trust badges */}
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-xs text-brand-steel">
+        <span className="flex items-center gap-1.5">
+          <Truck size={11} className="text-brand-amber" />
+          Envío gratis a México
+        </span>
+        <span className="text-brand-steel/30">·</span>
+        <span className="flex items-center gap-1.5">
+          <Lock size={11} className="text-brand-amber" />
+          Pago Seguro
+        </span>
+        <span className="text-brand-steel/30">·</span>
+        <span className="flex items-center gap-1.5">
+          <RefreshCw size={11} className="text-brand-amber" />
+          Garantía 30 Días
+        </span>
+      </div>
+
+      {/* Payment method badges */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {['VISA', 'MC', 'AMEX', 'Apple Pay', 'G Pay', 'OXXO'].map((method) => (
+          <span
+            key={method}
+            className="px-2 py-0.5 border border-white/[0.15] rounded text-[10px] text-brand-steel font-medium tracking-wide"
+          >
+            {method}
+          </span>
+        ))}
+      </div>
+
+      {/* Legal links */}
+      <div className="flex items-center justify-center gap-3 text-xs text-brand-steel/50">
+        <a href="/terminos-y-condiciones" target="_blank" className="hover:text-brand-steel transition-colors">Términos</a>
         <span>|</span>
-        <a href="/aviso-de-privacidad" target="_blank" className="underline hover:text-foreground">Privacidad</a>
+        <a href="/aviso-de-privacidad" target="_blank" className="hover:text-brand-steel transition-colors">Privacidad</a>
       </div>
     </div>
   )
