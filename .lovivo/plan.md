@@ -16,28 +16,11 @@
 - Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
 
 ## Active Plan
-**COMPLETADO ✅ — Sync PDP MX con repo US**
-
-Todos los cambios aplicados en `src/pages/ui/ProductPageUI.tsx` (v4):
-
-### ✅ Bugs resueltos:
-1. **Sticky bar fix** — `hasCTABeenVisible` ref + IntersectionObserver nativo (reemplaza useInView)
-2. **getSizeKey** — maneja valores como "S (60-75 cm)" → extrae "S" para lookup correcto
-
-### ✅ Conversión:
-3. **Badge "Oferta de Lanzamiento · Envío gratis incluido"** — debajo del precio
-4. **Social proof block** — 3 avatares iniciales + "+1,000 riders aman el Rodata One"
-5. **Acordeón Envío y Devoluciones** — fecha de entrega dinámica, política de cambio
-
-### ✅ Performance:
-6. **Image URLs optimizadas** — `render/image/public` + `?width=xxx&quality=75` en todas las remotas
-7. **Mobile gallery** — scroll-snap nativo con fetchPriority="high" en primera imagen
-8. **Eliminado react-intersection-observer** — solo IntersectionObserver nativo
-
-### ✅ UX:
-9. **Botón "Volver" eliminado** — padding ajustado a pt-3
+**COMPLETADO ✅ — Social proof avatars + fecha entrega fix**
 
 ## Recent Changes
+- **Social proof: avatares reales generados** — avatar-carlos.webp, avatar-jorge.webp, avatar-andres.webp (Mexican riders reales, Supabase URLs) (2026-06-15) ✅
+- **Fecha entrega: 3 → 4 días hábiles** + texto ahora dice "En 4 días hábiles · llega el {fecha}" (2026-06-15) ✅
 - **PDP MX v4 — 8 mejoras sincronizadas del repo US** (2026-06-15) ✅ COMPLETADO
 - **PDP MX vs US diff analizado** — 8 mejoras identificadas (2 bugs, 3 conversión, 3 performance) (2026-06-15)
 - **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) — DB + IndexUI.tsx (4 ocurrencias) ✅
@@ -51,20 +34,21 @@ Todos los cambios aplicados en `src/pages/ui/ProductPageUI.tsx` (v4):
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
 - **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
 - **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
-- **trackPurchase en Express Checkout handler — RESUELTO ✅**
-- **BUG FIX: isValidPhone rechazaba E.164 sin espacio (+525531245632) — RESUELTO ✅**
 
 ## Image Inventory
 - LIFESTYLE_CITY: `/pdp-lifestyle-1.jpg`
 - LIFESTYLE_HIGHWAY: `render/image/public/message-images/.../1775768374485-uca4dkx21g.webp?width=1200&quality=75` ✅
 - FEAT_IMG_1-3: `render/image/public/message-images/.../1775777133671/72-*.webp?width=800&quality=75` ✅
 - REVIEW_IMG_1-5: `render/image/public/product-images/.../review-1-5.webp?width=600&quality=75` ✅
+- AVATAR_CARLOS: `render/image/public/product-images/.../avatar-carlos.webp?width=64&quality=80` ✅
+- AVATAR_JORGE: `render/image/public/product-images/.../avatar-jorge.webp?width=64&quality=80` ✅
+- AVATAR_ANDRES: `render/image/public/product-images/.../avatar-andres.webp?width=64&quality=80` ✅
 
 ## Known Issues
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround: CSS autofill override ya aplicado en index.css)
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4 (sincronizado con repo US)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.1 (avatares reales + fecha entrega fix)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅

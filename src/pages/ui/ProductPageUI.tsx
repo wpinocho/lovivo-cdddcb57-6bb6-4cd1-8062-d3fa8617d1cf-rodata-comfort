@@ -35,11 +35,11 @@ const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 const getSizeKey = (value: string) =>
   value.includes('(') ? value.split('(')[0].trim() : value
 
-/** Estimated delivery date (3 business days out) */
+/** Estimated delivery date (4 business days out) */
 const getDeliveryDate = () => {
   const d = new Date()
   let added = 0
-  while (added < 3) {
+  while (added < 4) {
     d.setDate(d.getDate() + 1)
     if (d.getDay() !== 0 && d.getDay() !== 6) added++
   }
@@ -411,7 +411,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   </AccordionTrigger>
                   <AccordionContent className="text-brand-steel text-xs font-inter leading-relaxed pb-4 space-y-2">
                     <p><span className="text-brand-smoke font-semibold">🚚 Envío gratis</span> a todo México. Sin costo mínimo de compra.</p>
-                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> {deliveryDate} (días hábiles).</p>
+                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En 4 días hábiles · llega el {deliveryDate}.</p>
                     <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos con el cambio sin costo.</p>
                     <p><span className="text-brand-smoke font-semibold">✅ 30 días de prueba:</span> Si no queda como esperabas, lo resolvemos.</p>
                   </AccordionContent>
@@ -421,9 +421,13 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               {/* Social proof block */}
               <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="flex -space-x-2 flex-shrink-0">
-                  {['C', 'J', 'A'].map((initial, i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-brand-carbon bg-brand-amber/20 flex items-center justify-center text-xs font-sora font-bold text-brand-amber">
-                      {initial}
+                  {[
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-carlos.webp?width=64&quality=80',
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-jorge.webp?width=64&quality=80',
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-andres.webp?width=64&quality=80',
+                  ].map((src, i) => (
+                    <div key={i} className="h-8 w-8 rounded-full border-2 border-brand-carbon overflow-hidden flex-shrink-0">
+                      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
