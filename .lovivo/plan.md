@@ -16,13 +16,14 @@
 - Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
 
 ## Active Plan
-**COMPLETADO ✅ — Social proof avatars + fecha entrega fix**
+**COMPLETADO ✅ — Avatares v2 headshots reales + copy fix**
 
 ## Recent Changes
+- **Avatares v2: headshots bien centrados** — avatar-carlos-v2.webp, avatar-jorge-v2.webp, avatar-andres-v2.webp (cara completa, object-top, h-9 w-9) (2026-06-15) ✅
+- **Copy fix: "aman" → "ya lo usan a diario"** — más natural en MX (2026-06-15) ✅
 - **Social proof: avatares reales generados** — avatar-carlos.webp, avatar-jorge.webp, avatar-andres.webp (Mexican riders reales, Supabase URLs) (2026-06-15) ✅
 - **Fecha entrega: 3 → 4 días hábiles** + texto ahora dice "En 4 días hábiles · llega el {fecha}" (2026-06-15) ✅
 - **PDP MX v4 — 8 mejoras sincronizadas del repo US** (2026-06-15) ✅ COMPLETADO
-- **PDP MX vs US diff analizado** — 8 mejoras identificadas (2 bugs, 3 conversión, 3 performance) (2026-06-15)
 - **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) — DB + IndexUI.tsx (4 ocurrencias) ✅
 - Added urgency/stock signal above CTA on PDP
 - Added checkout dark rebrand
@@ -32,7 +33,6 @@
 - **BUG FIX: /gracias mostraba "Recoger en Tienda" — RESUELTO ✅**
 - **Migración Express Checkout — Pasos 1-5 COMPLETADOS ✅**
 - **Stripe Elements dark theme — RESUELTO ✅** (`src/lib/stripe-appearance.ts` + `StripePayment.tsx`)
-- **ExpressCheckoutElement: paymentMethodOrder + maxRows + buttonHeight ✅**
 - **BUG FIX: validateCheckoutFields bloqueaba pago con AddressElement — RESUELTO ✅**
 
 ## Image Inventory
@@ -40,15 +40,15 @@
 - LIFESTYLE_HIGHWAY: `render/image/public/message-images/.../1775768374485-uca4dkx21g.webp?width=1200&quality=75` ✅
 - FEAT_IMG_1-3: `render/image/public/message-images/.../1775777133671/72-*.webp?width=800&quality=75` ✅
 - REVIEW_IMG_1-5: `render/image/public/product-images/.../review-1-5.webp?width=600&quality=75` ✅
-- AVATAR_CARLOS: `render/image/public/product-images/.../avatar-carlos.webp?width=64&quality=80` ✅
-- AVATAR_JORGE: `render/image/public/product-images/.../avatar-jorge.webp?width=64&quality=80` ✅
-- AVATAR_ANDRES: `render/image/public/product-images/.../avatar-andres.webp?width=64&quality=80` ✅
+- AVATAR_CARLOS_V2: `render/image/public/product-images/.../avatar-carlos-v2.webp?width=80&quality=80` ✅
+- AVATAR_JORGE_V2: `render/image/public/product-images/.../avatar-jorge-v2.webp?width=80&quality=80` ✅
+- AVATAR_ANDRES_V2: `render/image/public/product-images/.../avatar-andres-v2.webp?width=80&quality=80` ✅
 
 ## Known Issues
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround: CSS autofill override ya aplicado en index.css)
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.1 (avatares reales + fecha entrega fix)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.2 (avatares v2 + copy fix)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅

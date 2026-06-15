@@ -422,18 +422,18 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="flex -space-x-2 flex-shrink-0">
                   {[
-                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-carlos.webp?width=64&quality=80',
-                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-jorge.webp?width=64&quality=80',
-                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-andres.webp?width=64&quality=80',
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-carlos-v2.webp?width=80&quality=80',
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-jorge-v2.webp?width=80&quality=80',
+                    'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/avatar-andres-v2.webp?width=80&quality=80',
                   ].map((src, i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-brand-carbon overflow-hidden flex-shrink-0">
-                      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <div key={i} className="h-9 w-9 rounded-full border-2 border-brand-carbon overflow-hidden flex-shrink-0">
+                      <img src={src} alt="" className="w-full h-full object-cover object-top" loading="lazy" />
                     </div>
                   ))}
                 </div>
                 <p className="text-brand-smoke text-xs font-inter">
                   <span className="text-brand-offwhite font-semibold">Carlos M. ✓</span> y{' '}
-                  <span className="text-brand-offwhite font-semibold">+1,000 riders</span> aman el Rodata One
+                  <span className="text-brand-offwhite font-semibold">+1,000 riders</span> ya lo usan a diario
                 </p>
               </div>
 
