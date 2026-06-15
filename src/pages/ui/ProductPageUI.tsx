@@ -16,6 +16,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
 const SUPABASE_PROD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf'
 
+// Avatares — resize=cover hace el crop a cuadrado en el servidor, no en el browser
+const AVATAR_CARLOS = `${SUPABASE_PROD}/avatar-carlos-v3.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_JORGE  = `${SUPABASE_PROD}/avatar-jorge-v3.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_ANDRES = `${SUPABASE_PROD}/avatar-andres-v3.webp?width=72&height=72&resize=cover&quality=80`
+
 const LIFESTYLE_CITY    = '/pdp-lifestyle-1.jpg'
 const LIFESTYLE_HIGHWAY = `${SUPABASE_MSG}/1775768374485-uca4dkx21g.webp?width=1200&quality=75`
 const PRODUCT_FLAT      = `${SUPABASE_MSG}/1775767354281-gqxi2j4hklp.webp?width=800&quality=75`
@@ -421,13 +426,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               {/* Social proof block */}
               <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="flex -space-x-2 flex-shrink-0">
-                  {[
-                    { initial: 'C', hue: 'bg-brand-amber/20 border-brand-amber/40 text-brand-amber' },
-                    { initial: 'J', hue: 'bg-blue-500/20 border-blue-400/40 text-blue-300' },
-                    { initial: 'A', hue: 'bg-green-500/20 border-green-400/40 text-green-300' },
-                  ].map(({ initial, hue }, i) => (
-                    <div key={i} className={`h-9 w-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-sora font-bold text-xs ${hue}`} style={{ zIndex: 3 - i }}>
-                      {initial}
+                  {[AVATAR_CARLOS, AVATAR_JORGE, AVATAR_ANDRES].map((src, i) => (
+                    <div key={i} className="h-9 w-9 rounded-full overflow-hidden border-2 border-brand-graphite flex-shrink-0" style={{ zIndex: 3 - i }}>
+                      <img src={src} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
