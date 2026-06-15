@@ -14,12 +14,54 @@
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Botones: btn-amber-lg (primario), btn-outline-light (secundario)
 - Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
-- **Avatar rule**: Para círculos de 36px (w-9 h-9), usar Supabase `?width=72&height=72&resize=cover&quality=80` → la imagen llega ya cuadrada y centrada al browser → `object-cover` funciona perfecto sin zoom.
+- **Avatar rule**: Para círculos de 36px (w-9 h-9), usar Supabase `?width=72&height=72&resize=cover&quality=80`
 
 ## Active Plan
-**COMPLETADO ✅ — Badge descuento "half-outside" + precio tachado dinámico**
+**EN PROGRESO — Mejoras UI del Checkout (diff con repo US)**
+
+### Mejoras identificadas del repo US vs actual (solo las implementables):
+
+**1. `getEstimatedDelivery()` function** (NUEVA)
+- Calcular fecha estimada de entrega: hoy + 6 días hábiles (earliest) y +8 días hábiles (latest)
+- Usar `addBusinessDays` helper interno (salta sábados/domingos)
+- Formatear como "Jun 25 – Jun 27" (formato en-US, `month: 'short', day: 'numeric'`)
+- Agregar al top del archivo, antes de las constantes dark theme
+- NO cambiar "días hábiles" en el copy — mantenerlo en español donde aparezca visible
+
+**2. Import `Truck` icon**
+- Agregar `Truck` a la línea de imports de lucide-react (línea 9)
+- Ya está `Lock`, `ChevronDown`, `ChevronUp`, etc. Solo agregar `Truck`
+
+**3. Fila "Envío gratis · Llega {fecha}"** en desktop totals
+- En la sección de totales del panel derecho (desktop), después del `Total` row
+- Agregar: `<div className="flex items-center gap-2 mt-1 pt-3 border-t border-white/[0.08] text-xs text-brand-steel">`
+- `<Truck size={12} className="text-brand-amber flex-shrink-0" />`
+- `<span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>`
+- Va DESPUÉS del bloque total (línea ~547), ANTES del cierre del `space-y-2 pt-4 border-t` div
+
+**4. Fila "Envío gratis · Llega {fecha}"** en MobileOrderSummary
+- En el `MobileOrderSummary`, en la sección de totales, después del row de Total
+- Mismo patrón: `<div className="flex items-center gap-2 pt-2 text-xs text-brand-steel">`
+- `<Truck size={11} className="text-brand-amber flex-shrink-0" />`
+- `<span>Envío gratis · <span className="text-brand-smoke">Llega {getEstimatedDelivery()}</span></span>`
+- Va después del div de Total (línea ~629), ANTES del cierre del `space-y-1 pt-3 border-t` div
+
+**5. Mobile summary empieza abierto**
+- `MobileOrderSummary`: cambiar `useState(false)` → `useState(true)` (línea 563)
+- Motivo: al llegar al checkout en móvil el usuario ya debe ver su pedido inmediatamente
+
+**6. PayPal button** — SKIP. `PaypalExpressButton` no existe en este repo.
+
+### Archivos a modificar:
+- `src/pages/ui/CheckoutUI.tsx` — todos los cambios arriba
+
+### Notas de implementación:
+- Mantener todos los strings visibles EN ESPAÑOL (Envío gratis, Llega, etc.)
+- No tocar la lógica de Stripe, validaciones ni ninguna otra sección
+- getEstimatedDelivery usa `en-US` locale solo para el formato de fecha corto (Jun 25) — es aceptable o cambiar a `es-MX` con `{ month: 'short', day: 'numeric' }` → "25 jun."
 
 ## Recent Changes
+- **Checkout UI mejoras (delivery estimate + mobile open)** — EN PROGRESO (2026-06-15)
 - **Badge descuento half-outside + precio tachado dinámico** — COMPLETADO ✅ (2026-06-15)
   - Desktop: wrapper externo sin overflow-hidden, badge con `absolute top-0 left-5 -translate-y-1/2 z-10`
   - Mobile: mismo posicionamiento half-outside
@@ -51,7 +93,7 @@
 ## Key Files
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.6 (badge half-outside + precio tachado dinámico)
 - `src/templates/EcommerceTemplate.tsx` — ✅ trust bar 2 mensajes
-- `src/pages/ui/CheckoutUI.tsx` — checkout ✅
+- `src/pages/ui/CheckoutUI.tsx` — checkout (mejoras pendientes en Craft Mode)
 - `src/components/StripePayment.tsx` — payment form ✅
 - `src/lib/stripe-appearance.ts` — ✅
 - `src/components/ProductExpressCheckout.tsx` — ✅
