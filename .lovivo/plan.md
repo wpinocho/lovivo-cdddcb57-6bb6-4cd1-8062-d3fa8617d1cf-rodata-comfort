@@ -13,77 +13,32 @@
 - Amber: #C98B2E (brand-amber) — único acento
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Botones: btn-amber-lg (primario), btn-outline-light (secundario)
-- Imágenes con Supabase transform: `?width=800&quality=75`
+- Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
 
 ## Active Plan
-**OBJETIVO: Sincronizar mejoras del repo US → repo MX (ProductPageUI.tsx)**
+**COMPLETADO ✅ — Sync PDP MX con repo US**
 
-### Diferencias identificadas (US optimizado vs MX actual):
+Todos los cambios aplicados en `src/pages/ui/ProductPageUI.tsx` (v4):
 
-#### 🔴 BUGS / UX CRÍTICOS
-1. **Sticky bar aparece en page load (BUG)**
-   - MX usa `react-intersection-observer` `useInView` → el sticky bar se muestra apenas carga la página porque `ctaInView=false` inicialmente
-   - US usa `useRef` + `IntersectionObserver` nativo con flag `hasCTABeenVisible` → solo muestra el sticky DESPUÉS de que el CTA fue visible al menos una vez
-   - Fix: reemplazar `useInView` por el patrón del repo US con `hasCTABeenVisible = useRef(false)` + `useEffect` con observer manual
+### ✅ Bugs resueltos:
+1. **Sticky bar fix** — `hasCTABeenVisible` ref + IntersectionObserver nativo (reemplaza useInView)
+2. **getSizeKey** — maneja valores como "S (60-75 cm)" → extrae "S" para lookup correcto
 
-2. **`getSizeKey` faltante (BUG potencial)**
-   - MX usa `value` directo para buscar en SIZE_GUIDE → si el variant value tiene formato "S (60-75 cm)" en vez de "S", la guía no matchea
-   - US tiene `getSizeKey` que extrae solo la letra: `value.includes('(') ? value.split('(')[0].trim() : value`
-   - Fix: agregar `getSizeKey` y aplicarla en los 3 lugares donde se usa (display en botón, waist en botón, lookup de SIZE_GUIDE)
+### ✅ Conversión:
+3. **Badge "Oferta de Lanzamiento · Envío gratis incluido"** — debajo del precio
+4. **Social proof block** — 3 avatares iniciales + "+1,000 riders aman el Rodata One"
+5. **Acordeón Envío y Devoluciones** — fecha de entrega dinámica, política de cambio
 
-#### 🟡 MEJORAS DE CONVERSIÓN (nuevas secciones/elementos)
-3. **Badge "Oferta de Lanzamiento"** — falta en MX
-   - En US: inline-flex badge ámbar debajo del precio con "🏷 Oferta de Lanzamiento · Envío gratis incluido"
-   - MX: no tiene este badge → agregar traducido
+### ✅ Performance:
+6. **Image URLs optimizadas** — `render/image/public` + `?width=xxx&quality=75` en todas las remotas
+7. **Mobile gallery** — scroll-snap nativo con fetchPriority="high" en primera imagen
+8. **Eliminado react-intersection-observer** — solo IntersectionObserver nativo
 
-4. **Bloque de prueba social "riders verificados"** — falta en MX
-   - En US: bloque graphite con 3 avatares superpuestos + "Jason R. ✓ y +1,000 riders aman el Rodata One"
-   - MX: no tiene este bloque → agregar con nombres mexicanos (Carlos M., Jorge R., Andrés V.) y texto en español
-
-5. **Acordeón "Envío y Devoluciones"** — falta en MX
-   - En US: acordeón expandible debajo del trust row con detalles de envío, fecha estimada dinámica, política de cambio
-   - MX: solo tiene link de WhatsApp → agregar acordeón (mantener también el WhatsApp link)
-
-#### 🟢 MEJORAS DE PERFORMANCE
-6. **Image optimization params en URLs remotas**
-   - MX usa URLs crudas sin params: `supabase.co/.../image.webp`
-   - US usa: `supabase.co/.../image.webp?width=1200&quality=75` (hero), `?width=800&quality=75` (features), `?width=600&quality=75` (reviews)
-   - Fix: agregar params a LIFESTYLE_HIGHWAY, FEATURES_ES, PRODUCT_FLAT, FEAT_IMG_1-3, REVIEW_IMG_1-5
-   - NOTA: usar `render/image` en vez de `object/public` en el path para que funcionen los transforms
-
-7. **`fetchPriority` en imágenes móvil**
-   - MX: gallery móvil usa `<Carousel>` (embla) — sin `fetchPriority`
-   - US: usa scroll horizontal nativo con `fetchPriority="high"` en primera imagen, `"auto"` en el resto
-   - Fix: cambiar gallery móvil de `<Carousel>` a scroll-snap nativo + agregar fetchPriority/loading attrs correctos
-
-8. **Quitar `react-intersection-observer`**
-   - MX: importa `useInView` de `react-intersection-observer`
-   - US: usa solo IntersectionObserver nativo (ya disponible en todos los browsers)
-   - Fix: remover import y usar el patrón con useRef del repo US (ya cubierto en punto 1)
-
-#### ⚪ PEQUEÑOS AJUSTES DE COPY/UX
-9. **Quitar el botón "Volver"**
-   - MX: tiene `<button onClick={logic.handleNavigateBack}>← Volver</button>` y `pt-6`
-   - US: no tiene botón de volver, usa `pt-3` más ajustado
-   - Fix: remover el botón Volver (la nav del header ya sirve para eso) y ajustar padding a pt-3
-
-10. **FAQ respuesta de cambio de talla → mencionar WhatsApp**
-    - MX: ya lo menciona ✅ (mantener)
-
-### Orden de implementación recomendado:
-1. Fix sticky bar (bug crítico — punto 1)
-2. getSizeKey (bug potencial — punto 2)
-3. Image optimization URLs (punto 6)
-4. Mobile gallery → scroll nativo (punto 7, junto al punto 1 por el import de useInView)
-5. Badge oferta de lanzamiento (punto 3)
-6. Bloque social proof riders (punto 4)
-7. Acordeón envío/devoluciones (punto 5)
-8. Quitar botón Volver (punto 9)
-
-### Archivos a modificar:
-- `src/pages/ui/ProductPageUI.tsx` — todos los cambios arriba
+### ✅ UX:
+9. **Botón "Volver" eliminado** — padding ajustado a pt-3
 
 ## Recent Changes
+- **PDP MX v4 — 8 mejoras sincronizadas del repo US** (2026-06-15) ✅ COMPLETADO
 - **PDP MX vs US diff analizado** — 8 mejoras identificadas (2 bugs, 3 conversión, 3 performance) (2026-06-15)
 - **Precio actualizado: MX$699 → MX$799** (compare_at_price: MX$999, badge: 20% OFF) — DB + IndexUI.tsx (4 ocurrencias) ✅
 - Added urgency/stock signal above CTA on PDP
@@ -101,17 +56,15 @@
 
 ## Image Inventory
 - LIFESTYLE_CITY: `/pdp-lifestyle-1.jpg`
-- LIFESTYLE_HIGHWAY: `supabase.co/.../1775768374485-uca4dkx21g.webp` (agregar ?width=1200&quality=75)
-- FEAT_IMG_1-3: `supabase.co/.../1775777133671/72-*.webp` (agregar ?width=800&quality=75)
-- REVIEW_IMG_1-5: `supabase.co/product-images/.../review-1-5.webp` (agregar ?width=600&quality=75)
-- Avatares para social proof block: `/avatar-j.webp`, `/avatar-m.webp`, `/avatar-r.webp` (mismas que US)
+- LIFESTYLE_HIGHWAY: `render/image/public/message-images/.../1775768374485-uca4dkx21g.webp?width=1200&quality=75` ✅
+- FEAT_IMG_1-3: `render/image/public/message-images/.../1775777133671/72-*.webp?width=800&quality=75` ✅
+- REVIEW_IMG_1-5: `render/image/public/product-images/.../review-1-5.webp?width=600&quality=75` ✅
 
 ## Known Issues
-- Sticky bar MX aparece en page load (BUG — fix en el plan activo)
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround: CSS autofill override ya aplicado en index.css)
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ (pendiente sync con US)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4 (sincronizado con repo US)
 - `src/pages/ui/CheckoutUI.tsx` — checkout ✅
 - `src/templates/EcommerceTemplate.tsx` — header/footer/nav
 - `src/components/StripePayment.tsx` — payment form ✅
@@ -124,7 +77,7 @@
 - `src/pages/ui/IndexUI.tsx` — ✅ precio actualizado a MX$799
 
 ## PENDING / Future Sessions
-- **ALTA PRIORIDAD: Sync PDP MX con mejoras del repo US** — ver Active Plan arriba
 - Add a "También les encantó" section at bottom of cart/checkout (upsell)
 - Consider a post-purchase email sequence (set up from Dashboard)
 - Video testimonial section if user has video content
+- Monitor conversion rate after PDP v4 deploy (comparar vs baseline)
