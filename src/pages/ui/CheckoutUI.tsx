@@ -640,7 +640,7 @@ function MobileOrderSummary({ logic }: { logic: any }) {
                   ? "GRATIS"
                   : logic.shippingCost > 0
                   ? formatMoney(logic.shippingCost, logic.currencyCode)
-                  : "Pendiente"}
+                  : "Gratis"}
               </span>
             </div>
             {logic.discountAmount > 0 && (
