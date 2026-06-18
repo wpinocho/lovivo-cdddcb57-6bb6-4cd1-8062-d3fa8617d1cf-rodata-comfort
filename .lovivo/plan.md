@@ -17,40 +17,12 @@
 - **Avatar rule**: Para círculos de 36px (w-9 h-9), usar Supabase `?width=72&height=72&resize=cover&quality=80`
 
 ## Active Plan
-**BUG FIX: Sticky bar no aparece en PDP** — PENDIENTE 🔧
-
-### Root cause
-`src/pages/ui/ProductPageUI.tsx` línea ~149:
-```js
-useEffect(() => {
-    const el = ctaRef.current
-    if (!el) return          // ← sale aquí porque el producto aún no cargó
-    const observer = new IntersectionObserver(...)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])                     // ← [] → no vuelve a correr cuando llega el producto
-```
-
-La primera vez que corre el effect, `logic.product` todavía es null (carga async). El componente retorna el skeleton, `ctaRef.current` es null, y el effect sale sin registrar el observer. Cuando el producto carga y renderiza el CTA real, el effect no vuelve a correr porque la dependencia es `[]`.
-
-### Fix (1 línea)
-En `src/pages/ui/ProductPageUI.tsx`, cambiar la dependencia del useEffect del observer de:
-```js
-  }, [])
-```
-a:
-```js
-  }, [logic.product])
-```
-
-Esto hace que el effect se reconecte cuando el producto llega, en ese momento `ctaRef.current` ya apunta al div del CTA real y el IntersectionObserver se registra correctamente.
-
-No hay riesgo de side effects: el cleanup `observer.disconnect()` se ejecuta antes de cada re-run.
-
-### File to modify
-- `src/pages/ui/ProductPageUI.tsx` — línea ~161: cambiar `}, [])` a `}, [logic.product])`
+Sin active plan — tienda en estado estable.
 
 ## Recent Changes
+- **BUG FIX: Sticky bar no aparece en PDP — RESUELTO ✅** (2026-06-18)
+  - `ProductPageUI.tsx`: `useEffect` del IntersectionObserver cambiado de `[]` a `[logic.product]`
+  - Root cause: el observer se montaba cuando el producto aún no cargaba (ctaRef.current era null). Al agregar `logic.product` como dependencia, el effect se reconecta una vez que el producto llega y ctaRef apunta al CTA real.
 - **BUG FIX: Sticky bar no aparece — diagnosticado** (2026-06-18) — fix pendiente en Craft Mode
 - **Fix conversiones duplicadas Meta** — COMPLETADO ✅ (2026-06-18)
   - `tracking-utils.ts`: `generateEventId()` ahora acepta `(eventName, stableId?)` → ID determinístico por orden/producto. Purchase usa `order_id`, AddToCart/ViewContent/InitiateCheckout usan `product_id`, Search usa el término buscado. PageView no se toca.
@@ -87,7 +59,7 @@ No hay riesgo de side effects: el cleanup `observer.disconnect()` se ejecuta ant
 - Avatares: si `avatar-carlos-v3.webp` no existe en `product-images` bucket, buscar en `message-images` o regenerar
 
 ## Key Files
-- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.6 (sticky bar bug pendiente)
+- `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.7 (sticky bar bug resuelto)
 - `src/templates/EcommerceTemplate.tsx` — ✅ trust bar 2 mensajes
 - `src/pages/ui/CheckoutUI.tsx` — ✅ v3 (4 días hábiles, Gratis, "Llega el")
 - `src/components/StripePayment.tsx` — ✅ v3 | sessionStorage guard en 2 trackPurchase

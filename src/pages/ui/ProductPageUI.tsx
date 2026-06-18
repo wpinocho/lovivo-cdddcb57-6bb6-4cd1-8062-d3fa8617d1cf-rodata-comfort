@@ -158,7 +158,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [logic.product])
 
   const productImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
   const displayImage = selectedImage ?? productImages[0]
