@@ -364,16 +364,21 @@ function PaymentForm({
 
       if (pi?.status === 'succeeded') {
         // Payment succeeded (card, Link, etc.)
-        trackPurchase({
-          products: paymentItems.map((item: any) => tracking.createTrackingProduct({
-            id: item.product_id, title: item.product_name || item.title,
-            price: item.price / 100, category: 'product',
-            variant: item.variant_id ? { id: item.variant_id } : undefined
-          })),
-          value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
-          order_id: orderId,
-          custom_parameters: { payment_method: 'stripe', checkout_token: checkoutToken }
-        })
+        const ptKey = `purchase_tracked_${orderId}`;
+        const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1'; } catch { return false; } })();
+        if (!alreadyTracked) {
+          try { sessionStorage.setItem(ptKey, '1'); } catch {}
+          trackPurchase({
+            products: paymentItems.map((item: any) => tracking.createTrackingProduct({
+              id: item.product_id, title: item.product_name || item.title,
+              price: item.price / 100, category: 'product',
+              variant: item.variant_id ? { id: item.variant_id } : undefined
+            })),
+            value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
+            order_id: orderId,
+            custom_parameters: { payment_method: 'stripe', checkout_token: checkoutToken }
+          })
+        }
 
         // Save order data for ThankYou page before clearing.
         // Prefer the order returned by payments-create-intent (already includes
@@ -588,16 +593,21 @@ function PaymentForm({
 
       const pi = result.paymentIntent
       if (pi?.status === 'succeeded') {
-        trackPurchase({
-          products: paymentItems.map((item: any) => tracking.createTrackingProduct({
-            id: item.product_id, title: item.product_name || item.title,
-            price: item.price / 100, category: 'product',
-            variant: item.variant_id ? { id: item.variant_id } : undefined
-          })),
-          value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
-          order_id: orderId,
-          custom_parameters: { payment_method: 'express_checkout', checkout_token: checkoutToken }
-        })
+        const ptKey = `purchase_tracked_${orderId}`;
+        const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1'; } catch { return false; } })();
+        if (!alreadyTracked) {
+          try { sessionStorage.setItem(ptKey, '1'); } catch {}
+          trackPurchase({
+            products: paymentItems.map((item: any) => tracking.createTrackingProduct({
+              id: item.product_id, title: item.product_name || item.title,
+              price: item.price / 100, category: 'product',
+              variant: item.variant_id ? { id: item.variant_id } : undefined
+            })),
+            value: totalCents / 100, currency: tracking.getCurrencyFromSettings(currency),
+            order_id: orderId,
+            custom_parameters: { payment_method: 'express_checkout', checkout_token: checkoutToken }
+          })
+        }
 
         // intentOrder fix: persist order from edge function for ThankYou page
         try {

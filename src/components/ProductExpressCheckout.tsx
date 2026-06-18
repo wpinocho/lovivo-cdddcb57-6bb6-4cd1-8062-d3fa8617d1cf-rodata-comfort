@@ -362,20 +362,25 @@ function PaymentRequestInner({
         }
 
         if (finalIntent?.status === 'succeeded') {
-          // Track purchase
-          trackPurchase({
-            products: [tracking.createTrackingProduct({
-              id: product.id,
-              title: product.title,
-              price: unitPrice,
-              category: 'product',
-              variant,
-            })],
-            value: totalAmount,
-            currency: tracking.getCurrencyFromSettings(currencyCode),
-            order_id: orderId,
-            custom_parameters: { payment_method: 'payment_request_button', checkout_token: checkoutToken },
-          })
+          // Track purchase (sessionStorage guard prevents duplicate events on 3DS retry / double fire)
+          const ptKey = `purchase_tracked_${orderId}`;
+          const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1'; } catch { return false; } })();
+          if (!alreadyTracked) {
+            try { sessionStorage.setItem(ptKey, '1'); } catch {}
+            trackPurchase({
+              products: [tracking.createTrackingProduct({
+                id: product.id,
+                title: product.title,
+                price: unitPrice,
+                category: 'product',
+                variant,
+              })],
+              value: totalAmount,
+              currency: tracking.getCurrencyFromSettings(currencyCode),
+              order_id: orderId,
+              custom_parameters: { payment_method: 'payment_request_button', checkout_token: checkoutToken },
+            })
+          }
 
           // Persist order for ThankYou page. Prefer the order returned by
           // payments-create-intent (already includes shipping_address from DB).
