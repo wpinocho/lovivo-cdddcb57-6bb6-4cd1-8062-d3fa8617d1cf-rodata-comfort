@@ -203,7 +203,7 @@ export const EcommerceTemplate = ({
             <h3 className="font-sora font-semibold text-brand-smoke text-sm uppercase tracking-widest mb-5">Contacto</h3>
             <p className="text-brand-steel text-sm mb-4">¿Tienes dudas? Escríbenos por WhatsApp.</p>
             <a
-              href="https://wa.me/5215500000000?text=Hola,%20tengo%20una%20duda%20sobre%20el%20Soporte%20Lumbar%20Rodata%20One"
+              href="https://wa.me/5215531215386?text=Hola,%20tengo%20una%20duda%20sobre%20el%20Soporte%20Lumbar%20Rodata%20One"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] text-sm font-medium px-4 py-2.5 rounded transition-colors hover:bg-[#25D366]/20"
