@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AuthDialog } from '@/components/AuthDialog'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Package, Calendar, RefreshCw, ShoppingBag, AlertCircle, LogIn, ChevronDown, MapPin, Tag } from 'lucide-react'
+import { Package, Calendar, RefreshCw, ShoppingBag, AlertCircle, LogIn, ChevronDown, MapPin, Tag, Truck, ExternalLink, CalendarClock } from 'lucide-react'
 import { formatMoney } from '@/lib/money'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -70,6 +70,7 @@ function OrderSkeleton() {
 }
 
 function OrderCard({ order }: { order: any }) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const items = order.order_items || []
   const currency = order.currency_code || 'USD'
@@ -214,6 +215,49 @@ function OrderCard({ order }: { order: any }) {
                     <p className="text-sm">{address}</p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Tracking */}
+            {(order.checkout_token || order.estimated_delivery_at || order.tracking_number) && (
+              <div className="border-t pt-3 space-y-2.5">
+                {order.estimated_delivery_at && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Entrega estimada:</span>
+                    <span className="font-medium">
+                      {format(new Date(order.estimated_delivery_at), 'd MMM yyyy', { locale: es })}
+                    </span>
+                  </div>
+                )}
+                {order.tracking_number && (
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Guía:</span>
+                    <span className="font-medium">{order.tracking_number}</span>
+                    {order.tracking_url && (
+                      <a
+                        href={order.tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        Ver en la paquetería
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                )}
+                {order.checkout_token && (
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    onClick={() => navigate('/orders/track/' + order.checkout_token)}
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    Rastrear pedido
+                  </Button>
+                )}
               </div>
             )}
           </div>

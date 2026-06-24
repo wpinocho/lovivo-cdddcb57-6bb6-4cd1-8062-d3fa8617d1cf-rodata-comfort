@@ -385,13 +385,13 @@ function PaymentForm({
         // shipping_address persisted from DB). Fallback to the checkout snapshot.
         try {
           if (intentOrder) {
-            localStorage.setItem('completed_order', JSON.stringify(intentOrder))
+            localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...intentOrder }))
           } else {
             const checkoutData = localStorage.getItem(`checkout:${STORE_ID}`)
             if (checkoutData) {
               const parsed = JSON.parse(checkoutData)
               if (parsed.order) {
-                localStorage.setItem('completed_order', JSON.stringify(parsed.order))
+                localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...parsed.order }))
               }
             }
           }
@@ -612,7 +612,7 @@ function PaymentForm({
         // intentOrder fix: persist order from edge function for ThankYou page
         try {
           if (intentOrder) {
-            localStorage.setItem('completed_order', JSON.stringify(intentOrder))
+            localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...intentOrder }))
           }
         } catch {}
         clearCart()

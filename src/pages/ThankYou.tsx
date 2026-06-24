@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CheckCircle, Package, Mail, ArrowLeft, ShoppingBag } from 'lucide-react'
+import { CheckCircle, Package, Mail, ArrowLeft, ShoppingBag, Truck } from 'lucide-react'
 import { formatMoney } from '@/lib/money'
 import { useToast } from '@/hooks/use-toast'
 import { EcommerceTemplate } from '@/templates/EcommerceTemplate'
@@ -12,6 +12,7 @@ import { EcommerceTemplate } from '@/templates/EcommerceTemplate'
 interface OrderDetails {
   id: string
   order_number: string
+  checkout_token?: string
   total_amount: number
   currency_code: string
   status: string
@@ -222,6 +223,14 @@ const ThankYou = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          {order.checkout_token && (
+            <Button asChild>
+              <Link to={`/orders/track/${order.checkout_token}`} className="flex items-center gap-2">
+                <Truck className="w-4 h-4" />
+                Rastrear mi pedido
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link to="/" className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />

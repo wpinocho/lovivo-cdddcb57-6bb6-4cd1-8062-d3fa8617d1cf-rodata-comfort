@@ -27,6 +27,7 @@ const MySubscriptions = lazy(() => import('./pages/MySubscriptions'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const PendingPayment = lazy(() => import('./pages/PendingPayment'));
+const OrderTrack = lazy(() => import('./pages/OrderTrack'));
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,8 @@ const App = () => (
                         <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
                         <Route path="/aviso-de-privacidad" element={<PrivacyPolicy />} />
                         <Route path="/pago-pendiente/:orderId" element={<PendingPayment />} />
+                        <Route path="/orders/track" element={<OrderTrack />} />
+                        <Route path="/orders/track/:token" element={<OrderTrack />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </Suspense>

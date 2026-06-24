@@ -387,7 +387,7 @@ function PaymentRequestInner({
           try {
             const completedOrder = intentData?.order ?? order.order
             if (completedOrder) {
-              localStorage.setItem('completed_order', JSON.stringify(completedOrder))
+              localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...completedOrder }))
             }
           } catch {}
 
