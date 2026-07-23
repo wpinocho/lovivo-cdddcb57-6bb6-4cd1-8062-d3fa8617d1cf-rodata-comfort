@@ -17,77 +17,87 @@
 - Imágenes Supabase: usar `render/image/public` path + `?width=xxx&quality=75`
 - **Avatar rule**: círculos de 36px → Supabase `?width=72&height=72&resize=cover&quality=80`
 
-## Active Plan — PORTAR PAYPAL DE RODATA US A MX (EN PROGRESO)
+## Active Plan — PORTAR PAYPAL DE RODATA US A MX (EN PROGRESO — enfoque CORREGIDO)
 
 ### Objetivo
-Añadir botón "PayPal Express" en el checkout de Rodata MX, replicando exactamente la implementación ya probada en Rodata US. El botón aparece encima de Stripe (GPay/Link) y NO requiere que el usuario llene el formulario (PayPal recolecta la dirección de envío dentro de su popup).
+Añadir botón "PayPal Express" en el checkout de Rodata MX, replicando la implementación probada en Rodata US. Aparece encima de Stripe y NO requiere llenar el formulario (PayPal recolecta el envío en su popup).
 
-### Diagnóstico del repo MX (2026-07-23) — qué EXISTE y qué FALTA
-- **PACKAGE `@paypal/react-paypal-js`**: ❌ NO instalado en MX. (Ver `package.json` — no aparece). Craft Mode debe instalarlo con lov-add-dependency.
-- **`src/components/PaypalExpressButton.tsx`**: ❌ NO existe en MX (cero referencias "paypal" en todo `src/`). Hay que CREARLO copiando el de US, con estos ajustes de copy ES-MX:
-  - Divider label `"or pay with"` → `"o paga con"`
-  - Toasts `title: 'PayPal error'` → `'Error de PayPal'`; description `'Something went wrong. Please try again.'` → `'Algo salió mal. Intenta de nuevo.'` y `'Payment not completed'` → `'El pago no se completó'`.
-  - **currency**: en US se pasa `'usd'`; en MX se pasará `logic.currencyCode.toLowerCase()` = `'mxn'`. PayPal soporta MXN. Verificar que la cuenta PayPal de la tienda acepte MXN (config Dashboard/PayPal). Todo lo demás del componente queda IGUAL.
-- **`src/contexts/SettingsContext.tsx`** (MX): ❌ NO expone `paypalEnabled`, `paypalClientId`, `paypalEnvironment`, y el `.select(...)` de `store_settings` NO incluye columnas de PayPal. Hay que:
-  1. Añadir las columnas de PayPal al `.select('... , paypal_...')` de `fetchStoreSettings` (⚠️ NOMBRES EXACTOS de columnas los da el SettingsContext de US — ver "Falta recibir" abajo).
-  2. Añadir `paypalEnabled: boolean`, `paypalClientId: string | null`, `paypalEnvironment: string | null` a la interface `SettingsContextType` y al value del Provider.
-  3. Añadir defaults en el fallback del catch.
-  - StoreSettings/PaymentMethods types en `src/lib/supabase.ts` quizá necesiten los campos paypal (opcional, para tipado). Confirmar contra el supabase.ts de US si difiere.
-- **`src/pages/ui/CheckoutUI.tsx`** (MX): estructura casi idéntica a US pero SIN PayPal. Hay que:
-  1. Añadir import `import { PaypalExpressButton } from "@/components/PaypalExpressButton";` (junto al import de StripePayment, línea ~14).
-  2. En el bloque de pago (dentro del IIFE `return (...)` que hoy devuelve solo `<StripePayment .../>` en línea ~260-261), envolver en `<>...</>` e insertar el botón PayPal ANTES de `<StripePayment>`, exactamente así:
+### ✅ CONFIRMADO por el usuario (2026-07-23)
+- PayPal YA está activado/configurado para Rodata MX en el Dashboard.
+- La cuenta PayPal acepta cobros en MXN.
+
+### 🔑 CORRECCIÓN CLAVE — cómo lee US la config de PayPal
+Mi plan anterior asumía columnas paypal en `store_settings`. **FALSO.** US usa un **RPC**:
+```
+supabase.rpc('get_public_paypal_account', { p_store_id: STORE_ID }).maybeSingle()
+```
+Devuelve una fila con `client_id` y `environment`. Derivados:
+- `paypalEnabled = !!paypalRow`
+- `paypalClientId = (paypalRow as any)?.client_id ?? null`
+- `paypalEnvironment = ((paypalRow as any)?.environment ?? 'live') as 'live' | 'sandbox'`
+→ NO se toca el `.select()` de `store_settings`. NO se tocan columnas.
+
+### Estado archivo por archivo (verificado 2026-07-23)
+- **`src/lib/supabase.ts`**: ✅ IDÉNTICO al de US. US **no** agregó campos paypal a los types (castea a `any`). **CERO cambios necesarios.**
+- **`src/contexts/SettingsContext.tsx`** (MX): idéntico a US salvo PayPal. Cambios EXACTOS a aplicar:
+  1. Interface `SettingsContextType`: añadir tras `chargeType`:
      ```
-     return (
-       <>
-       <PaypalExpressButton
-         className="mb-2"
-         showDivider={false}
-         orderId={logic.orderId}
-         checkoutToken={logic.checkoutToken}
-         amount={logic.finalTotal}
-         currency={logic.currencyCode.toLowerCase()}
-         items={logic.orderItems}
-         shippingCost={logic.shippingCost}
-       />
-       <StripePayment ... />   // (dejar el StripePayment MX tal cual está)
-       </>
-     );
+     paypalEnabled: boolean
+     paypalClientId: string | null
+     paypalEnvironment: 'sandbox' | 'live' | null
      ```
-  - NOTA: el `return (<StripePayment .../>)` de MX está en el IIFE de líneas ~260-330. Solo envolver en fragment y anteponer el botón. No tocar props de StripePayment.
-- **`src/hooks/useCheckout.ts`** (MX): NO requiere cambios para PayPal. El botón NO depende de useCheckout. (US lo mandó como contexto; su única diferencia real con MX es que US pasa `getAttributionPayload()` a `createCheckoutFromCart` — eso es una mejora de atribución independiente de PayPal, NO portar en esta tarea salvo que se decida aparte.)
-- **`src/lib/tracking-utils.ts`** (MX): `trackPurchase` y `tracking` ✅ existen (StripePayment MX ya los importa). ⚠️ `getAttributionPayload` — VERIFICAR que esté exportado en MX (el useCheckout de MX NO lo importa, a diferencia de US). El PaypalExpressButton lo usa. Si NO existe en MX:
-  - Opción A: portar `getAttributionPayload` desde tracking-utils de US.
-  - Opción B (más simple): quitar las 2 llamadas a `getAttributionPayload()` del botón y no enviar `attribution` (el backend lo trata como opcional). Preferir A si el resto del sitio ya usa atribución; si no, B.
-- **Backend / Edge functions** `paypal-create-order` y `paypal-capture-order`: son funciones del backend compartido de Lovivo. El botón las llama vía `callEdge`. ⚠️ REQUISITO EXTERNO: la tienda Rodata MX debe tener PayPal CONFIGURADO y ACTIVADO en el Dashboard (client_id + secret + enabled en `store_settings`). Si `paypalEnabled` o `paypalClientId` vienen vacíos, el botón simplemente NO se renderiza (el componente hace `if (!paypalEnabled || !paypalClientId || !checkoutToken) return null`). Esto es un paso de configuración en el Dashboard, no de código.
+  2. Añadir 3er useQuery (después del de `platform_stores`):
+     ```
+     const { data: paypalRow, isLoading: isLoadingPaypal } = useQuery({
+       queryKey: ['paypal-account', STORE_ID],
+       queryFn: async () => {
+         const { data, error } = await (supabase
+           .rpc('get_public_paypal_account', { p_store_id: STORE_ID }) as any)
+           .maybeSingle()
+         if (error) { console.warn('[PayPal RPC] Error:', error); return null }
+         return data
+       },
+       staleTime: 60000, retry: 1
+     })
+     ```
+  3. `const isLoading = isLoadingSettings || isLoadingPlatform || isLoadingPaypal`
+  4. Derivados (tras `chargeType`):
+     ```
+     const paypalEnabled = !!paypalRow
+     const paypalClientId = (paypalRow as any)?.client_id ?? null
+     const paypalEnvironment = ((paypalRow as any)?.environment ?? 'live') as 'live' | 'sandbox'
+     ```
+  5. Añadir `paypalEnabled, paypalClientId, paypalEnvironment` al value del Provider.
+  (Los console.log de debug de US son opcionales; omitir en prod o dejar 1 mínimo.)
+- **`src/lib/tracking-utils.ts`** (MX): ❌ `getAttributionPayload` NO existe (verificado: 0 coincidencias). El PaypalExpressButton de US lo usa. Decisión pendiente:
+  - **Opción A**: portar `getAttributionPayload` desde tracking-utils de US (requiere que el usuario mande esa función).
+  - **Opción B (más simple, preferida si no usan atribución en el resto)**: quitar las llamadas a `getAttributionPayload()` del botón y no enviar `attribution` (backend lo trata como opcional).
+- **`src/components/PaypalExpressButton.tsx`** (MX): ❌ NO existe. Hay que CREARLO. ⚠️ **El código que mandó el usuario vino TRUNCADO** ("[...contenido intermedio omitido...]"). FALTA recibir el archivo COMPLETO. Ajustes ES-MX al portar: divider "or pay with"→"o paga con"; toasts "PayPal error"→"Error de PayPal", "Something went wrong..."→"Algo salió mal. Intenta de nuevo.", "Payment not completed"→"El pago no se completó". Currency: pasar `logic.currencyCode.toLowerCase()` (= 'mxn').
+- **`src/pages/ui/CheckoutUI.tsx`** (MX): añadir import de PaypalExpressButton e insertarlo ANTES de `<StripePayment>` (envolver en fragment `<>...</>`), con props: className="mb-2", showDivider={false}, orderId, checkoutToken, amount=finalTotal, currency=currencyCode.toLowerCase(), items=orderItems, shippingCost. (Confirmar nombres exactos de estas vars en el logic de CheckoutUI MX al implementar.)
 
-### Falta recibir del usuario (Rodata US) ANTES de implementar
-1. **`src/contexts/SettingsContext.tsx` de Rodata US** — CRÍTICO. Necesito los NOMBRES EXACTOS de las columnas de `store_settings` (o `platform_stores`) donde se leen `paypalEnabled` / `paypalClientId` / `paypalEnvironment`, y la lógica exacta de fetch. Sin esto no puedo replicar el SettingsContext con seguridad.
-2. (Opcional) `src/lib/supabase.ts` de US si añadieron campos paypal a los types `StoreSettings` / `PaymentMethods`.
+### FALTA RECIBIR del usuario ANTES de crear el botón
+1. **`src/components/PaypalExpressButton.tsx` de US — COMPLETO** (el anterior vino cortado). CRÍTICO.
+2. (Solo si eligen Opción A) la función `getAttributionPayload` del tracking-utils de US.
 
-### Confirmaciones de configuración (Dashboard, no código)
-- ¿PayPal ya está activado/configurado (client_id + secret) para Rodata MX en el Dashboard? Sin esto el botón no aparecerá aunque el código esté perfecto.
-- ¿La cuenta PayPal acepta cobros en MXN?
-
-### Pasos de implementación (Craft Mode) — orden sugerido
+### Pasos de implementación (Craft Mode) — orden
 1. `lov-add-dependency @paypal/react-paypal-js`.
-2. Actualizar `SettingsContext.tsx` (select + interface + provider + fallback) según el US recibido.
-3. (Si aplica) actualizar types en `src/lib/supabase.ts`.
-4. Verificar/portar `getAttributionPayload` en tracking-utils.
-5. Crear `src/components/PaypalExpressButton.tsx` (copia de US con copy ES-MX + currency mxn).
-6. Editar `CheckoutUI.tsx`: import + insertar botón antes de StripePayment en fragment.
-7. Probar con checkout real: el botón debe aparecer solo si PayPal está activo en Dashboard; completar un pago sandbox y validar redirect a `/thank-you/{id}` + Purchase tracking sin duplicar.
+2. Editar `SettingsContext.tsx` (interface + 3er useQuery RPC + isLoading + derivados + provider value).
+3. Decidir A/B para getAttributionPayload.
+4. Crear `PaypalExpressButton.tsx` (copia US completa + copy ES-MX + currency mxn).
+5. Editar `CheckoutUI.tsx`: import + insertar botón antes de StripePayment en fragment.
+6. Probar checkout real: botón aparece (PayPal ya activo en Dashboard) → completar pago → validar redirect `/thank-you/{id}` + Purchase sin duplicar.
 
 ### Archivos a tocar
-- `package.json` (vía lov-add-dependency) — add @paypal/react-paypal-js
-- `src/contexts/SettingsContext.tsx` — exponer paypal config
-- `src/lib/supabase.ts` — (posible) types paypal
-- `src/lib/tracking-utils.ts` — (verificar) getAttributionPayload
-- `src/components/PaypalExpressButton.tsx` — CREAR
+- `package.json` (vía lov-add-dependency) — @paypal/react-paypal-js
+- `src/contexts/SettingsContext.tsx` — RPC paypal + exponer config
+- `src/components/PaypalExpressButton.tsx` — CREAR (falta código completo de US)
 - `src/pages/ui/CheckoutUI.tsx` — import + insertar botón
+- (posible) `src/lib/tracking-utils.ts` — solo si Opción A para getAttributionPayload
+- `src/lib/supabase.ts` — SIN cambios
 
 ## Recent Changes
-- **PayPal port US→MX — plan creado, esperando SettingsContext de US** ⏳ (2026-07-23) — diagnóstico: falta package, PaypalExpressButton, config en SettingsContext, verificar getAttributionPayload; backend requiere PayPal activado en Dashboard MX
-- **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24) — link a /orders/track en desktop, mobile y footer
+- **PayPal port US→MX — enfoque corregido (RPC), esperando botón completo** ⏳ (2026-07-23) — recibido SettingsContext+supabase.ts de US; descubierto que PayPal se lee vía RPC `get_public_paypal_account` (no columnas); supabase.ts sin cambios; getAttributionPayload NO existe en MX (decidir A/B); FALTA PaypalExpressButton.tsx completo (vino truncado); PayPal ya activo en Dashboard MX + acepta MXN
+- **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
 - **Order Tracking — frontend completo** ✅ (2026-06-24)
 - **Footer WhatsApp link corregido** ✅ (2026-06-24) — +52 55 3121 5386
 - **BUG FIX: Sticky bar no aparece en PDP — RESUELTO ✅** (2026-06-18)
@@ -105,24 +115,24 @@ Añadir botón "PayPal Express" en el checkout de Rodata MX, replicando exactame
 - AVATAR_*: `product-images/.../avatar-carlos-v3.webp?width=72&height=72&resize=cover&quality=80` ✅
 
 ## Known Issues
-- **PayPal MX — dependencias del port (2026-07-23)**: (1) `getAttributionPayload` puede no existir en tracking-utils de MX — verificar antes de crear el botón. (2) El botón solo aparece si el Dashboard de MX tiene PayPal configurado (client_id/secret/enabled). (3) Confirmar que la cuenta PayPal acepta MXN.
-- **Order Tracking — view orders_customer**: el CTA "Rastrear pedido" + entrega estimada en /mis-pedidos dependen de que la VIEW `orders_customer` exponga `checkout_token`, `tracking_number`, `tracking_url`, `estimated_delivery_at`. Guards condicionales protegen. La página /orders/track/:token NO depende de esto.
+- **PayPal MX — pendientes del port (2026-07-23)**: (1) FALTA el PaypalExpressButton.tsx completo de US (llegó truncado). (2) `getAttributionPayload` no existe en MX — decidir portarlo (A) o quitarlo del botón (B). (3) Config Dashboard ya OK (PayPal activo + MXN confirmado por usuario).
+- **Order Tracking — view orders_customer**: CTA "Rastrear pedido" + entrega estimada en /mis-pedidos dependen de que la VIEW `orders_customer` exponga checkout_token/tracking_number/tracking_url/estimated_delivery_at. Guards condicionales protegen. /orders/track/:token NO depende de esto.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
-- `src/contexts/SettingsContext.tsx` — settings store; ⚠️ falta exponer paypal config
+- `src/contexts/SettingsContext.tsx` — settings store; añadir RPC paypal
 - `src/pages/ui/CheckoutUI.tsx` — checkout; insertar PaypalExpressButton antes de StripePayment
 - `src/components/StripePayment.tsx` — pago Stripe (ya usa trackPurchase/tracking)
-- `src/lib/tracking-utils.ts` — trackPurchase/tracking ✅; getAttributionPayload ⚠️ verificar
-- `src/lib/edge.ts` — helper callEdge (usado por el botón para paypal-create/capture-order)
+- `src/lib/tracking-utils.ts` — trackPurchase/tracking ✅; getAttributionPayload ❌ no existe
+- `src/lib/edge.ts` — helper callEdge (paypal-create/capture-order)
+- `src/lib/supabase.ts` — types; SIN cambios para paypal
 - `src/pages/OrderTrack.tsx` / `src/pages/ui/OrderTrackUI.tsx` — rastreo pedidos ✅
 - `src/pages/ui/ProductPageUI.tsx` — main PDP ✅ v4.7
 - `src/templates/EcommerceTemplate.tsx` — trust bar + WhatsApp + nav "Rastrear pedido"
 - `src/index.css` — design system
 
 ## PENDING / Future Sessions
-- **PayPal**: recibir SettingsContext de US → implementar en Craft Mode
-- Confirmar PayPal activado en Dashboard MX + soporte MXN
+- **PayPal**: recibir PaypalExpressButton.tsx completo de US → implementar en Craft Mode (SettingsContext ya listo para replicar)
 - Verificar response real de order-track con token de producción
 - "También les encantó" upsell en cart/checkout
 - Post-purchase email sequence (Dashboard)
