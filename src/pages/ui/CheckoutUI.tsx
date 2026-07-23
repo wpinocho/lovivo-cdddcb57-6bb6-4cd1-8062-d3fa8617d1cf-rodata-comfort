@@ -12,6 +12,7 @@ import { CartAppliedRules } from "@/components/ui/CartAppliedRules";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import StripePayment from "@/components/StripePayment";
+import { PaypalExpressButton } from "@/components/PaypalExpressButton";
 import { HeadlessCheckout } from "@/components/headless/HeadlessCheckout";
 import { BrandLogoLeft } from "@/components/BrandLogoLeft";
 import { useURLCheckoutParams } from "@/hooks/useURLCheckoutParams";
@@ -258,6 +259,17 @@ export default function CheckoutUI() {
                       ].join('|');
 
                       return (
+                        <>
+                        <PaypalExpressButton
+                          className="mb-3"
+                          showDivider={false}
+                          orderId={logic.orderId}
+                          checkoutToken={logic.checkoutToken}
+                          amount={logic.finalTotal}
+                          currency={logic.currencyCode.toLowerCase()}
+                          items={logic.orderItems}
+                          shippingCost={logic.shippingFromCheckout || logic.shippingCost}
+                        />
                         <StripePayment
                           key={stripeKey}
                           amountCents={Math.round(logic.finalTotal * 100)}
@@ -366,6 +378,7 @@ export default function CheckoutUI() {
                           }}
                           onLinkAuthChange={setLinkAuthenticated}
                         />
+                        </>
                       );
                     })()}
                   </section>

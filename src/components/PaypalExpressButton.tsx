@@ -1,0 +1,155 @@
+import React from 'react'
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
+import { useSettings } from '@/contexts/SettingsContext'
+import { callEdge } from '@/lib/edge'
+import { STORE_ID } from '@/lib/config'
+import { useToast } from '@/hooks/use-toast'
+import { useNavigate } from 'react-router-dom'
+import { getAttributionPayload, trackPurchase, tracking } from '@/lib/tracking-utils'
+
+interface PaypalExpressButtonProps {
+  orderId: string
+  checkoutToken: string
+  amount: number        // finalTotal en pesos (ej. 799.00)
+  currency: string      // minúsculas (ej. 'mxn')
+  items: any[]
+  shippingCost: number
+  className?: string    // className del wrapper externo
+  showDivider?: boolean // muestra "o paga con" arriba (default true)
+}
+
+export function PaypalExpressButton({
+  orderId,
+  checkoutToken,
+  amount,
+  currency,
+  items,
+  shippingCost,
+  className,
+  showDivider = true,
+}: PaypalExpressButtonProps) {
+  const { paypalEnabled, paypalClientId, paypalEnvironment } = useSettings()
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  if (!paypalEnabled || !paypalClientId || !checkoutToken) return null
+
+  const currencyUpper = currency.toUpperCase()
+
+  return (
+    <div className={className}>
+      {showDivider && (
+        <div className="flex items-center gap-2 my-3">
+          <div className="flex-1 h-px bg-white/[0.08]" />
+          <span className="text-xs text-brand-steel">o paga con</span>
+          <div className="flex-1 h-px bg-white/[0.08]" />
+        </div>
+      )}
+
+      <PayPalScriptProvider
+        key={`${paypalClientId}-${currencyUpper}`}
+        options={{
+          clientId: paypalClientId,
+          currency: currencyUpper,
+          intent: 'capture',
+        }}
+      >
+        <PayPalButtons
+          style={{ layout: 'horizontal', height: 45, tagline: false, color: 'gold' }}
+          fundingSource="paypal"
+          createOrder={async () => {
+            // PayPal Express: no requiere validar el formulario — PayPal recolecta
+            // la dirección de envío del comprador dentro del popup de PayPal.
+            const attribution = getAttributionPayload();
+            const result = await callEdge('paypal-create-order', {
+              store_id: STORE_ID,
+              checkout_token: checkoutToken,
+              amount,
+              currency: currencyUpper,
+              items,
+              shipping: shippingCost,
+              attribution,
+            })
+            if (!result?.id) throw new Error('Falta el ID de la orden de PayPal')
+            return result.id
+          }}
+          onApprove={async (data) => {
+            try {
+              const attribution = getAttributionPayload();
+              const res = await callEdge('paypal-capture-order', {
+                store_id: STORE_ID,
+                paypal_order_id: data.orderID,
+                checkout_token: checkoutToken,
+                attribution,
+              })
+              if (!res?.ok || res?.status !== 'COMPLETED') {
+                throw new Error(res?.error || 'El pago no se completó')
+              }
+
+              // Construye una orden de respaldo desde los props locales por si res.order es null
+              const internalOrderId = res.order?.id || res.order_id
+              const fallbackOrder = {
+                id: internalOrderId || data.orderID,
+                order_number: (internalOrderId || data.orderID).slice(0, 8).toUpperCase(),
+                total_amount: amount,
+                currency_code: currency.toUpperCase(),
+                status: 'paid',
+                order_items: items.map((it: any) => ({
+                  product_name: it.title || it.product_name || 'Producto',
+                  quantity: it.quantity,
+                  price: it.unit_price || it.price || 0,
+                  product_images: it.images || it.product_images || [],
+                  variant_name: it.variant_title || it.variant_name || null,
+                })),
+                created_at: new Date().toISOString(),
+              }
+
+              // Siempre escribe en localStorage — usa la orden del servidor si existe, o el respaldo
+              localStorage.setItem('completed_order', JSON.stringify(res.order ?? fallbackOrder))
+              const ordId = internalOrderId || data.orderID
+
+              // Dispara Purchase (Pixel + CAPI + PostHog) con un guard unificado en
+              // sessionStorage para que ThankYou no lo vuelva a disparar para esta orden.
+              const ptKey = `purchase_tracked_${ordId}`
+              const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1' } catch { return false } })()
+              if (!alreadyTracked) {
+                try { sessionStorage.setItem(ptKey, '1') } catch {}
+                trackPurchase({
+                  products: items
+                    .filter((it: any) => (it.quantity ?? 0) > 0)
+                    .map((it: any) => tracking.createTrackingProduct({
+                      id: it.product_id || it.id,
+                      title: it.title || it.product_name,
+                      price: it.unit_price || it.price || 0,
+                      category: 'product',
+                      variant: it.variant_id ? { id: it.variant_id } : undefined,
+                    })),
+                  value: amount,
+                  currency,
+                  order_id: ordId,
+                  custom_parameters: { payment_method: 'paypal', checkout_token: checkoutToken },
+                })
+              }
+
+              navigate(`/thank-you/${ordId}`)
+            } catch (err: unknown) {
+              toast({
+                title: 'Error de PayPal',
+                description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
+                variant: 'destructive',
+              })
+            }
+          }}
+          onError={(err: unknown) => {
+            toast({
+              title: 'Error de PayPal',
+              description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
+              variant: 'destructive',
+            })
+          }}
+          onCancel={() => { /* el usuario cerró el popup — sin acción */ }}
+        />
+      </PayPalScriptProvider>
+    </div>
+  )
+}
