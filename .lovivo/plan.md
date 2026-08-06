@@ -6,7 +6,7 @@
 - Slug real del producto: `soporte-lumbar-rodata-one` (id `400026a2-c277-407c-abbb-d1683f415120`)
 - Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
 - **Avatar 1**: rider de carretera/fin de semana → PDP `/productos/soporte-lumbar-rodata-one`
-- **Avatar 2**: **repartidor de plataformas** (Rappi/DiDi/Uber Eats) → `/repartidores` (2026-08-06)
+- **Avatar 2**: **repartidor de plataformas** (Rappi/DiDi/Uber Eats) → `/repartidores`
 - Store en producción: rodata.store
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
 
@@ -16,88 +16,33 @@
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
 - Avatares 36px → `?width=72&height=72&resize=cover&quality=80`
+- **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx` (arquitectura
+  validada). Cambiar solo copy, imágenes, reviews y FAQ. Nunca reinventar el esqueleto.
 
 ---
 
-## Active Plan — REFACTOR `/repartidores`: de landing standalone → PDP clonada (2026-08-06)
+## Active Plan — VALIDAR `/repartidores` (PDP clonada) — IMPLEMENTADO 2026-08-06
 
-### Decisión estratégica (acordada con el usuario)
-La v1 de `/repartidores` se construyó como una **landing standalone** (header propio, sin nav,
-sin `EcommerceTemplate`, sin galería, sin CartSidebar). **Es la decisión equivocada.**
+### Qué se hizo
+`/repartidores` es ahora un fork literal de `ProductPageUI` v4.7 (`DeliveryPDPUI.tsx`):
+misma galería con scroll-snap, badge -20% half-outside, guía de tallas inline, cantidad,
+express checkout, **botón Agregar al carrito recuperado** (CartSidebar vuelve a funcionar),
+trust row, accordion de envío, social proof, WhatsApp, stats bar, sticky bar, FAQ y CTA final.
 
-Razonamiento a documentar y respetar:
-1. **Una variable a la vez.** Lo que cambió es el avatar (copy + imágenes), NO la arquitectura.
-   Si cambiamos ambas y el CR baja, no sabemos cuál falló. La arquitectura de
-   `ProductPageUI` (v4.7) ya está validada con ventas reales → es el control.
-2. **La PDP actual tiene activos de conversión que la landing perdió**: carrusel de galería
-   mobile con scroll-snap, badge -20% half-outside, guía de tallas inline, sticky bar,
-   express checkout (wallets), trust bar, WhatsApp flotante, CartSidebar.
-3. **Bug funcional real**: sin `EcommerceTemplate` no hay CartSidebar → `handleAddToCart`
-   no renderiza nada. Se resolvió "quitando el botón", lo cual es amputar, no arreglar.
-4. **Quitar el nav es una micro-optimización, no la jugada de apertura.** En una tienda de
-   1 producto, la fuga por el logo es marginal. Si el repartidor hace clic en el logo y ve
-   la home de carretera, es un caso raro y aceptable. Se puede testear después.
-5. **Mantenimiento**: si ambas páginas comparten esqueleto, portar mejoras futuras es un diff
-   trivial. Con dos arquitecturas distintas, se duplica el trabajo para siempre.
+Cambios respecto al control (solo contenido):
+- Galería: `[DLV_HERO_SQ, DLV_FEAT_3, DLV_FEAT_2, ...logic.displayImages]`
+- Eyebrow: "Diseñado para jornadas de 8 a 12 horas sobre la moto" + subtítulo con el gancho del ad
+- 3 bullets, FEATURES 01–03, 5 REVIEWS y 7 FAQS en lenguaje de repartidor
+- Lifestyle break con `DLV_HERO_WIDE`; quote break con `DLV_FEAT_1`
+- **Sección nueva exclusiva**: banda de ángulo económico ("El dolor no solo molesta.
+  Te cuesta dinero.") entre stats bar y `#por-que-funciona`
+- SEO: `noindex, follow` + canonical a la PDP principal, con cleanup al desmontar
+- `ProductPageUI.tsx` NO se tocó (es el control)
 
-### Objetivo
-`/repartidores` debe ser **la misma PDP** que `/productos/soporte-lumbar-rodata-one`,
-con copy, imágenes, reseñas y FAQ del avatar repartidor. Nada más.
-
-### URL — mantener `/repartidores`
-Más corta y limpia para los ads que `/productos/...-repartidores`. Sin impacto SEO porque
-lleva `noindex, follow` + canonical a la PDP principal.
-
-### Implementation steps (Craft Mode)
-1. **Crear `src/pages/ui/DeliveryPDPUI.tsx` como FORK LITERAL de `src/pages/ui/ProductPageUI.tsx`.**
-   Copiar el archivo tal cual y luego sustituir SOLO contenido. **NO reordenar secciones,
-   NO cambiar clases de layout, NO tocar el sticky bar ni la lógica del IntersectionObserver.**
-   El diff contra `ProductPageUI.tsx` debe ser casi 100% strings, imágenes y arrays de datos.
-2. **Galería (única modificación estructural permitida en el bloque de producto):**
-   `productImages` hoy sale de `logic.displayImages` (imágenes del Dashboard = carretera).
-   Para esta página anteponer las imágenes del avatar repartidor:
-   ```
-   const DLV_GALLERY = [DLV_HERO, DLV_FEAT_3, DLV_FEAT_2]
-   const productImages = [...DLV_GALLERY, ...(logic.displayImages ?? [])]
-   ```
-   Nota: `DLV_HERO` es 1600x1200 (4:3) y la galería usa `aspect-square` con `object-cover`
-   → verificar en screenshot mobile que no corte la cabeza del rider. Si corta,
-   usar `?width=1200&height=1200&resize=cover` en la URL de Supabase.
-3. **Mantener `EcommerceTemplate`** con `layout="full-width" noPadding hideFloatingCartOnMobile`
-   y los mismos `navLinks` (`Por qué funciona`, `Opiniones`, `FAQ`). Logo → home. Aceptado.
-4. **Recuperar el botón "Agregar al carrito"** igual que en la PDP (el CartSidebar ya existe
-   dentro de `EcommerceTemplate`). Esto cierra el Known Issue de la v1.
-5. **Contenido a portar desde `DeliveryLandingUI.tsx`** (ya está escrito y aprobado):
-   - Eyebrow: `DISEÑADO PARA JORNADAS DE 8 A 12 HORAS SOBRE LA MOTO`
-   - H1: mantener `logic.product.title` (es la PDP) pero el eyebrow + bullets hacen el match.
-     Añadir subtítulo bajo el título con el gancho del ad: "Acortar tu turno te cuesta entregas."
-   - 3 bullets del panel de info → versión repartidor (turno completo / subir-bajar 40 veces /
-     no estorba con la mochila).
-   - `FEATURES` 01–03 → copiar los 3 objetos de `DeliveryLandingUI.tsx` con `DLV_FEAT_1..3`.
-   - `REVIEWS` → 5 reseñas con lenguaje de repartidor (turnos, pedidos, plataformas),
-     reutilizando `review-1..5.webp` y los avatares existentes. Ciudades: CDMX, Edomex,
-     Guadalajara, Monterrey, Puebla.
-   - `FAQS` → las 7 de la landing (mochila térmica, calor, subir/bajar, talla, envío, cambio,
-     garantía).
-6. **Única sección NUEVA permitida — ángulo económico** ("El dolor no solo molesta. Te cuesta
-   dinero."). Es el diferenciador más fuerte del avatar y la PDP de carretera no lo tiene.
-   Insertarla como banda compacta justo DESPUÉS de la trust bar / antes de `#por-que-funciona`.
-   Copy: parar antes = menos entregas = menos dinero; "si te ahorra un turno cortado, ya se pagó".
-7. **SEO**: mover el `useEffect` de `noindex, follow` + `<link rel=canonical>` apuntando a
-   `https://rodata.store/productos/soporte-lumbar-rodata-one`, con cleanup al desmontar.
-8. **`src/pages/DeliveryLanding.tsx`**: cambiar el render a `DeliveryPDPUI`. La inyección de slug
-   (`<HeadlessProduct slug="soporte-lumbar-rodata-one">`) ya funciona, no tocar.
-9. **Borrar `src/pages/ui/DeliveryLandingUI.tsx`** (recuperable en git si algún día se quiere
-   testear la versión sin nav).
-10. **Ruta `/repartidores` en `App.tsx`**: sin cambios.
-11. **Verificación**: screenshot-preview mobile (390px) + desktop de `/repartidores`;
-    comprobar galería, sticky bar, guía de tallas, express checkout y que el CartSidebar abra.
-
-### Archivos
-- CREAR: `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7)
-- EDITAR: `src/pages/DeliveryLanding.tsx`
-- BORRAR: `src/pages/ui/DeliveryLandingUI.tsx`
-- NO TOCAR: `src/pages/ui/ProductPageUI.tsx`, `HeadlessProduct.tsx`, `App.tsx`
+### Pendiente de verificación
+- Screenshot mobile 390px + desktop tras el deploy. Revisar que `DLV_HERO_SQ`
+  (`?width=1200&height=1200&resize=cover`) no corte la cabeza del rider en la galería.
+- Probar que el CartSidebar abra al dar "Agregar al carrito".
 
 ### Cómo medir (sin A/B split — no hay volumen)
 - Swap por campaña con benchmark antes/después: apuntar SOLO el ad set de repartidores a
@@ -109,15 +54,14 @@ lleva `noindex, follow` + canonical a la PDP principal.
 ---
 
 ## Recent Changes
-- **Refactor `/repartidores` → clonar arquitectura de la PDP** 📋 (2026-08-06) — decisión: la v1
-  standalone se descarta; se forkea `ProductPageUI` y solo se cambia copy + imágenes. Motivo:
-  no cambiar arquitectura y mensaje al mismo tiempo; recuperar galería, carrito y sticky bar.
-- **Landing `/repartidores` v1 IMPLEMENTADA** ✅ (2026-08-06) — slug inyectable en HeadlessProduct,
-  ruta nueva, `DeliveryLandingUI` standalone, 4 imágenes del avatar repartidor, copy con message
-  match a los 3 ads, SEO noindex+canonical. (Copy e imágenes se reciclan; el esqueleto se descarta.)
-- **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — el storefront NO manda nada directo a
-  graph.facebook.com. La duplicación ocurre fuera de este repo.
-- **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23) — falta prueba real de checkout.
+- **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06) — creado
+  `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7), `DeliveryLanding.tsx` apunta
+  al nuevo UI, borrado `DeliveryLandingUI.tsx`. Carrito y galería recuperados.
+- **Refactor `/repartidores` → clonar arquitectura de la PDP** 📋 (2026-08-06) — decisión:
+  no cambiar arquitectura y mensaje al mismo tiempo.
+- **Landing `/repartidores` v1** (2026-08-06) — descartada; copy e imágenes reciclados.
+- **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
+- **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23) — falta prueba real.
 - **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
 - **Order Tracking — frontend completo** ✅ (2026-06-24)
 - **Footer WhatsApp link corregido** ✅ (2026-06-24) — +52 55 3121 5386
@@ -141,11 +85,11 @@ Base URLs:
 - REVIEW_IMG_1-5: `SB_PROD/review-1..5.webp`
 - AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
 
-### Avatar repartidor — generadas 2026-08-06 ✅ (se reutilizan en el refactor)
-- DLV_HERO: `SB_PROD/dlv-hero.webp` (1600x1200) — repartidor en scooter, noche lluviosa CDMX
-- DLV_FEAT_1: `SB_PROD/dlv-feat-1.webp` (1024²) — estirando la espalda al final del turno
-- DLV_FEAT_2: `SB_PROD/dlv-feat-2.webp` (1024²) — close-up ajustando correas en la calle
-- DLV_FEAT_3: `SB_PROD/dlv-feat-3.webp` (1024²) — espalda con mochila térmica + soporte debajo
+### Avatar repartidor — en uso en DeliveryPDPUI
+- DLV_HERO: `SB_PROD/dlv-hero.webp` (1600x1200) — usado en galería (crop cuadrado) y lifestyle break
+- DLV_FEAT_1: `SB_PROD/dlv-feat-1.webp` (1024²) — feature 01 + quote break
+- DLV_FEAT_2: `SB_PROD/dlv-feat-2.webp` (1024²) — feature 02 + galería
+- DLV_FEAT_3: `SB_PROD/dlv-feat-3.webp` (1024²) — feature 03 + galería
 - Reviews/avatares: reutilizados de la PDP (pendiente generar propios)
 
 ### Creativos de ads validados (subidos por el usuario, en Supabase)
@@ -154,9 +98,7 @@ Base URLs:
 - `message-images/0f3c776b-.../1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **`/repartidores` sin CartSidebar (2026-08-06)** — se resuelve con el refactor a `EcommerceTemplate`.
-  Cerrar este issue cuando esté implementado.
-- **PayPal MX — falta prueba real (2026-07-23)**: implementación completa pero NO probada en checkout real.
+- **PayPal MX — falta prueba real (2026-07-23)**: implementación completa pero NO probada.
 - **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos. No viene del
   storefront. Revisar CAPI Gateway en Business Manager.
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
@@ -167,20 +109,19 @@ Base URLs:
 - `src/App.tsx` — rutas (`/repartidores` incluida)
 - `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`, prop `slug`
 - `src/pages/Product.tsx` — PDP carretera (contenedor)
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **NO TOCAR** (es el control del test)
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test, tocar con cuidado**
 - `src/pages/DeliveryLanding.tsx` — contenedor PDP repartidores
-- `src/pages/ui/DeliveryPDPUI.tsx` — (a crear) PDP repartidores, fork de ProductPageUI
+- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fork de ProductPageUI)
 - `src/templates/EcommerceTemplate.tsx` — nav/trust bar/WhatsApp/CartSidebar
 - `src/components/ProductExpressCheckout.tsx` — wallets en PDP
 - `src/lib/tracking-utils.ts` — tracking + getAttributionPayload
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[ALTA]** Ejecutar el refactor de `/repartidores` a PDP clonada (ver Active Plan).
-- **[ALTA]** Screenshot-preview mobile + desktop tras el refactor y ajustar recortes de galería.
+- **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y ajustar recorte de galería si corta.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar el CR benchmark previo.
 - **[ALTA]** PayPal: probar checkout real en producción.
-- **[MEDIA]** Generar reviews/avatares propios de repartidores.
+- **[MEDIA]** Generar reviews/avatares propios de repartidores (hoy se reutilizan los de carretera).
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
 - **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores` (micro-optimización).
 - **[BAJA]** Property PostHog `landing_variant: 'repartidores'`.

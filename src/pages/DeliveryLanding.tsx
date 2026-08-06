@@ -1,17 +1,17 @@
 import { HeadlessProduct } from "@/components/headless/HeadlessProduct"
-import { DeliveryLandingUI } from "@/pages/ui/DeliveryLandingUI"
+import { DeliveryPDPUI } from "@/pages/ui/DeliveryPDPUI"
 
 /**
  * ROUTE COMPONENT — /repartidores
  *
- * Landing dedicada al avatar "repartidor de plataformas".
- * Usa EXACTAMENTE el mismo producto que la PDP principal (mismo inventario,
- * mismo precio, mismas variantes) — solo cambia la presentación y el copy.
+ * PDP dedicada al avatar "repartidor de plataformas".
+ * Misma arquitectura que la PDP principal (galería, sticky bar, carrito,
+ * express checkout) y el mismo producto — solo cambian copy e imágenes.
  */
 const DeliveryLanding = () => {
   return (
     <HeadlessProduct slug="soporte-lumbar-rodata-one">
-      {(logic) => <DeliveryLandingUI logic={logic} />}
+      {(logic) => <DeliveryPDPUI logic={logic} />}
     </HeadlessProduct>
   )
 }
