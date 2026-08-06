@@ -25,8 +25,9 @@ import { useCheckout } from '@/hooks/useCheckout'
  * - Estados de carga y navegación
  */
 
-export const useProductLogic = () => {
-  const { slug } = useParams<{ slug: string }>()
+export const useProductLogic = (slugOverride?: string) => {
+  const { slug: paramSlug } = useParams<{ slug: string }>()
+  const slug = slugOverride ?? paramSlug
   const navigate = useNavigate()
   const [product, setProduct] = useState<ProductType | null>(null)
   const [loading, setLoading] = useState(true)
@@ -419,10 +420,12 @@ export const useProductLogic = () => {
 
 interface HeadlessProductProps {
   children: (logic: ReturnType<typeof useProductLogic>) => React.ReactNode
+  /** Fuerza un slug concreto (landings dedicadas). Si se omite, usa el param de la URL. */
+  slug?: string
 }
 
-export const HeadlessProduct = ({ children }: HeadlessProductProps) => {
-  const productLogic = useProductLogic()
+export const HeadlessProduct = ({ children, slug }: HeadlessProductProps) => {
+  const productLogic = useProductLogic(slug)
   
   return <>{children(productLogic)}</>
 }
