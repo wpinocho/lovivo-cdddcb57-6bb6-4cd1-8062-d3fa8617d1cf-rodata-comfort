@@ -18,6 +18,8 @@ interface OrderDetails {
   status: string
   shipping_address?: any
   billing_address?: any
+  delivery_method?: string
+  pickup_location?: any
   order_items: any[]
   created_at: string
 }
@@ -39,9 +41,16 @@ const ThankYou = () => {
         const completedOrderJson = localStorage.getItem('completed_order')
         if (completedOrderJson) {
           const completedOrder = JSON.parse(completedOrderJson)
-          setOrder(completedOrder)
-          // Clean up localStorage
-          localStorage.removeItem('completed_order')
+          // No borramos la orden inmediatamente: si el cliente recarga /gracias/:id
+          // debe seguir viendo su resumen. La descartamos cuando pasan 2 horas.
+          const createdAt = completedOrder?.created_at ? new Date(completedOrder.created_at).getTime() : 0
+          const isStale = createdAt > 0 && Date.now() - createdAt > 2 * 60 * 60 * 1000
+          if (isStale) {
+            localStorage.removeItem('completed_order')
+            setOrder(null)
+          } else {
+            setOrder(completedOrder)
+          }
         } else {
           setOrder(null)
         }
@@ -200,10 +209,17 @@ const ThankYou = () => {
                     {order.shipping_address.phone && <p>Tel: {order.shipping_address.phone}</p>}
                   </div>
                 </div>
-              ) : (
+              ) : (order.delivery_method === 'pickup' || order.pickup_location) ? (
                 <div>
                   <h4 className="font-medium mb-2">Método de Entrega:</h4>
                   <p className="text-sm text-muted-foreground">Recoger en Tienda</p>
+                </div>
+              ) : (
+                <div>
+                  <h4 className="font-medium mb-2">Método de Entrega:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Envío a domicilio. Te enviamos los detalles de entrega por correo.
+                  </p>
                 </div>
               )}
 

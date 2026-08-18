@@ -6,6 +6,7 @@ import { STORE_ID } from '@/lib/config'
 import { useToast } from '@/hooks/use-toast'
 import { useNavigate } from 'react-router-dom'
 import { getAttributionPayload, trackPurchase, tracking } from '@/lib/tracking-utils'
+import { useCart } from '@/contexts/CartContext'
 
 interface PaypalExpressButtonProps {
   orderId: string
@@ -31,6 +32,7 @@ export function PaypalExpressButton({
   const { paypalEnabled, paypalClientId, paypalEnvironment } = useSettings()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const { clearCart } = useCart()
 
   if (!paypalEnabled || !paypalClientId || !checkoutToken) return null
 
@@ -90,22 +92,32 @@ export function PaypalExpressButton({
               const internalOrderId = res.order?.id || res.order_id
               const fallbackOrder = {
                 id: internalOrderId || data.orderID,
-                order_number: (internalOrderId || data.orderID).slice(0, 8).toUpperCase(),
+                order_number: res.order?.order_number || (internalOrderId || data.orderID).slice(0, 8).toUpperCase(),
                 total_amount: amount,
                 currency_code: currency.toUpperCase(),
                 status: 'paid',
+                // En PayPal Express la dirección la recolecta el popup de PayPal, así que
+                // solo el servidor la conoce. Marcamos delivery_method para que la página
+                // de gracias no asuma "Recoger en Tienda" cuando falta la dirección.
+                shipping_address: res.order?.shipping_address ?? null,
+                delivery_method: 'shipping',
                 order_items: items.map((it: any) => ({
-                  product_name: it.title || it.product_name || 'Producto',
+                  product_name: it.product_title || it.product?.title || it.title || it.product_name || 'Producto',
                   quantity: it.quantity,
-                  price: it.unit_price || it.price || 0,
-                  product_images: it.images || it.product_images || [],
-                  variant_name: it.variant_title || it.variant_name || null,
+                  // price ya viene en pesos (no centavos) desde useOrderItems
+                  price: it.price ?? it.unit_price ?? 0,
+                  product_images: it.product?.images || it.images || it.product_images || [],
+                  variant_name: it.variant_title || it.variant?.name || it.variant_name || null,
                 })),
                 created_at: new Date().toISOString(),
               }
 
-              // Siempre escribe en localStorage — usa la orden del servidor si existe, o el respaldo
-              localStorage.setItem('completed_order', JSON.stringify(res.order ?? fallbackOrder))
+              // Siempre escribe en localStorage — usa la orden del servidor si existe, o el respaldo.
+              // checkout_token se agrega siempre para habilitar el botón "Rastrear mi pedido".
+              localStorage.setItem(
+                'completed_order',
+                JSON.stringify({ checkout_token: checkoutToken, ...(res.order ?? fallbackOrder) })
+              )
               const ordId = internalOrderId || data.orderID
 
               // Dispara Purchase (Pixel + CAPI + PostHog) con un guard unificado en
@@ -119,8 +131,8 @@ export function PaypalExpressButton({
                     .filter((it: any) => (it.quantity ?? 0) > 0)
                     .map((it: any) => tracking.createTrackingProduct({
                       id: it.product_id || it.id,
-                      title: it.title || it.product_name,
-                      price: it.unit_price || it.price || 0,
+                      title: it.product_title || it.product?.title || it.title || it.product_name,
+                      price: it.price ?? it.unit_price ?? 0,
                       category: 'product',
                       variant: it.variant_id ? { id: it.variant_id } : undefined,
                     })),
@@ -131,7 +143,12 @@ export function PaypalExpressButton({
                 })
               }
 
-              navigate(`/thank-you/${ordId}`)
+              clearCart()
+              toast({
+                title: '¡Pago exitoso!',
+                description: 'Tu compra ha sido procesada correctamente.',
+              })
+              navigate(`/gracias/${ordId}`)
             } catch (err: unknown) {
               toast({
                 title: 'Error de PayPal',

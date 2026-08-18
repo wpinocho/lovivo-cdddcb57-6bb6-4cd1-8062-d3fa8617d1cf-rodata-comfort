@@ -21,105 +21,55 @@
 
 ---
 
-## Active Plan — 🚨 FIX CRÍTICO: PayPal manda a una ruta 404 (auditoría 2026-08-18)
+## Active Plan — ✅ Fix PayPal → `/gracias` IMPLEMENTADO (2026-08-18). Falta QA real.
 
-### Contexto
-El usuario preguntó si una compra por PayPal aterriza bien en `/gracias` con el resumen
-de compra. **Respuesta: NO.** Auditoría de código encontró 1 bug crítico + 4 secundarios.
+### Qué se arregló (código ya en el repo)
+**`src/components/PaypalExpressButton.tsx`**
+1. `navigate('/thank-you/${ordId}')` → **`navigate('/gracias/${ordId}')`** (era el 404 crítico).
+2. `localStorage.completed_order` ahora se guarda como
+   `{ checkout_token: checkoutToken, ...(res.order ?? fallbackOrder) }` ⇒ aparece el botón
+   "Rastrear mi pedido" en `/gracias`.
+3. `fallbackOrder.order_items` remapeado al shape real de `orderItems` (CheckoutAdapter L170-176):
+   `product_title || product?.title`, `price ?? unit_price` (en **pesos**, sin dividir /100),
+   `product?.images`, `variant_title || variant?.name`.
+4. `order_number` prefiere `res.order?.order_number` antes del slice del UUID.
+5. `shipping_address: res.order?.shipping_address ?? null` + `delivery_method: 'shipping'`.
+6. Paridad con Stripe: `clearCart()` (import `useCart` de `@/contexts/CartContext`) y
+   `toast({ title: '¡Pago exitoso!' })` antes de navegar.
+7. `trackPurchase` corregido: `title: it.product_title || it.product?.title || ...`,
+   `price: it.price ?? it.unit_price ?? 0`.
 
-### Estado actual verificado
-- `src/App.tsx` líneas 75-76: las rutas de agradecimiento son **`/gracias`** y **`/gracias/:orderId`**.
-  **No existe ninguna ruta `/thank-you`.**
-- `src/components/PaypalExpressButton.tsx` línea 134: `navigate(`/thank-you/${ordId}`)`
-  → cae en `<Route path="*" element={<NotFound />} />`. **El cliente paga y ve un 404.**
-- Stripe (`StripePayment.tsx` L336 + L401) y wallets (`ProductExpressCheckout.tsx` L395)
-  sí navegan correctamente a `/gracias/${orderId}`. PayPal fue el único que quedó mal.
-- `ThankYou.tsx` lee **solo** de `localStorage.completed_order` (L39) y lo borra tras leerlo (L44).
-  PayPal sí escribe esa key (L108), así que el resumen existiría — pero nunca se llega a renderizar.
-- `PaypalExpressButton` se renderiza en `src/pages/ui/CheckoutUI.tsx` L263-272 con
-  `items={logic.orderItems}` (provienen de `useOrderItems`).
-- **Shape real de `orderItems`** (ver `CheckoutAdapter.tsx` L170-176): campos
-  `product_id`, `product_title` (o `product.title`), `price` / `unit_price` (**en pesos, NO centavos**),
-  `variant_id`, `quantity`, imágenes en `product.images`.
-  El `fallbackOrder` de PayPal (L97-103) mapea `it.title`, `it.product_name`, `it.images`,
-  `it.variant_title` → **todos undefined** ⇒ el resumen mostraría "Producto" sin imagen ni variante.
-- `fallbackOrder` **no incluye `checkout_token`** ⇒ el botón "Rastrear mi pedido"
-  (`ThankYou.tsx` L226) no aparece en compras PayPal.
-- `fallbackOrder` **no incluye `shipping_address`** ⇒ `ThankYou.tsx` L189 cae al `else` y
-  muestra **"Método de Entrega: Recoger en Tienda"**, que es FALSO (envío a domicilio).
-  Nota: en PayPal Express la dirección la recoge el popup de PayPal, así que la dirección
-  buena solo puede venir de `res.order` (servidor).
-- `clearCart()` NO se llama tras PayPal (Stripe sí lo hace). Riesgo bajo porque
-  `useCheckout.checkout()` L93 ya limpia el carrito al crear la orden, pero se agrega por seguridad.
-- No hay toast de "¡Pago exitoso!" en PayPal (Stripe sí).
+**`src/pages/ThankYou.tsx`**
+8. Interface `OrderDetails` + `delivery_method?`, `pickup_location?`.
+9. Lógica de entrega en 3 ramas: (a) dirección → mostrarla, (b) `delivery_method === 'pickup'`
+   o `pickup_location` → "Recoger en Tienda", (c) sin datos → "Envío a domicilio. Te enviamos
+   los detalles de entrega por correo." **Ya no miente con "Recoger en Tienda".**
+10. Resistente a refresh: ya NO borra `completed_order` al leerlo; lo descarta solo si
+    `created_at` tiene más de 2 horas. Aplica a todos los métodos de pago.
 
-### Implementation steps
-
-**1. `src/components/PaypalExpressButton.tsx` — arreglar la navegación (CRÍTICO)**
-- L134: `navigate(`/thank-you/${ordId}`)` → `navigate(`/gracias/${ordId}`)`.
-
-**2. Mismo archivo — enriquecer `fallbackOrder` (L91-105)**
-- Agregar `checkout_token: checkoutToken` al objeto que se guarda en `completed_order`
-  (igual que Stripe: `{ checkout_token: checkoutToken, ...order }`). Aplicar TANTO a
-  `res.order` como al fallback → cambiar L108 a:
-  `localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...(res.order ?? fallbackOrder) }))`
-- Corregir el mapeo de items al shape real de `orderItems`:
-  - `product_name: it.product_title || it.product?.title || it.title || it.product_name || 'Producto'`
-  - `price: it.price ?? it.unit_price ?? 0` (ya está en pesos — NO dividir entre 100)
-  - `product_images: it.product?.images || it.images || it.product_images || []`
-  - `variant_name: it.variant_title || it.variant?.name || it.variant_name || null`
-- Añadir `shipping_address: res.order?.shipping_address ?? null` explícito en el fallback
-  y marcar `delivery_method: 'shipping'` para que ThankYou no asuma pickup.
-- Preferir `res.order.order_number` cuando exista (el slice del UUID no coincide con el
-  número real que ve el usuario en el correo / dashboard).
-
-**3. Mismo archivo — paridad con Stripe en el success path**
-- Importar `useCart` y llamar `clearCart()` antes de navegar.
-- Mostrar `toast({ title: "¡Pago exitoso!", description: "Tu compra ha sido procesada correctamente." })`.
-- Corregir el título en `trackPurchase` (L120-126): usar
-  `title: it.product_title || it.product?.title` y `price: it.price ?? it.unit_price ?? 0`
-  (hoy usa `it.title` → undefined). `value: amount` ya es correcto.
-
-**4. `src/pages/ThankYou.tsx` — no mentir con "Recoger en Tienda"**
-- L189: la condición actual es `order.shipping_address && (line1 || address1)`.
-  Cambiar el `else` para distinguir 3 casos:
-  a) hay dirección → mostrarla (como hoy)
-  b) `order.delivery_method === 'pickup'` o existe `pickup_location` → "Recoger en Tienda"
-  c) no hay datos → mostrar "Te enviamos los detalles de entrega por correo"
-     (NO decir "Recoger en Tienda").
-
-**5. Robustez opcional (prioridad media, hacer si es fácil)**
-- `ThankYou.tsx` borra `completed_order` al leerlo (L44) ⇒ si el cliente recarga `/gracias/:id`
-  ve "Pedido no encontrado". Considerar NO borrar la key inmediatamente (dejarla ~30 min o
-  borrarla al montar la home) o hidratar desde el backend por `checkout_token` como fallback,
-  igual que hace `OrderTrack`.
-
-### Files to modify
-- `src/components/PaypalExpressButton.tsx` — ruta `/gracias`, checkout_token, mapeo de items,
-  shipping_address, clearCart, toast, fix de tracking.
-- `src/pages/ThankYou.tsx` — lógica de entrega (no asumir pickup cuando falta la dirección).
-
-### QA obligatorio tras el fix
+### QA obligatorio (PENDIENTE — no probado en real)
 1. Compra real (o sandbox) con PayPal en `/pagar`.
-2. Verificar: aterriza en `/gracias/<id>` (NO 404), muestra nombre real del producto + imagen,
+2. Verificar: aterriza en `/gracias/<id>` (NO 404), nombre real del producto + imagen + talla,
    total correcto en MXN (799, no 79900), número de pedido correcto.
-3. Verificar que aparece el botón "Rastrear mi pedido" y que abre `/orders/track/<token>`.
+3. Verificar botón "Rastrear mi pedido" → abre `/orders/track/<token>`.
 4. Verificar que NO diga "Recoger en Tienda".
-5. Verificar que el carrito quedó vacío y que Meta recibe 1 solo Purchase con value 799.
+5. Verificar carrito vacío y que Meta reciba **1 solo** Purchase con value 799.
+6. Refrescar `/gracias/<id>` → el resumen debe seguir ahí (no "Pedido no encontrado").
 
 ---
 
 ## Recent Changes
-- **🚨 Auditoría PayPal → `/gracias`** (2026-08-18) — encontrado bug crítico: PayPal navega a
-  `/thank-you/:id` que NO existe como ruta ⇒ 404 tras pagar. Plan de fix guardado. NO implementado aún.
+- **✅ Fix PayPal → `/gracias` implementado** (2026-08-18) — ruta corregida, `checkout_token`,
+  mapeo de items al shape real, `delivery_method`, `clearCart`, toast, tracking corregido.
+  `ThankYou` ya no asume pickup y sobrevive un refresh (TTL 2h). **Falta prueba real.**
+- **🚨 Auditoría PayPal → `/gracias`** (2026-08-18) — detectado el 404 y 4 bugs secundarios.
 - **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06) — creado
   `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7), `DeliveryLanding.tsx` apunta
   al nuevo UI, borrado `DeliveryLandingUI.tsx`. Carrito y galería recuperados.
-- **Refactor `/repartidores` → clonar arquitectura de la PDP** 📋 (2026-08-06) — decisión:
-  no cambiar arquitectura y mensaje al mismo tiempo.
+- **Refactor `/repartidores` → clonar arquitectura de la PDP** 📋 (2026-08-06)
 - **Landing `/repartidores` v1** (2026-08-06) — descartada; copy e imágenes reciclados.
 - **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
-- **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23) — falta prueba real.
+- **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
 - **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
 - **Order Tracking — frontend completo** ✅ (2026-06-24)
 - **Footer WhatsApp link corregido** ✅ (2026-06-24) — +52 55 3121 5386
@@ -128,7 +78,6 @@ de compra. **Respuesta: NO.** Auditoría de código encontró 1 bug crítico + 4
 - **Checkout bottom section v2** ✅ (2026-06-15)
 - **Badge descuento half-outside + precio tachado dinámico** ✅ (2026-06-15)
 - **PDP MX v4 — 8 mejoras sincronizadas del repo US** ✅ (2026-06-15)
-- **Precio actualizado: MX$699 → MX$799** ✅
 
 ## Image Inventory
 Base URLs:
@@ -144,7 +93,7 @@ Base URLs:
 - AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
 
 ### Avatar repartidor — en uso en DeliveryPDPUI
-- DLV_HERO: `SB_PROD/dlv-hero.webp` (1600x1200) — usado en galería (crop cuadrado) y lifestyle break
+- DLV_HERO: `SB_PROD/dlv-hero.webp` (1600x1200) — galería (crop cuadrado) y lifestyle break
 - DLV_FEAT_1: `SB_PROD/dlv-feat-1.webp` (1024²) — feature 01 + quote break
 - DLV_FEAT_2: `SB_PROD/dlv-feat-2.webp` (1024²) — feature 02 + galería
 - DLV_FEAT_3: `SB_PROD/dlv-feat-3.webp` (1024²) — feature 03 + galería
@@ -156,31 +105,29 @@ Base URLs:
 - `message-images/0f3c776b-.../1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **🚨 PayPal → 404 tras pagar (2026-08-18)**: `PaypalExpressButton.tsx` L134 navega a
-  `/thank-you/:id`, ruta inexistente (las reales son `/gracias` y `/gracias/:orderId`).
-  Toda compra por PayPal termina en "Página no encontrada". Fix pendiente en Craft Mode.
-- **PayPal — resumen de compra incompleto (2026-08-18)**: sin `checkout_token` (no aparece
-  "Rastrear mi pedido"), mapeo de items con campos equivocados ("Producto", sin imagen),
-  y sin `shipping_address` ⇒ ThankYou muestra "Recoger en Tienda" falsamente.
-- **PayPal MX — falta prueba real (2026-07-23)**: implementación completa pero NO probada.
+- **PayPal MX — falta prueba real (2026-08-18)**: el fix del 404 y del resumen está
+  implementado pero NUNCA se ha completado una compra real por PayPal de punta a punta.
+- **PayPal — dirección de envío**: en PayPal Express la dirección la recoge el popup de
+  PayPal, así que solo llega si `paypal-capture-order` devuelve `res.order.shipping_address`.
+  Si el servidor no la devuelve, `/gracias` muestra "Envío a domicilio + detalles por correo"
+  (correcto, pero sin la dirección impresa). Verificar en el QA.
 - **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos. No viene del
   storefront. Revisar CAPI Gateway en Business Manager.
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
   tracking_url/estimated_delivery_at.
-- **`ThankYou` es frágil**: borra `completed_order` al leerlo, así que un refresh de
-  `/gracias/:id` muestra "Pedido no encontrado". Aplica a todos los métodos de pago.
-- **`lov-search-files` devolvió 0 resultados para strings que sí existen (2026-08-18)** —
+- **`lov-search-files` devuelve resultados inconsistentes / líneas equivocadas (2026-08-18)** —
   índice desactualizado; usar `lov-view` directo cuando pase.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
 - `src/App.tsx` — rutas (`/gracias`, `/gracias/:orderId`, `/repartidores`)
-- `src/components/PaypalExpressButton.tsx` — PayPal Express (⚠️ bug de ruta)
+- `src/components/PaypalExpressButton.tsx` — PayPal Express (✅ arreglado 2026-08-18)
 - `src/components/StripePayment.tsx` — pago con tarjeta/OXXO (referencia de flujo correcto)
 - `src/components/ProductExpressCheckout.tsx` — wallets en PDP (referencia de flujo correcto)
-- `src/pages/ThankYou.tsx` — resumen post-compra (lee `localStorage.completed_order`)
-- `src/pages/ui/CheckoutUI.tsx` — checkout; renderiza PayPal en L263 y Stripe en L273
+- `src/pages/ThankYou.tsx` — resumen post-compra (lee `localStorage.completed_order`, TTL 2h)
+- `src/pages/ui/CheckoutUI.tsx` — checkout; PayPal en L263, Stripe en L273
 - `src/adapters/CheckoutAdapter.tsx` — `orderItems` (shape: product_title, price en pesos)
+- `src/contexts/CartContext.tsx` — `useCart()` expone `clearCart`
 - `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`
 - `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test**
 - `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fork de ProductPageUI)
@@ -188,11 +135,11 @@ Base URLs:
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Fix ruta PayPal `/thank-you` → `/gracias` + resumen completo (ver Active Plan).
-- **[ALTA]** Probar compra real con PayPal en producción de punta a punta.
+- **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta (checklist arriba).
 - **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y ajustar recorte de galería si corta.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar el CR benchmark previo.
-- **[MEDIA]** Hacer `ThankYou` resistente a refresh (no borrar `completed_order` de inmediato).
+- **[MEDIA]** Considerar hidratar `/gracias/:id` desde el backend por `checkout_token`
+  (como `OrderTrack`) para no depender de localStorage.
 - **[MEDIA]** Generar reviews/avatares propios de repartidores (hoy se reutilizan los de carretera).
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
 - **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores`.
