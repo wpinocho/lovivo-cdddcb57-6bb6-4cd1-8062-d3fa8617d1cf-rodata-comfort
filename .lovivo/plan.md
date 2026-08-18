@@ -21,39 +21,97 @@
 
 ---
 
-## Active Plan — VALIDAR `/repartidores` (PDP clonada) — IMPLEMENTADO 2026-08-06
+## Active Plan — 🚨 FIX CRÍTICO: PayPal manda a una ruta 404 (auditoría 2026-08-18)
 
-### Qué se hizo
-`/repartidores` es ahora un fork literal de `ProductPageUI` v4.7 (`DeliveryPDPUI.tsx`):
-misma galería con scroll-snap, badge -20% half-outside, guía de tallas inline, cantidad,
-express checkout, **botón Agregar al carrito recuperado** (CartSidebar vuelve a funcionar),
-trust row, accordion de envío, social proof, WhatsApp, stats bar, sticky bar, FAQ y CTA final.
+### Contexto
+El usuario preguntó si una compra por PayPal aterriza bien en `/gracias` con el resumen
+de compra. **Respuesta: NO.** Auditoría de código encontró 1 bug crítico + 4 secundarios.
 
-Cambios respecto al control (solo contenido):
-- Galería: `[DLV_HERO_SQ, DLV_FEAT_3, DLV_FEAT_2, ...logic.displayImages]`
-- Eyebrow: "Diseñado para jornadas de 8 a 12 horas sobre la moto" + subtítulo con el gancho del ad
-- 3 bullets, FEATURES 01–03, 5 REVIEWS y 7 FAQS en lenguaje de repartidor
-- Lifestyle break con `DLV_HERO_WIDE`; quote break con `DLV_FEAT_1`
-- **Sección nueva exclusiva**: banda de ángulo económico ("El dolor no solo molesta.
-  Te cuesta dinero.") entre stats bar y `#por-que-funciona`
-- SEO: `noindex, follow` + canonical a la PDP principal, con cleanup al desmontar
-- `ProductPageUI.tsx` NO se tocó (es el control)
+### Estado actual verificado
+- `src/App.tsx` líneas 75-76: las rutas de agradecimiento son **`/gracias`** y **`/gracias/:orderId`**.
+  **No existe ninguna ruta `/thank-you`.**
+- `src/components/PaypalExpressButton.tsx` línea 134: `navigate(`/thank-you/${ordId}`)`
+  → cae en `<Route path="*" element={<NotFound />} />`. **El cliente paga y ve un 404.**
+- Stripe (`StripePayment.tsx` L336 + L401) y wallets (`ProductExpressCheckout.tsx` L395)
+  sí navegan correctamente a `/gracias/${orderId}`. PayPal fue el único que quedó mal.
+- `ThankYou.tsx` lee **solo** de `localStorage.completed_order` (L39) y lo borra tras leerlo (L44).
+  PayPal sí escribe esa key (L108), así que el resumen existiría — pero nunca se llega a renderizar.
+- `PaypalExpressButton` se renderiza en `src/pages/ui/CheckoutUI.tsx` L263-272 con
+  `items={logic.orderItems}` (provienen de `useOrderItems`).
+- **Shape real de `orderItems`** (ver `CheckoutAdapter.tsx` L170-176): campos
+  `product_id`, `product_title` (o `product.title`), `price` / `unit_price` (**en pesos, NO centavos**),
+  `variant_id`, `quantity`, imágenes en `product.images`.
+  El `fallbackOrder` de PayPal (L97-103) mapea `it.title`, `it.product_name`, `it.images`,
+  `it.variant_title` → **todos undefined** ⇒ el resumen mostraría "Producto" sin imagen ni variante.
+- `fallbackOrder` **no incluye `checkout_token`** ⇒ el botón "Rastrear mi pedido"
+  (`ThankYou.tsx` L226) no aparece en compras PayPal.
+- `fallbackOrder` **no incluye `shipping_address`** ⇒ `ThankYou.tsx` L189 cae al `else` y
+  muestra **"Método de Entrega: Recoger en Tienda"**, que es FALSO (envío a domicilio).
+  Nota: en PayPal Express la dirección la recoge el popup de PayPal, así que la dirección
+  buena solo puede venir de `res.order` (servidor).
+- `clearCart()` NO se llama tras PayPal (Stripe sí lo hace). Riesgo bajo porque
+  `useCheckout.checkout()` L93 ya limpia el carrito al crear la orden, pero se agrega por seguridad.
+- No hay toast de "¡Pago exitoso!" en PayPal (Stripe sí).
 
-### Pendiente de verificación
-- Screenshot mobile 390px + desktop tras el deploy. Revisar que `DLV_HERO_SQ`
-  (`?width=1200&height=1200&resize=cover`) no corte la cabeza del rider en la galería.
-- Probar que el CartSidebar abra al dar "Agregar al carrito".
+### Implementation steps
 
-### Cómo medir (sin A/B split — no hay volumen)
-- Swap por campaña con benchmark antes/después: apuntar SOLO el ad set de repartidores a
-  `rodata.store/repartidores?utm_source=meta&utm_campaign=repartidores`.
-- Antes de lanzar: anotar el CR actual de ese ad set sobre la PDP vieja (últimos 14–21 días).
-- Ventana: ~2–3 semanas o ~300–400 clics / ~20–25 compras.
-- Regla: si el CR NO cae >20–25% relativo → quedarse con la nueva. Reversible en 1 min.
+**1. `src/components/PaypalExpressButton.tsx` — arreglar la navegación (CRÍTICO)**
+- L134: `navigate(`/thank-you/${ordId}`)` → `navigate(`/gracias/${ordId}`)`.
+
+**2. Mismo archivo — enriquecer `fallbackOrder` (L91-105)**
+- Agregar `checkout_token: checkoutToken` al objeto que se guarda en `completed_order`
+  (igual que Stripe: `{ checkout_token: checkoutToken, ...order }`). Aplicar TANTO a
+  `res.order` como al fallback → cambiar L108 a:
+  `localStorage.setItem('completed_order', JSON.stringify({ checkout_token: checkoutToken, ...(res.order ?? fallbackOrder) }))`
+- Corregir el mapeo de items al shape real de `orderItems`:
+  - `product_name: it.product_title || it.product?.title || it.title || it.product_name || 'Producto'`
+  - `price: it.price ?? it.unit_price ?? 0` (ya está en pesos — NO dividir entre 100)
+  - `product_images: it.product?.images || it.images || it.product_images || []`
+  - `variant_name: it.variant_title || it.variant?.name || it.variant_name || null`
+- Añadir `shipping_address: res.order?.shipping_address ?? null` explícito en el fallback
+  y marcar `delivery_method: 'shipping'` para que ThankYou no asuma pickup.
+- Preferir `res.order.order_number` cuando exista (el slice del UUID no coincide con el
+  número real que ve el usuario en el correo / dashboard).
+
+**3. Mismo archivo — paridad con Stripe en el success path**
+- Importar `useCart` y llamar `clearCart()` antes de navegar.
+- Mostrar `toast({ title: "¡Pago exitoso!", description: "Tu compra ha sido procesada correctamente." })`.
+- Corregir el título en `trackPurchase` (L120-126): usar
+  `title: it.product_title || it.product?.title` y `price: it.price ?? it.unit_price ?? 0`
+  (hoy usa `it.title` → undefined). `value: amount` ya es correcto.
+
+**4. `src/pages/ThankYou.tsx` — no mentir con "Recoger en Tienda"**
+- L189: la condición actual es `order.shipping_address && (line1 || address1)`.
+  Cambiar el `else` para distinguir 3 casos:
+  a) hay dirección → mostrarla (como hoy)
+  b) `order.delivery_method === 'pickup'` o existe `pickup_location` → "Recoger en Tienda"
+  c) no hay datos → mostrar "Te enviamos los detalles de entrega por correo"
+     (NO decir "Recoger en Tienda").
+
+**5. Robustez opcional (prioridad media, hacer si es fácil)**
+- `ThankYou.tsx` borra `completed_order` al leerlo (L44) ⇒ si el cliente recarga `/gracias/:id`
+  ve "Pedido no encontrado". Considerar NO borrar la key inmediatamente (dejarla ~30 min o
+  borrarla al montar la home) o hidratar desde el backend por `checkout_token` como fallback,
+  igual que hace `OrderTrack`.
+
+### Files to modify
+- `src/components/PaypalExpressButton.tsx` — ruta `/gracias`, checkout_token, mapeo de items,
+  shipping_address, clearCart, toast, fix de tracking.
+- `src/pages/ThankYou.tsx` — lógica de entrega (no asumir pickup cuando falta la dirección).
+
+### QA obligatorio tras el fix
+1. Compra real (o sandbox) con PayPal en `/pagar`.
+2. Verificar: aterriza en `/gracias/<id>` (NO 404), muestra nombre real del producto + imagen,
+   total correcto en MXN (799, no 79900), número de pedido correcto.
+3. Verificar que aparece el botón "Rastrear mi pedido" y que abre `/orders/track/<token>`.
+4. Verificar que NO diga "Recoger en Tienda".
+5. Verificar que el carrito quedó vacío y que Meta recibe 1 solo Purchase con value 799.
 
 ---
 
 ## Recent Changes
+- **🚨 Auditoría PayPal → `/gracias`** (2026-08-18) — encontrado bug crítico: PayPal navega a
+  `/thank-you/:id` que NO existe como ruta ⇒ 404 tras pagar. Plan de fix guardado. NO implementado aún.
 - **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06) — creado
   `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7), `DeliveryLanding.tsx` apunta
   al nuevo UI, borrado `DeliveryLandingUI.tsx`. Carrito y galería recuperados.
@@ -98,31 +156,45 @@ Base URLs:
 - `message-images/0f3c776b-.../1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
+- **🚨 PayPal → 404 tras pagar (2026-08-18)**: `PaypalExpressButton.tsx` L134 navega a
+  `/thank-you/:id`, ruta inexistente (las reales son `/gracias` y `/gracias/:orderId`).
+  Toda compra por PayPal termina en "Página no encontrada". Fix pendiente en Craft Mode.
+- **PayPal — resumen de compra incompleto (2026-08-18)**: sin `checkout_token` (no aparece
+  "Rastrear mi pedido"), mapeo de items con campos equivocados ("Producto", sin imagen),
+  y sin `shipping_address` ⇒ ThankYou muestra "Recoger en Tienda" falsamente.
 - **PayPal MX — falta prueba real (2026-07-23)**: implementación completa pero NO probada.
 - **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos. No viene del
   storefront. Revisar CAPI Gateway en Business Manager.
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
   tracking_url/estimated_delivery_at.
+- **`ThankYou` es frágil**: borra `completed_order` al leerlo, así que un refresh de
+  `/gracias/:id` muestra "Pedido no encontrado". Aplica a todos los métodos de pago.
+- **`lov-search-files` devolvió 0 resultados para strings que sí existen (2026-08-18)** —
+  índice desactualizado; usar `lov-view` directo cuando pase.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
-- `src/App.tsx` — rutas (`/repartidores` incluida)
-- `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`, prop `slug`
-- `src/pages/Product.tsx` — PDP carretera (contenedor)
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test, tocar con cuidado**
-- `src/pages/DeliveryLanding.tsx` — contenedor PDP repartidores
+- `src/App.tsx` — rutas (`/gracias`, `/gracias/:orderId`, `/repartidores`)
+- `src/components/PaypalExpressButton.tsx` — PayPal Express (⚠️ bug de ruta)
+- `src/components/StripePayment.tsx` — pago con tarjeta/OXXO (referencia de flujo correcto)
+- `src/components/ProductExpressCheckout.tsx` — wallets en PDP (referencia de flujo correcto)
+- `src/pages/ThankYou.tsx` — resumen post-compra (lee `localStorage.completed_order`)
+- `src/pages/ui/CheckoutUI.tsx` — checkout; renderiza PayPal en L263 y Stripe en L273
+- `src/adapters/CheckoutAdapter.tsx` — `orderItems` (shape: product_title, price en pesos)
+- `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test**
 - `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fork de ProductPageUI)
-- `src/templates/EcommerceTemplate.tsx` — nav/trust bar/WhatsApp/CartSidebar
-- `src/components/ProductExpressCheckout.tsx` — wallets en PDP
 - `src/lib/tracking-utils.ts` — tracking + getAttributionPayload
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
+- **[CRÍTICA]** Fix ruta PayPal `/thank-you` → `/gracias` + resumen completo (ver Active Plan).
+- **[ALTA]** Probar compra real con PayPal en producción de punta a punta.
 - **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y ajustar recorte de galería si corta.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar el CR benchmark previo.
-- **[ALTA]** PayPal: probar checkout real en producción.
+- **[MEDIA]** Hacer `ThankYou` resistente a refresh (no borrar `completed_order` de inmediato).
 - **[MEDIA]** Generar reviews/avatares propios de repartidores (hoy se reutilizan los de carretera).
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
-- **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores` (micro-optimización).
+- **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores`.
 - **[BAJA]** Property PostHog `landing_variant: 'repartidores'`.
 - **[BAJA]** "También les encantó" upsell en cart/checkout.
