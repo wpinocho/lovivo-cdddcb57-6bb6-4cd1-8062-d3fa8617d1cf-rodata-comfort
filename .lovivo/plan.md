@@ -18,56 +18,49 @@
 - Avatares 36px → `?width=72&height=72&resize=cover&quality=80`
 - **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx` (arquitectura
   validada). Cambiar solo copy, imágenes, reviews y FAQ. Nunca reinventar el esqueleto.
+- **Regla del cliente (2026-08-20)**: en `/repartidores` SOLO se usan las fotos reales que él
+  sube. Prohibido mezclar las imágenes del producto de la BD ni generar con IA para esa landing.
 
 ---
 
-## Active Plan — ✅ Fix PayPal → `/gracias` IMPLEMENTADO (2026-08-18). Falta QA real.
+## Active Plan — ✅ Fotografía real montada en `/repartidores` (2026-08-20). Falta QA visual.
 
-### Qué se arregló (código ya en el repo)
-**`src/components/PaypalExpressButton.tsx`**
-1. `navigate('/thank-you/${ordId}')` → **`navigate('/gracias/${ordId}')`** (era el 404 crítico).
-2. `localStorage.completed_order` ahora se guarda como
-   `{ checkout_token: checkoutToken, ...(res.order ?? fallbackOrder) }` ⇒ aparece el botón
-   "Rastrear mi pedido" en `/gracias`.
-3. `fallbackOrder.order_items` remapeado al shape real de `orderItems` (CheckoutAdapter L170-176):
-   `product_title || product?.title`, `price ?? unit_price` (en **pesos**, sin dividir /100),
-   `product?.images`, `variant_title || variant?.name`.
-4. `order_number` prefiere `res.order?.order_number` antes del slice del UUID.
-5. `shipping_address: res.order?.shipping_address ?? null` + `delivery_method: 'shipping'`.
-6. Paridad con Stripe: `clearCart()` (import `useCart` de `@/contexts/CartContext`) y
-   `toast({ title: '¡Pago exitoso!' })` antes de navegar.
-7. `trackPurchase` corregido: `title: it.product_title || it.product?.title || ...`,
-   `price: it.price ?? it.unit_price ?? 0`.
+### Mapeo de slots de imagen en `src/pages/ui/DeliveryPDPUI.tsx`
+Bucket: `message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1` (constante `SB_UPLOAD`)
 
-**`src/pages/ThankYou.tsx`**
-8. Interface `OrderDetails` + `delivery_method?`, `pickup_location?`.
-9. Lógica de entrega en 3 ramas: (a) dirección → mostrarla, (b) `delivery_method === 'pickup'`
-   o `pickup_location` → "Recoger en Tienda", (c) sin datos → "Envío a domicilio. Te enviamos
-   los detalles de entrega por correo." **Ya no miente con "Recoger en Tienda".**
-10. Resistente a refresh: ya NO borra `completed_order` al leerlo; lo descarta solo si
-    `created_at` tiene más de 2 horas. Aplica a todos los métodos de pago.
+| Slot | Archivo |
+|---|---|
+| Galería 1 (estudio 3/4) | `1787249204164-ifubpmh955s.webp` |
+| Galería 2 (mochila térmica) | `1787249204164-h4pa1xnbjw.webp` |
+| Galería 3 (asiento + casco) | `1787249204164-5rlwxy193t3.webp` |
+| Galería 4 (ajuste puesto) | `1787249204164-r9dtbwqmwaa.webp` |
+| Galería 5 (interior) | `1787249204164-7ws595nt61i.webp` |
+| Lifestyle "Para quien vive arriba de la moto" | `1787249204164-0fhnu1sec2e.webp` |
+| Beneficio 01 | `1787249204164-v5k7gqoh4rq.webp` |
+| Beneficio 02 (macro correas) | `1787249204164-w8rmrhw4b6k.webp` |
+| Beneficio 03 | `1787249204164-sobj1wnq3sg.webp` |
+| Quote "Ya cierro las 10 horas…" | reutiliza galería 2 (**falta la imagen 10**) |
 
-### QA obligatorio (PENDIENTE — no probado en real)
-1. Compra real (o sandbox) con PayPal en `/pagar`.
-2. Verificar: aterriza en `/gracias/<id>` (NO 404), nombre real del producto + imagen + talla,
-   total correcto en MXN (799, no 79900), número de pedido correcto.
-3. Verificar botón "Rastrear mi pedido" → abre `/orders/track/<token>`.
-4. Verificar que NO diga "Recoger en Tienda".
-5. Verificar carrito vacío y que Meta reciba **1 solo** Purchase con value 799.
-6. Refrescar `/gracias/<id>` → el resumen debe seguir ahí (no "Pedido no encontrado").
+- `productImages` ya NO incluye `logic.displayImages` (BD) — galería 100% del avatar repartidor.
+- Constantes viejas `DLV_HERO_WIDE`, `DLV_HERO_SQ`, `dlv-feat-*.webp` **eliminadas** del archivo.
+
+### QA pendiente
+1. Screenshot mobile + desktop de `/repartidores`: verificar recortes cuadrados de la galería.
+2. Lifestyle break: la imagen tiene texto quemado abajo-izquierda ("No estorba con la mochila").
+   El gradiente 0.92 a la izquierda debería taparlo — confirmar en mobile.
+3. Pedir al cliente la imagen #10 para el quote break.
 
 ---
 
 ## Recent Changes
+- **✅ Fotografía real en `/repartidores`** (2026-08-20) — 9 imágenes del cliente montadas en
+  galería (5), lifestyle break, 3 beneficios; quote reutiliza galería 2. Galería desligada de la BD.
 - **✅ Fix PayPal → `/gracias` implementado** (2026-08-18) — ruta corregida, `checkout_token`,
   mapeo de items al shape real, `delivery_method`, `clearCart`, toast, tracking corregido.
   `ThankYou` ya no asume pickup y sobrevive un refresh (TTL 2h). **Falta prueba real.**
 - **🚨 Auditoría PayPal → `/gracias`** (2026-08-18) — detectado el 404 y 4 bugs secundarios.
 - **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06) — creado
-  `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7), `DeliveryLanding.tsx` apunta
-  al nuevo UI, borrado `DeliveryLandingUI.tsx`. Carrito y galería recuperados.
-- **Refactor `/repartidores` → clonar arquitectura de la PDP** 📋 (2026-08-06)
-- **Landing `/repartidores` v1** (2026-08-06) — descartada; copy e imágenes reciclados.
+  `src/pages/ui/DeliveryPDPUI.tsx` (fork de ProductPageUI v4.7).
 - **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
 - **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
 - **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
@@ -76,7 +69,6 @@
 - **BUG FIX: Sticky bar no aparece en PDP — RESUELTO ✅** (2026-06-18)
 - **Fix conversiones duplicadas Meta** ✅ (2026-06-18)
 - **Checkout bottom section v2** ✅ (2026-06-15)
-- **Badge descuento half-outside + precio tachado dinámico** ✅ (2026-06-15)
 - **PDP MX v4 — 8 mejoras sincronizadas del repo US** ✅ (2026-06-15)
 
 ## Image Inventory
@@ -92,56 +84,52 @@ Base URLs:
 - REVIEW_IMG_1-5: `SB_PROD/review-1..5.webp`
 - AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
 
-### Avatar repartidor — en uso en DeliveryPDPUI
-- DLV_HERO: `SB_PROD/dlv-hero.webp` (1600x1200) — galería (crop cuadrado) y lifestyle break
-- DLV_FEAT_1: `SB_PROD/dlv-feat-1.webp` (1024²) — feature 01 + quote break
-- DLV_FEAT_2: `SB_PROD/dlv-feat-2.webp` (1024²) — feature 02 + galería
-- DLV_FEAT_3: `SB_PROD/dlv-feat-3.webp` (1024²) — feature 03 + galería
-- Reviews/avatares: reutilizados de la PDP (pendiente generar propios)
+### Avatar repartidor — fotografía REAL vigente (2026-08-20)
+Ver tabla de mapeo en "Active Plan". Todas en `SB_MSG`, prefijo `1787249204164-`.
+- **DEPRECADAS**: `SB_PROD/dlv-hero.webp`, `dlv-feat-1.webp`, `dlv-feat-2.webp`, `dlv-feat-3.webp`
+  (generadas con IA, el cliente las rechazó por calidad).
+- Reviews/avatares en `/repartidores`: siguen reutilizando los de carretera.
 
-### Creativos de ads validados (subidos por el usuario, en Supabase)
-- `message-images/0f3c776b-.../1786041572607-zlqbmm6nxp.webp` — "Te subes y bajas 40 veces al día"
-- `message-images/0f3c776b-.../1786041572607-2687rjqwf6x.webp` — "Mochila cargada. Postura inclinada."
-- `message-images/0f3c776b-.../1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
+### Creativos de ads validados
+- `SB_MSG/1786041572607-zlqbmm6nxp.webp` — "Te subes y bajas 40 veces al día"
+- `SB_MSG/1786041572607-2687rjqwf6x.webp` — "Mochila cargada. Postura inclinada."
+- `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
+- **Falta la imagen #10 de `/repartidores` (2026-08-20)**: el cliente dijo 10, llegaron 9.
+  El quote break usa provisionalmente la imagen de galería 2.
 - **PayPal MX — falta prueba real (2026-08-18)**: el fix del 404 y del resumen está
   implementado pero NUNCA se ha completado una compra real por PayPal de punta a punta.
-- **PayPal — dirección de envío**: en PayPal Express la dirección la recoge el popup de
-  PayPal, así que solo llega si `paypal-capture-order` devuelve `res.order.shipping_address`.
-  Si el servidor no la devuelve, `/gracias` muestra "Envío a domicilio + detalles por correo"
-  (correcto, pero sin la dirección impresa). Verificar en el QA.
-- **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos. No viene del
-  storefront. Revisar CAPI Gateway en Business Manager.
+- **PayPal — dirección de envío**: solo llega si `paypal-capture-order` devuelve
+  `res.order.shipping_address`. Si no, `/gracias` muestra "Envío a domicilio + detalles por correo".
+- **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos. Revisar CAPI Gateway.
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
   tracking_url/estimated_delivery_at.
-- **`lov-search-files` devuelve resultados inconsistentes / líneas equivocadas (2026-08-18)** —
-  índice desactualizado; usar `lov-view` directo cuando pase.
+- **`lov-search-files` devuelve resultados vacíos / índice desactualizado (2026-08-18, confirmado
+  2026-08-20)** — usar `lov-view` directo.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
 - `src/App.tsx` — rutas (`/gracias`, `/gracias/:orderId`, `/repartidores`)
 - `src/components/PaypalExpressButton.tsx` — PayPal Express (✅ arreglado 2026-08-18)
 - `src/components/StripePayment.tsx` — pago con tarjeta/OXXO (referencia de flujo correcto)
-- `src/components/ProductExpressCheckout.tsx` — wallets en PDP (referencia de flujo correcto)
-- `src/pages/ThankYou.tsx` — resumen post-compra (lee `localStorage.completed_order`, TTL 2h)
+- `src/components/ProductExpressCheckout.tsx` — wallets en PDP
+- `src/pages/ThankYou.tsx` — resumen post-compra (localStorage `completed_order`, TTL 2h)
 - `src/pages/ui/CheckoutUI.tsx` — checkout; PayPal en L263, Stripe en L273
-- `src/adapters/CheckoutAdapter.tsx` — `orderItems` (shape: product_title, price en pesos)
-- `src/contexts/CartContext.tsx` — `useCart()` expone `clearCart`
+- `src/adapters/CheckoutAdapter.tsx` — `orderItems` (product_title, price en pesos)
 - `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`
 - `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test**
-- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fork de ProductPageUI)
+- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fotografía real desde 2026-08-20)
 - `src/lib/tracking-utils.ts` — tracking + getAttributionPayload
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta (checklist arriba).
-- **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y ajustar recorte de galería si corta.
-- **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar el CR benchmark previo.
-- **[MEDIA]** Considerar hidratar `/gracias/:id` desde el backend por `checkout_token`
-  (como `OrderTrack`) para no depender de localStorage.
-- **[MEDIA]** Generar reviews/avatares propios de repartidores (hoy se reutilizan los de carretera).
+- **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y validar recortes.
+- **[ALTA]** Pedir la imagen #10 (quote break) al cliente.
+- **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
+- **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar CR benchmark.
+- **[MEDIA]** Hidratar `/gracias/:id` desde el backend por `checkout_token` (como `OrderTrack`).
+- **[MEDIA]** Generar/pedir reviews y avatares propios de repartidores.
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
 - **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores`.
 - **[BAJA]** Property PostHog `landing_variant: 'repartidores'`.
-- **[BAJA]** "También les encantó" upsell en cart/checkout.

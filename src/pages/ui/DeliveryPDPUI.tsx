@@ -22,12 +22,28 @@ const AVATAR_CARLOS = `${SUPABASE_PROD}/avatar-carlos-v3.webp?width=72&height=72
 const AVATAR_JORGE  = `${SUPABASE_PROD}/avatar-jorge-v3.webp?width=72&height=72&resize=cover&quality=80`
 const AVATAR_ANDRES = `${SUPABASE_PROD}/avatar-andres-v3.webp?width=72&height=72&resize=cover&quality=80`
 
-// Avatar repartidor
-const DLV_HERO_WIDE = `${SUPABASE_PROD}/dlv-hero.webp?width=1400&quality=75`
-const DLV_HERO_SQ   = `${SUPABASE_PROD}/dlv-hero.webp?width=1200&height=1200&resize=cover&quality=75`
-const DLV_FEAT_1 = `${SUPABASE_PROD}/dlv-feat-1.webp?width=800&quality=75`
-const DLV_FEAT_2 = `${SUPABASE_PROD}/dlv-feat-2.webp?width=800&quality=75`
-const DLV_FEAT_3 = `${SUPABASE_PROD}/dlv-feat-3.webp?width=800&quality=75`
+// ── Fotografía real del avatar repartidor (subida por el cliente) ──
+const SB_UPLOAD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
+
+const sq = (file: string) => `${SB_UPLOAD}/${file}?width=1200&height=1200&resize=cover&quality=75`
+
+// Galería del producto (orden definido por el cliente)
+const DLV_GAL_1 = sq('1787249204164-ifubpmh955s.webp') // estudio 3/4
+const DLV_GAL_2 = sq('1787249204164-h4pa1xnbjw.webp')  // repartidor con mochila térmica
+const DLV_GAL_3 = sq('1787249204164-5rlwxy193t3.webp') // sobre el asiento con casco y guantes
+const DLV_GAL_4 = sq('1787249204164-r9dtbwqmwaa.webp') // ajuste de correa puesto
+const DLV_GAL_5 = sq('1787249204164-7ws595nt61i.webp') // interior / cara de contacto
+
+// Lifestyle break — "Para quien vive arriba de la moto"
+const DLV_LIFESTYLE = `${SB_UPLOAD}/1787249204164-0fhnu1sec2e.webp?width=1600&quality=75`
+
+// Beneficios 01 · 02 · 03
+const DLV_FEAT_1 = `${SB_UPLOAD}/1787249204164-v5k7gqoh4rq.webp?width=900&height=900&resize=cover&quality=75`
+const DLV_FEAT_2 = `${SB_UPLOAD}/1787249204164-w8rmrhw4b6k.webp?width=900&height=900&resize=cover&quality=75`
+const DLV_FEAT_3 = `${SB_UPLOAD}/1787249204164-sobj1wnq3sg.webp?width=900&height=900&resize=cover&quality=75`
+
+// Quote break — "Ya cierro las 10 horas..."
+const DLV_QUOTE = `${SB_UPLOAD}/1787249204164-h4pa1xnbjw.webp?width=1600&quality=75`
 
 const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
 const REVIEW_IMG_2 = `${SUPABASE_PROD}/review-2.webp?width=600&quality=75`
@@ -176,9 +192,8 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
     }
   }, [])
 
-  // Galería: primero las imágenes del avatar repartidor, luego las del producto
-  const DLV_GALLERY = [DLV_HERO_SQ, DLV_FEAT_3, DLV_FEAT_2]
-  const productImages: string[] = [...DLV_GALLERY, ...(logic.displayImages ?? [])]
+  // Galería exclusiva del avatar repartidor (NO se mezclan las imágenes del producto en BD)
+  const productImages: string[] = [DLV_GAL_1, DLV_GAL_2, DLV_GAL_3, DLV_GAL_4, DLV_GAL_5]
   const displayImage = selectedImage ?? productImages[0]
   const discountPct = logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice
     ? Math.round((1 - logic.currentPrice / logic.currentCompareAt) * 100) : null
@@ -519,7 +534,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
       {/* ── 3. LIFESTYLE BREAK ── */}
       <section className="relative min-h-[55vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
-          <img src={DLV_HERO_WIDE} alt="Repartidor en moto de noche con el Soporte Lumbar Rodata One" className="w-full h-full object-cover" loading="lazy"/>
+          <img src={DLV_LIFESTYLE} alt="Repartidor con mochila térmica usando el Soporte Lumbar Rodata One" className="w-full h-full object-cover object-center" loading="lazy"/>
           <div className="absolute inset-0" style={{background:'linear-gradient(to right, rgba(17,19,21,0.92) 0%, rgba(17,19,21,0.55) 55%, rgba(17,19,21,0.2) 100%)'}}/>
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -560,7 +575,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
 
       {/* ── 5. QUOTE BREAK ── */}
       <section className="relative overflow-hidden" style={{minHeight:'40vh'}}>
-        <img src={DLV_FEAT_1} alt="Repartidor estirando la espalda al final del turno" className="w-full h-full object-cover absolute inset-0" loading="lazy"/>
+        <img src={DLV_QUOTE} alt="Repartidor estirando la espalda al final del turno" className="w-full h-full object-cover object-center absolute inset-0" loading="lazy"/>
         <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, rgba(17,19,21,0.3) 0%, rgba(17,19,21,0.75) 100%)'}}/>
         <div className="relative z-10 flex items-end min-h-[40vh] pb-10">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
