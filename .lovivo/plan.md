@@ -23,38 +23,54 @@
 
 ---
 
-## Active Plan — ✅ Fotografía real montada en `/repartidores` (2026-08-20). Falta QA visual.
+## Active Plan — ✅ Reasignación de fotos reales en `/repartidores` (2026-08-20, tanda 2). Falta QA visual.
 
-### Mapeo de slots de imagen en `src/pages/ui/DeliveryPDPUI.tsx`
+### Mapeo DEFINITIVO de slots en `src/pages/ui/DeliveryPDPUI.tsx`
 Bucket: `message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1` (constante `SB_UPLOAD`)
 
+**Tanda 1 (prefijo `1787249204164-`) — solo galería del producto:**
 | Slot | Archivo |
 |---|---|
-| Galería 1 (estudio 3/4) | `1787249204164-ifubpmh955s.webp` |
-| Galería 2 (mochila térmica) | `1787249204164-h4pa1xnbjw.webp` |
-| Galería 3 (asiento + casco) | `1787249204164-5rlwxy193t3.webp` |
-| Galería 4 (ajuste puesto) | `1787249204164-r9dtbwqmwaa.webp` |
-| Galería 5 (interior) | `1787249204164-7ws595nt61i.webp` |
-| Lifestyle "Para quien vive arriba de la moto" | `1787249204164-0fhnu1sec2e.webp` |
-| Beneficio 01 | `1787249204164-v5k7gqoh4rq.webp` |
-| Beneficio 02 (macro correas) | `1787249204164-w8rmrhw4b6k.webp` |
-| Beneficio 03 | `1787249204164-sobj1wnq3sg.webp` |
-| Quote "Ya cierro las 10 horas…" | reutiliza galería 2 (**falta la imagen 10**) |
+| Galería 1 (estudio 3/4) | `ifubpmh955s.webp` |
+| Galería 2 (mochila térmica) | `h4pa1xnbjw.webp` |
+| Galería 3 (asiento + casco) | `5rlwxy193t3.webp` |
+| Galería 4 (ajuste puesto) | `r9dtbwqmwaa.webp` |
+| Galería 5 (interior) | `7ws595nt61i.webp` |
 
-- `productImages` ya NO incluye `logic.displayImages` (BD) — galería 100% del avatar repartidor.
-- Constantes viejas `DLV_HERO_WIDE`, `DLV_HERO_SQ`, `dlv-feat-*.webp` **eliminadas** del archivo.
+**Tanda 2 (prefijo `1787251752010-`) — resto de la página:**
+| # | Slot | Archivo |
+|---|---|---|
+| 1 | Lifestyle "Para quien vive arriba de la moto" | `uvy9yh7965f.webp` |
+| 2 | Beneficio 01 | `dxk60x3zg28.webp` |
+| 3 | Beneficio 02 | `h6de90gdd6.webp` |
+| 4 | Beneficio 03 | `mf34bj94nqm.webp` |
+| 5 | Quote "Ya cierro las 10 horas…" | `2b6138nc4z9.webp` |
+| 6 | Reseña 1 — Luis M. | `jotniqhksrb.webp` |
+| 7 | Reseña 2 — Ernesto R. | `13eliul1j8io.webp` |
+| 8 | Reseña 3 — Diego A. | `jos9p0cz468.webp` |
+| 9 | Reseña 4 — Iván T. | `wdpx2luqeyp.webp` |
+| 10 | Reseña 5 — Marco V. (nueva) | `muvx1aec14.webp` |
+| — | Reseña 6 — Saúl H. | `SB_PROD/review-5.webp` (original, sin cambio) |
+
+- Reseñas ahora son **6** (grid de 3 col → 2 filas exactas).
+- Constantes eliminadas: `REVIEW_IMG_1..4` y las 4 imágenes de tanda 1 usadas antes en
+  lifestyle/beneficios (`0fhnu1sec2e`, `v5k7gqoh4rq`, `w8rmrhw4b6k`, `sobj1wnq3sg`) — ya sin uso.
 
 ### QA pendiente
-1. Screenshot mobile + desktop de `/repartidores`: verificar recortes cuadrados de la galería.
-2. Lifestyle break: la imagen tiene texto quemado abajo-izquierda ("No estorba con la mochila").
-   El gradiente 0.92 a la izquierda debería taparlo — confirmar en mobile.
-3. Pedir al cliente la imagen #10 para el quote break.
+1. Screenshot mobile + desktop de `/repartidores`.
+2. Beneficio 01 usa la imagen con texto quemado "No estorba con la mochila ni da calor",
+   que es el titular del Beneficio 03 → posible incongruencia visual. Confirmar con el cliente.
+3. Beneficio 03 es un macro de estudio sobre fondo oscuro (no lifestyle) — validar que no rompa
+   el ritmo de la sección.
 
 ---
 
 ## Recent Changes
-- **✅ Fotografía real en `/repartidores`** (2026-08-20) — 9 imágenes del cliente montadas en
-  galería (5), lifestyle break, 3 beneficios; quote reutiliza galería 2. Galería desligada de la BD.
+- **✅ Reasignación de fotos `/repartidores`** (2026-08-20, tanda 2) — lifestyle, 3 beneficios,
+  quote break y 5 reseñas remapeados a las 10 nuevas fotos del cliente. Se agregó reseña
+  "Marco V." (Querétaro) para llegar a 6; Saúl H. conserva foto y texto al final.
+- **✅ Fotografía real en `/repartidores`** (2026-08-20, tanda 1) — galería del producto (5 fotos),
+  desligada de la BD.
 - **✅ Fix PayPal → `/gracias` implementado** (2026-08-18) — ruta corregida, `checkout_token`,
   mapeo de items al shape real, `delivery_method`, `clearCart`, toast, tracking corregido.
   `ThankYou` ya no asume pickup y sobrevive un refresh (TTL 2h). **Falta prueba real.**
@@ -84,11 +100,12 @@ Base URLs:
 - REVIEW_IMG_1-5: `SB_PROD/review-1..5.webp`
 - AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
 
-### Avatar repartidor — fotografía REAL vigente (2026-08-20)
-Ver tabla de mapeo en "Active Plan". Todas en `SB_MSG`, prefijo `1787249204164-`.
-- **DEPRECADAS**: `SB_PROD/dlv-hero.webp`, `dlv-feat-1.webp`, `dlv-feat-2.webp`, `dlv-feat-3.webp`
-  (generadas con IA, el cliente las rechazó por calidad).
-- Reviews/avatares en `/repartidores`: siguen reutilizando los de carretera.
+### Avatar repartidor — fotografía REAL vigente
+Ver tabla de mapeo en "Active Plan".
+- **DEPRECADAS (IA, rechazadas)**: `SB_PROD/dlv-hero.webp`, `dlv-feat-1/2/3.webp`
+- **SIN USO (tanda 1, sustituidas)**: `SB_MSG/1787249204164-0fhnu1sec2e`, `-v5k7gqoh4rq`,
+  `-w8rmrhw4b6k`, `-sobj1wnq3sg`
+- Avatares (iniciales/foto de perfil) de `/repartidores`: siguen siendo los de carretera.
 
 ### Creativos de ads validados
 - `SB_MSG/1786041572607-zlqbmm6nxp.webp` — "Te subes y bajas 40 veces al día"
@@ -96,8 +113,8 @@ Ver tabla de mapeo en "Active Plan". Todas en `SB_MSG`, prefijo `1787249204164-`
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **Falta la imagen #10 de `/repartidores` (2026-08-20)**: el cliente dijo 10, llegaron 9.
-  El quote break usa provisionalmente la imagen de galería 2.
+- **Beneficio 01 con texto quemado (2026-08-20)**: la imagen asignada trae overlay
+  "No estorba con la mochila ni da calor", que es el titular del Beneficio 03.
 - **PayPal MX — falta prueba real (2026-08-18)**: el fix del 404 y del resumen está
   implementado pero NUNCA se ha completado una compra real por PayPal de punta a punta.
 - **PayPal — dirección de envío**: solo llega si `paypal-capture-order` devuelve
@@ -106,7 +123,7 @@ Ver tabla de mapeo en "Active Plan". Todas en `SB_MSG`, prefijo `1787249204164-`
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
   tracking_url/estimated_delivery_at.
 - **`lov-search-files` devuelve resultados vacíos / índice desactualizado (2026-08-18, confirmado
-  2026-08-20)** — usar `lov-view` directo.
+  2026-08-20)** — usar `lov-view` directo. Reportado.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
@@ -119,17 +136,17 @@ Ver tabla de mapeo en "Active Plan". Todas en `SB_MSG`, prefijo `1787249204164-`
 - `src/adapters/CheckoutAdapter.tsx` — `orderItems` (product_title, price en pesos)
 - `src/components/headless/HeadlessProduct.tsx` — `useProductLogic(slugOverride?)`
 - `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 — **control del test**
-- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fotografía real desde 2026-08-20)
+- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fotografía real, 6 reseñas)
 - `src/lib/tracking-utils.ts` — tracking + getAttributionPayload
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
 - **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y validar recortes.
-- **[ALTA]** Pedir la imagen #10 (quote break) al cliente.
+- **[ALTA]** Confirmar con el cliente el texto quemado en la imagen del Beneficio 01.
 - **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar CR benchmark.
 - **[MEDIA]** Hidratar `/gracias/:id` desde el backend por `checkout_token` (como `OrderTrack`).
-- **[MEDIA]** Generar/pedir reviews y avatares propios de repartidores.
+- **[MEDIA]** Avatares propios de repartidores para las reseñas.
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
 - **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores`.
 - **[BAJA]** Property PostHog `landing_variant: 'repartidores'`.

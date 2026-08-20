@@ -34,21 +34,24 @@ const DLV_GAL_3 = sq('1787249204164-5rlwxy193t3.webp') // sobre el asiento con c
 const DLV_GAL_4 = sq('1787249204164-r9dtbwqmwaa.webp') // ajuste de correa puesto
 const DLV_GAL_5 = sq('1787249204164-7ws595nt61i.webp') // interior / cara de contacto
 
-// Lifestyle break — "Para quien vive arriba de la moto"
-const DLV_LIFESTYLE = `${SB_UPLOAD}/1787249204164-0fhnu1sec2e.webp?width=1600&quality=75`
+// Lifestyle break — "Para quien vive arriba de la moto"  (imagen 1 del cliente)
+const DLV_LIFESTYLE = `${SB_UPLOAD}/1787251752010-uvy9yh7965f.webp?width=1600&quality=75`
 
-// Beneficios 01 · 02 · 03
-const DLV_FEAT_1 = `${SB_UPLOAD}/1787249204164-v5k7gqoh4rq.webp?width=900&height=900&resize=cover&quality=75`
-const DLV_FEAT_2 = `${SB_UPLOAD}/1787249204164-w8rmrhw4b6k.webp?width=900&height=900&resize=cover&quality=75`
-const DLV_FEAT_3 = `${SB_UPLOAD}/1787249204164-sobj1wnq3sg.webp?width=900&height=900&resize=cover&quality=75`
+// Beneficios 01 · 02 · 03  (imágenes 2, 3 y 4 del cliente)
+const DLV_FEAT_1 = `${SB_UPLOAD}/1787251752010-dxk60x3zg28.webp?width=900&height=900&resize=cover&quality=75`
+const DLV_FEAT_2 = `${SB_UPLOAD}/1787251752010-h6de90gdd6.webp?width=900&height=900&resize=cover&quality=75`
+const DLV_FEAT_3 = `${SB_UPLOAD}/1787251752010-mf34bj94nqm.webp?width=900&height=900&resize=cover&quality=75`
 
-// Quote break — "Ya cierro las 10 horas..."
-const DLV_QUOTE = `${SB_UPLOAD}/1787249204164-h4pa1xnbjw.webp?width=1600&quality=75`
+// Quote break — "Ya cierro las 10 horas..."  (imagen 5 del cliente)
+const DLV_QUOTE = `${SB_UPLOAD}/1787251752010-2b6138nc4z9.webp?width=1600&quality=75`
 
-const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
-const REVIEW_IMG_2 = `${SUPABASE_PROD}/review-2.webp?width=600&quality=75`
-const REVIEW_IMG_3 = `${SUPABASE_PROD}/review-3.webp?width=600&quality=75`
-const REVIEW_IMG_4 = `${SUPABASE_PROD}/review-4.webp?width=600&quality=75`
+// Reseñas — imágenes 6 a 10 del cliente (la 6ª reseña, Saúl H., conserva su foto original)
+const rev = (file: string) => `${SB_UPLOAD}/${file}?width=600&quality=75`
+const DLV_REVIEW_1 = rev('1787251752010-jotniqhksrb.webp')
+const DLV_REVIEW_2 = rev('1787251752010-13eliul1j8io.webp')
+const DLV_REVIEW_3 = rev('1787251752010-jos9p0cz468.webp')
+const DLV_REVIEW_4 = rev('1787251752010-wdpx2luqeyp.webp')
+const DLV_REVIEW_5 = rev('1787251752010-muvx1aec14.webp')
 const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 
 // ── Helpers ──
@@ -108,10 +111,11 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
 ]
 
 const REVIEWS = [
-  { name: 'Luis M.',    city: 'CDMX',        stars: 5, initial: 'L', date: 'Mar 2025', photo: REVIEW_IMG_1, text: 'Llevo 2 años repartiendo. Antes a las 6 horas ya andaba parando cada rato por la espalda baja. Ahora cierro las 10 y llego a mi casa sin arrastrarme.' },
-  { name: 'Ernesto R.', city: 'Ecatepec',    stars: 5, initial: 'E', date: 'Feb 2025', photo: REVIEW_IMG_2, text: 'Las fajas normales se me corrían al bajarme de la moto. Esta no. Me la ajusto en la mañana y ni la vuelvo a tocar. Abajo de la sudadera ni se ve.' },
-  { name: 'Diego A.',   city: 'Guadalajara', stars: 5, initial: 'D', date: 'Mar 2025', photo: REVIEW_IMG_3, text: 'Pensé que me iba a estorbar con la caja térmica y para nada, queda abajo. Con el calor de aquí sí se siente fresca, tiene malla.' },
-  { name: 'Iván T.',    city: 'Monterrey',   stars: 4, initial: 'I', date: 'Ene 2025', photo: REVIEW_IMG_4, text: 'Pedí la L con la guía y quedó exacta. En turnos dobles se nota la diferencia: ya no termino con esa punzada de siempre.' },
+  { name: 'Luis M.',    city: 'CDMX',        stars: 5, initial: 'L', date: 'Mar 2025', photo: DLV_REVIEW_1, text: 'Llevo 2 años repartiendo. Antes a las 6 horas ya andaba parando cada rato por la espalda baja. Ahora cierro las 10 y llego a mi casa sin arrastrarme.' },
+  { name: 'Ernesto R.', city: 'Ecatepec',    stars: 5, initial: 'E', date: 'Feb 2025', photo: DLV_REVIEW_2, text: 'Las fajas normales se me corrían al bajarme de la moto. Esta no. Me la ajusto en la mañana y ni la vuelvo a tocar. Abajo de la sudadera ni se ve.' },
+  { name: 'Diego A.',   city: 'Guadalajara', stars: 5, initial: 'D', date: 'Mar 2025', photo: DLV_REVIEW_3, text: 'Pensé que me iba a estorbar con la caja térmica y para nada, queda abajo. Con el calor de aquí sí se siente fresca, tiene malla.' },
+  { name: 'Iván T.',    city: 'Monterrey',   stars: 4, initial: 'I', date: 'Ene 2025', photo: DLV_REVIEW_4, text: 'Pedí la L con la guía y quedó exacta. En turnos dobles se nota la diferencia: ya no termino con esa punzada de siempre.' },
+  { name: 'Marco V.',   city: 'Querétaro',   stars: 5, initial: 'M', date: 'Ene 2025', photo: DLV_REVIEW_5, text: 'Lo dejo junto al casco y la mochila y ya es parte del uniforme. Salgo y me lo pongo sin pensarlo. La espalda baja al final del día es otra cosa.' },
   { name: 'Saúl H.',    city: 'Puebla',      stars: 5, initial: 'S', date: 'Feb 2025', photo: REVIEW_IMG_5, text: 'Hago como 30 entregas diarias en scooter. Con esto dejé de cortar el turno temprano. En una semana ya se había pagado solo.' },
 ]
 
