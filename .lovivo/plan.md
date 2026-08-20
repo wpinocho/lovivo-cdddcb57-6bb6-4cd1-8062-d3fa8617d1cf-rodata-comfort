@@ -16,6 +16,7 @@
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
 - Avatares 36px → `?width=72&height=72&resize=cover&quality=80`
+- **Cards de reseña con foto**: `aspect-square` (antes 4/3, se veían muy chicas). Fuente a `width=700`.
 - **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx` (arquitectura
   validada). Cambiar solo copy, imágenes, reviews y FAQ. Nunca reinventar el esqueleto.
 - **Regla del cliente (2026-08-20)**: en `/repartidores` SOLO se usan las fotos reales que él
@@ -23,7 +24,7 @@
 
 ---
 
-## Active Plan — ✅ Reasignación de fotos reales en `/repartidores` (2026-08-20, tanda 2). Falta QA visual.
+## Active Plan — ✅ Ajustes finos `/repartidores` (2026-08-20, tanda 3). Falta QA visual.
 
 ### Mapeo DEFINITIVO de slots en `src/pages/ui/DeliveryPDPUI.tsx`
 Bucket: `message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1` (constante `SB_UPLOAD`)
@@ -41,34 +42,34 @@ Bucket: `message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1` (constante `SB_UPL
 | # | Slot | Archivo |
 |---|---|---|
 | 1 | Lifestyle "Para quien vive arriba de la moto" | `uvy9yh7965f.webp` |
-| 2 | Beneficio 01 | `dxk60x3zg28.webp` |
+| 2 | **Beneficio 03** (swap 2026-08-20) | `dxk60x3zg28.webp` — trae texto quemado "No estorba con la mochila ni da calor" |
 | 3 | Beneficio 02 | `h6de90gdd6.webp` |
-| 4 | Beneficio 03 | `mf34bj94nqm.webp` |
+| 4 | **Beneficio 01** (swap 2026-08-20) | `mf34bj94nqm.webp` — macro de estudio |
 | 5 | Quote "Ya cierro las 10 horas…" | `2b6138nc4z9.webp` |
 | 6 | Reseña 1 — Luis M. | `jotniqhksrb.webp` |
 | 7 | Reseña 2 — Ernesto R. | `13eliul1j8io.webp` |
 | 8 | Reseña 3 — Diego A. | `jos9p0cz468.webp` |
 | 9 | Reseña 4 — Iván T. | `wdpx2luqeyp.webp` |
-| 10 | Reseña 5 — Marco V. (nueva) | `muvx1aec14.webp` |
+| 10 | Reseña 5 — Marco V. | `muvx1aec14.webp` |
 | — | Reseña 6 — Saúl H. | `SB_PROD/review-5.webp` (original, sin cambio) |
 
-- Reseñas ahora son **6** (grid de 3 col → 2 filas exactas).
-- Constantes eliminadas: `REVIEW_IMG_1..4` y las 4 imágenes de tanda 1 usadas antes en
-  lifestyle/beneficios (`0fhnu1sec2e`, `v5k7gqoh4rq`, `w8rmrhw4b6k`, `sobj1wnq3sg`) — ya sin uso.
+- Reseñas son **6** (grid de 3 col → 2 filas exactas), imagen `aspect-square`.
+- Copy "Se paga solo" (sección "El dolor te cuesta dinero"): ahora en horizonte corto —
+  *"Con que te devuelva una hora de reparto al día, en una semana el Rodata One ya se pagó.
+  Lo de después es ganancia."*
 
 ### QA pendiente
 1. Screenshot mobile + desktop de `/repartidores`.
-2. Beneficio 01 usa la imagen con texto quemado "No estorba con la mochila ni da calor",
-   que es el titular del Beneficio 03 → posible incongruencia visual. Confirmar con el cliente.
-3. Beneficio 03 es un macro de estudio sobre fondo oscuro (no lifestyle) — validar que no rompa
-   el ritmo de la sección.
+2. Validar que el macro de estudio (Beneficio 01) no rompa el ritmo lifestyle de la sección.
 
 ---
 
 ## Recent Changes
+- **✅ Ajustes finos `/repartidores`** (2026-08-20, tanda 3) — swap de imágenes Beneficio 01↔03
+  (el texto quemado ya coincide con su titular), cards de reseña de `aspect-[4/3]` a
+  `aspect-square` (+`width=700`), y copy de "Se paga solo" reescrito a horizonte semanal.
 - **✅ Reasignación de fotos `/repartidores`** (2026-08-20, tanda 2) — lifestyle, 3 beneficios,
-  quote break y 5 reseñas remapeados a las 10 nuevas fotos del cliente. Se agregó reseña
-  "Marco V." (Querétaro) para llegar a 6; Saúl H. conserva foto y texto al final.
+  quote break y 5 reseñas remapeados; se agregó reseña "Marco V." (Querétaro) para llegar a 6.
 - **✅ Fotografía real en `/repartidores`** (2026-08-20, tanda 1) — galería del producto (5 fotos),
   desligada de la BD.
 - **✅ Fix PayPal → `/gracias` implementado** (2026-08-18) — ruta corregida, `checkout_token`,
@@ -113,8 +114,6 @@ Ver tabla de mapeo en "Active Plan".
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **Beneficio 01 con texto quemado (2026-08-20)**: la imagen asignada trae overlay
-  "No estorba con la mochila ni da calor", que es el titular del Beneficio 03.
 - **PayPal MX — falta prueba real (2026-08-18)**: el fix del 404 y del resumen está
   implementado pero NUNCA se ha completado una compra real por PayPal de punta a punta.
 - **PayPal — dirección de envío**: solo llega si `paypal-capture-order` devuelve
@@ -123,7 +122,7 @@ Ver tabla de mapeo en "Active Plan".
 - **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number/
   tracking_url/estimated_delivery_at.
 - **`lov-search-files` devuelve resultados vacíos / índice desactualizado (2026-08-18, confirmado
-  2026-08-20)** — usar `lov-view` directo. Reportado.
+  2026-08-20 x2)** — usar `lov-view` directo. Reportado.
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
@@ -142,7 +141,6 @@ Ver tabla de mapeo en "Active Plan".
 
 ## PENDING / Future Sessions
 - **[ALTA]** Screenshot-preview mobile + desktop de `/repartidores` y validar recortes.
-- **[ALTA]** Confirmar con el cliente el texto quemado en la imagen del Beneficio 01.
 - **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar CR benchmark.
 - **[MEDIA]** Hidratar `/gracias/:id` desde el backend por `checkout_token` (como `OrderTrack`).

@@ -37,16 +37,17 @@ const DLV_GAL_5 = sq('1787249204164-7ws595nt61i.webp') // interior / cara de con
 // Lifestyle break — "Para quien vive arriba de la moto"  (imagen 1 del cliente)
 const DLV_LIFESTYLE = `${SB_UPLOAD}/1787251752010-uvy9yh7965f.webp?width=1600&quality=75`
 
-// Beneficios 01 · 02 · 03  (imágenes 2, 3 y 4 del cliente)
-const DLV_FEAT_1 = `${SB_UPLOAD}/1787251752010-dxk60x3zg28.webp?width=900&height=900&resize=cover&quality=75`
+// Beneficios 01 · 02 · 03  (imágenes 2, 3 y 4 del cliente — la 2 y la 4 van intercambiadas
+// para que el texto quemado "No estorba con la mochila" caiga en el beneficio 03, su titular)
+const DLV_FEAT_1 = `${SB_UPLOAD}/1787251752010-mf34bj94nqm.webp?width=900&height=900&resize=cover&quality=75`
 const DLV_FEAT_2 = `${SB_UPLOAD}/1787251752010-h6de90gdd6.webp?width=900&height=900&resize=cover&quality=75`
-const DLV_FEAT_3 = `${SB_UPLOAD}/1787251752010-mf34bj94nqm.webp?width=900&height=900&resize=cover&quality=75`
+const DLV_FEAT_3 = `${SB_UPLOAD}/1787251752010-dxk60x3zg28.webp?width=900&height=900&resize=cover&quality=75`
 
 // Quote break — "Ya cierro las 10 horas..."  (imagen 5 del cliente)
 const DLV_QUOTE = `${SB_UPLOAD}/1787251752010-2b6138nc4z9.webp?width=1600&quality=75`
 
 // Reseñas — imágenes 6 a 10 del cliente (la 6ª reseña, Saúl H., conserva su foto original)
-const rev = (file: string) => `${SB_UPLOAD}/${file}?width=600&quality=75`
+const rev = (file: string) => `${SB_UPLOAD}/${file}?width=700&quality=75`
 const DLV_REVIEW_1 = rev('1787251752010-jotniqhksrb.webp')
 const DLV_REVIEW_2 = rev('1787251752010-13eliul1j8io.webp')
 const DLV_REVIEW_3 = rev('1787251752010-jos9p0cz468.webp')
@@ -523,7 +524,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
             {[
               { icon: Clock, title: 'Paras antes', desc: 'Cuando la espalda truena a las 6 horas, cortas el turno justo en la hora pico de pedidos.' },
               { icon: Wallet, title: 'Entregas menos', desc: 'Cada hora que no conectas son pedidos que se lleva otro repartidor. Se nota al cierre de semana.' },
-              { icon: Check, title: 'Se paga solo', desc: 'Si te devuelve aunque sea medio turno a la semana, el Rodata One ya se pagó el primer mes.' },
+              { icon: Check, title: 'Se paga solo', desc: 'Con que te devuelva una hora de reparto al día, en una semana el Rodata One ya se pagó. Lo de después es ganancia.' },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 hover:border-brand-amber/20 transition-colors">
                 <div className="h-10 w-10 rounded-full bg-brand-amber/10 border border-brand-amber/20 flex items-center justify-center mb-3"><Icon size={17} className="text-brand-amber"/></div>
@@ -608,7 +609,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {REVIEWS.map(({name, city, stars, date, initial, text, photo}) => (
               <div key={name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col hover:border-brand-amber/20 transition-colors duration-300">
-                <div className="relative aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-square overflow-hidden">
                   <img src={photo} alt={`Foto de ${name} usando el Rodata One`} className="w-full h-full object-cover" loading="lazy"/>
                   <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, transparent 50%, rgba(17,19,21,0.7) 100%)'}}/>
                   <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
