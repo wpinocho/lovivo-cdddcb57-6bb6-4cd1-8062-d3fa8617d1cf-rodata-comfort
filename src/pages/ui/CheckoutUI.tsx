@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,40 @@ import { useURLCheckoutParams } from "@/hooks/useURLCheckoutParams";
 import { useTokenCheckout } from "@/hooks/useTokenCheckout";
 import { formatMoney } from "@/lib/money";
 import { countryNameToCode, countryCodeToName } from "@/lib/country-codes";
+import { trackPH, identifyCustomer } from "@/lib/tracking-utils";
+
+// ── PostHog: fires checkout_shipping_unavailable when the shipping banner appears ──
+function ShippingErrorTracker({
+  error,
+  orderId,
+  checkoutToken,
+  postalCode,
+  country,
+}: {
+  error?: string | null;
+  orderId?: string;
+  checkoutToken?: string;
+  postalCode?: string;
+  country?: string;
+}) {
+  const seen = useRef<string | null>(null);
+  useEffect(() => {
+    if (!error) {
+      seen.current = null;
+      return;
+    }
+    if (seen.current === error) return;
+    seen.current = error;
+    trackPH('checkout_shipping_unavailable', {
+      message: error,
+      order_id: orderId,
+      checkout_token: checkoutToken,
+      postal_code: postalCode,
+      country,
+    });
+  }, [error, orderId, checkoutToken, postalCode, country]);
+  return null;
+}
 
 // ── Estimated delivery date ──────────────────────────────────────────────────
 function addBusinessDays(date: Date, days: number): Date {
@@ -56,6 +90,10 @@ export default function CheckoutUI() {
   const [linkAuthenticated, setLinkAuthenticated] = useState(false);
   // Track whether the on-page Stripe AddressElement has a complete address.
   const [addressElementComplete, setAddressElementComplete] = useState(false);
+  // PostHog step guards — avoid re-firing on every keystroke / re-render.
+  const trackedEmailRef = useRef<string | null>(null);
+  const trackedAddressKeyRef = useRef<string | null>(null);
+  const trackedShippingMethodRef = useRef<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -113,7 +151,17 @@ export default function CheckoutUI() {
                       checked={logic.selectedDeliveryMethod?.type === method.type}
                       onChange={() => {
                         logic.setSelectedDeliveryMethod(method);
-                        logic.setShippingCost(method.hasPrice && method.price ? parseFloat(method.price) : 0);
+                        const cost = method.hasPrice && method.price ? parseFloat(method.price) : 0;
+                        logic.setShippingCost(cost);
+                        if (trackedShippingMethodRef.current !== method.type) {
+                          trackedShippingMethodRef.current = method.type;
+                          trackPH('checkout_shipping_method_selected', {
+                            method_type: method.type,
+                            shipping_cost: cost,
+                            order_id: logic.orderId,
+                            checkout_token: logic.checkoutToken,
+                          });
+                        }
                       }}
                       className="w-4 h-4"
                     />
@@ -260,6 +308,13 @@ export default function CheckoutUI() {
 
                       return (
                         <>
+                        <ShippingErrorTracker
+                          error={logic.shippingError}
+                          orderId={logic.orderId}
+                          checkoutToken={logic.checkoutToken}
+                          postalCode={logic.address?.postal_code}
+                          country={logic.address?.countryCode || logic.address?.country}
+                        />
                         <PaypalExpressButton
                           className="mb-3"
                           showDivider={false}
@@ -298,6 +353,13 @@ export default function CheckoutUI() {
                                 !logic.selectedDeliveryMethod
                               ) missing.push('m\u00e9todo de env\u00edo');
                               if (missing.length > 0) {
+                                trackPH('checkout_validation_failed', {
+                                  missing_fields: missing,
+                                  order_id: logic.orderId,
+                                  checkout_token: logic.checkoutToken,
+                                  value: logic.finalTotal,
+                                  currency: logic.currencyCode,
+                                });
                                 toast({
                                   title: 'Campos requeridos',
                                   description: `Por favor completa: ${missing.join(', ')}`,
@@ -367,6 +429,25 @@ export default function CheckoutUI() {
                             if (complete && first) {
                               logic.saveClientData(true);
                             }
+
+                            // PostHog: address step completed (re-fires only if country/CP changes)
+                            if (complete) {
+                              const key = `${address.country}|${address.postal_code}`;
+                              if (trackedAddressKeyRef.current !== key) {
+                                trackedAddressKeyRef.current = key;
+                                trackPH('checkout_address_completed', {
+                                  country: address.country,
+                                  state: address.state,
+                                  postal_code: address.postal_code,
+                                  city: address.city,
+                                  has_phone: !!phone,
+                                  order_id: logic.orderId,
+                                  checkout_token: logic.checkoutToken,
+                                  value: logic.finalTotal,
+                                  currency: logic.currencyCode,
+                                });
+                              }
+                            }
                           }}
                           shippingError={logic.shippingError}
                           paymentMethods={paymentMethods}
@@ -375,6 +456,21 @@ export default function CheckoutUI() {
                           onEmailChange={(email: string) => {
                             logic.setEmail(email);
                             logic.saveClientData(true, email);
+
+                            // PostHog: contact step completed (only on a valid, new email)
+                            const clean = (email || '').toLowerCase().trim();
+                            const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean);
+                            if (valid && trackedEmailRef.current !== clean) {
+                              trackedEmailRef.current = clean;
+                              identifyCustomer(clean, { store: 'rodata-mx' });
+                              trackPH('checkout_contact_completed', {
+                                has_email: true,
+                                order_id: logic.orderId,
+                                checkout_token: logic.checkoutToken,
+                                value: logic.finalTotal,
+                                currency: logic.currencyCode,
+                              });
+                            }
                           }}
                           onLinkAuthChange={setLinkAuthenticated}
                         />

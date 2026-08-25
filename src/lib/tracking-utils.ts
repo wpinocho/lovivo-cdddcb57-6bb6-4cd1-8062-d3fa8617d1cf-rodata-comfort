@@ -414,6 +414,48 @@ class TrackingUtility {
 // Export singleton instance
 export const tracking = new TrackingUtility();
 
+/**
+ * PostHog-only event tracking.
+ *
+ * IMPORTANT: this deliberately does NOT go through `trackHybrid`, so these
+ * events never reach Meta Pixel / CAPI. Checkout diagnostics (payment failures,
+ * validation errors, etc.) are internal analytics — sending them to the ad
+ * platform would pollute the pixel and worsen the known duplicate-event issue.
+ */
+export function trackPH(event: string, props: Record<string, any> = {}): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!(posthog as any).__loaded) return;
+    // Strip undefined/null so PostHog property lists stay clean
+    const clean: Record<string, any> = {};
+    Object.entries(props).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') clean[k] = v;
+    });
+    posthog.capture(event, clean);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📊 PostHog: ${event}`, clean);
+    }
+  } catch (error) {
+    console.error(`❌ PostHog Error (${event}):`, error);
+  }
+}
+
+/**
+ * Identify the shopper by email so PostHog creates a person profile
+ * (project runs with person_profiles: 'identified_only').
+ */
+export function identifyCustomer(email?: string | null, extra: Record<string, any> = {}): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!(posthog as any).__loaded || !email) return;
+    const normalized = email.toLowerCase().trim();
+    if (!normalized.includes('@')) return;
+    posthog.identify(normalized, { email: normalized, ...extra });
+  } catch (error) {
+    console.error('❌ PostHog identify error:', error);
+  }
+}
+
 // Export helper functions for easy access
 export const trackPageView = () => tracking.trackPageView();
 

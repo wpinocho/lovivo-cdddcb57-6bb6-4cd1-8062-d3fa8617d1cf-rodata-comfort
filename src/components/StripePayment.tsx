@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { useCart } from "@/contexts/CartContext"
 import { useCheckoutState } from "@/hooks/useCheckoutState"
 import { useSettings } from "@/contexts/SettingsContext"
-import { trackPurchase, tracking } from "@/lib/tracking-utils"
+import { trackPurchase, tracking, trackPH } from "@/lib/tracking-utils"
 import type { PaymentMethods } from "@/lib/supabase"
 
 /** Build Stripe payment_method_types array from store_settings.payment_methods */
@@ -145,6 +145,14 @@ function PaymentForm({
     }
   }, [elements, amountCents])
 
+  /** Common properties attached to every checkout diagnostic event */
+  const phBase = useCallback(() => ({
+    order_id: orderId,
+    checkout_token: checkoutToken,
+    value: (amountCents || 0) / 100,
+    currency: (currency || "mxn").toUpperCase(),
+  }), [orderId, checkoutToken, amountCents, currency])
+
   const amountLabel = useMemo(() => {
     const amt = (amountCents || 0) / 100
     const cur = (currency || "mxn").toUpperCase()
@@ -253,6 +261,11 @@ function PaymentForm({
       const unavailableNames = data.unavailable_items.map((item: any) =>
         item.variant_name ? `${item.product_name} (${item.variant_name})` : item.product_name
       ).join(', ')
+      trackPH('checkout_items_unavailable', {
+        ...phBase(),
+        items: data.unavailable_items.map((i: any) => i.product_name),
+        num_unavailable: data.unavailable_items.length,
+      })
       toast({
         title: "Productos agotados",
         description: `Los siguientes productos ya no están disponibles: ${unavailableNames}. Retíralos de tu carrito para completar tu compra.`,
@@ -273,9 +286,16 @@ function PaymentForm({
     if (onValidationRequired && !onValidationRequired()) return
 
     if (deliveryExpectations?.[0]?.type === "pickup" && (!pickupLocations || pickupLocations.length === 0)) {
+      trackPH('checkout_validation_failed', { ...phBase(), missing_fields: ['pickup_location'], payment_method: 'stripe_element' })
       toast({ title: "Punto de recogida requerido", description: "Por favor selecciona un punto de recogida antes de continuar.", variant: "destructive" })
       return
     }
+
+    trackPH('checkout_pay_clicked', {
+      ...phBase(),
+      payment_method: 'stripe_element',
+      num_items: buildPaymentItems().reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+    })
 
     try {
       setLoading(true)
@@ -283,6 +303,14 @@ function PaymentForm({
       // 1. Validate the payment form
       const { error: submitError } = await elements.submit()
       if (submitError) {
+        trackPH('checkout_payment_failed', {
+          ...phBase(),
+          stage: 'elements_submit',
+          payment_method: 'stripe_element',
+          error_code: submitError.code,
+          error_type: submitError.type,
+          error_message: submitError.message,
+        })
         toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
         return
       }
@@ -355,15 +383,32 @@ function PaymentForm({
       })
 
       if (result.error) {
+        trackPH('checkout_payment_failed', {
+          ...phBase(),
+          stage: 'confirm_payment',
+          payment_method: 'stripe',
+          error_code: result.error.code,
+          decline_code: (result.error as any).decline_code,
+          error_type: result.error.type,
+          error_message: result.error.message,
+        })
         toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
         return
       }
 
       const pi = result.paymentIntent
       const nextAction = pi?.next_action as any
+      const piMethod = (pi as any)?.payment_method_types?.[0] || 'card'
 
       if (pi?.status === 'succeeded') {
         // Payment succeeded (card, Link, etc.)
+        trackPH('checkout_payment_succeeded', {
+          ...phBase(),
+          payment_method: 'stripe',
+          stripe_method: piMethod,
+          pi_status: pi.status,
+          num_items: paymentItems.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+        })
         const ptKey = `purchase_tracked_${orderId}`;
         const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1'; } catch { return false; } })();
         if (!alreadyTracked) {
@@ -413,6 +458,7 @@ function PaymentForm({
             amount: (amountCents || 0) / 100,
             currency: (currency || 'mxn').toUpperCase(),
           }))
+          trackPH('checkout_payment_pending', { ...phBase(), payment_method: 'oxxo' })
           clearCart()
           navigate(`/pago-pendiente/${orderId}`)
         }
@@ -429,30 +475,42 @@ function PaymentForm({
             amount: (instructions.amount_remaining || amountCents || 0) / 100,
             currency: (currency || 'mxn').toUpperCase(),
           }))
+          trackPH('checkout_payment_pending', { ...phBase(), payment_method: 'spei' })
           clearCart()
           navigate(`/pago-pendiente/${orderId}`)
         }
         // Generic requires_action (e.g. 3D Secure handled by Stripe)
         else {
+          trackPH('checkout_payment_action_required', { ...phBase(), payment_method: 'stripe', stripe_method: piMethod })
           toast({ title: "Acción requerida", description: "Por favor completa la verificación del pago." })
         }
       } else if (pi?.status === 'processing') {
         // SPEI / bank transfer might be in processing state
+        trackPH('checkout_payment_pending', { ...phBase(), payment_method: 'processing', stripe_method: piMethod })
         clearCart()
         navigate(`/pago-pendiente/${orderId}`)
       } else {
+        trackPH('checkout_payment_unknown_status', { ...phBase(), pi_status: pi?.status ?? 'unknown', payment_method: 'stripe' })
         toast({ title: "Estado del pago", description: `Estado: ${pi?.status ?? "desconocido"}` })
       }
     } catch (err: any) {
       console.error("Error en el proceso de pago:", err)
-      handlePaymentError(err)
+      handlePaymentError(err, 'stripe')
     } finally {
       setLoading(false)
     }
   }
 
-  const handlePaymentError = (err: any) => {
+  const handlePaymentError = (err: any, method: string = 'stripe') => {
     const message = err?.message || ""
+    const lowered0 = message.toLowerCase()
+    trackPH('checkout_payment_failed', {
+      ...phBase(),
+      stage: 'exception',
+      payment_method: method,
+      error_message: message.slice(0, 300),
+      is_stripe_not_connected: lowered0.includes("stripe_not_connected") || lowered0.includes("stripe not connected"),
+    })
     const jsonStart = message.indexOf("{")
     const jsonEnd = message.lastIndexOf("}")
     if (jsonStart !== -1 && jsonEnd !== -1) {
@@ -474,10 +532,21 @@ function PaymentForm({
 
   const handleExpressCheckoutConfirm = useCallback(async (ev?: any) => {
     if (!stripe || !elements) return
+    const wallet = ev?.expressPaymentType || 'unknown'
+    trackPH('checkout_pay_clicked', { ...phBase(), payment_method: 'express_checkout', wallet })
     try {
       setLoading(true)
       const { error: submitError } = await elements.submit()
       if (submitError) {
+        trackPH('checkout_payment_failed', {
+          ...phBase(),
+          stage: 'elements_submit',
+          payment_method: 'express_checkout',
+          wallet,
+          error_code: submitError.code,
+          error_type: submitError.type,
+          error_message: submitError.message,
+        })
         toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
         return
       }
@@ -513,6 +582,12 @@ function PaymentForm({
       } : (billingAddress || effectiveShippingAddress)
 
       if (showAddressElement && (!effectiveShippingAddress || !effectiveShippingAddress.line1)) {
+        trackPH('checkout_validation_failed', {
+          ...phBase(),
+          missing_fields: ['shipping_address'],
+          payment_method: 'express_checkout',
+          wallet,
+        })
         toast({
           title: "Falta dirección de envío",
           description: "Por favor completa tu dirección antes de pagar.",
@@ -587,12 +662,29 @@ function PaymentForm({
       })
 
       if (result.error) {
+        trackPH('checkout_payment_failed', {
+          ...phBase(),
+          stage: 'confirm_payment',
+          payment_method: 'express_checkout',
+          wallet,
+          error_code: result.error.code,
+          decline_code: (result.error as any).decline_code,
+          error_type: result.error.type,
+          error_message: result.error.message,
+        })
         toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
         return
       }
 
       const pi = result.paymentIntent
       if (pi?.status === 'succeeded') {
+        trackPH('checkout_payment_succeeded', {
+          ...phBase(),
+          payment_method: 'express_checkout',
+          wallet,
+          pi_status: pi.status,
+          num_items: paymentItems.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+        })
         const ptKey = `purchase_tracked_${orderId}`;
         const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1'; } catch { return false; } })();
         if (!alreadyTracked) {
@@ -619,16 +711,17 @@ function PaymentForm({
         navigate(`/gracias/${orderId}`)
         toast({ title: "¡Pago exitoso!", description: "Tu compra ha sido procesada correctamente." })
       } else if (pi?.status === 'processing') {
+        trackPH('checkout_payment_pending', { ...phBase(), payment_method: 'express_checkout', wallet })
         clearCart()
         navigate(`/pago-pendiente/${orderId}`)
       }
     } catch (err: any) {
       console.error("Express checkout error:", err)
-      handlePaymentError(err)
+      handlePaymentError(err, 'express_checkout')
     } finally {
       setLoading(false)
     }
-  }, [stripe, elements, amountCents, orderId, email, name, phone, shippingAddress, billingAddress, deliveryFee, navigate, clearCart])
+  }, [stripe, elements, amountCents, orderId, email, name, phone, shippingAddress, billingAddress, deliveryFee, navigate, clearCart, phBase])
 
   const handleExpressShippingAddressChange = useCallback(async (ev: any) => {
     try {

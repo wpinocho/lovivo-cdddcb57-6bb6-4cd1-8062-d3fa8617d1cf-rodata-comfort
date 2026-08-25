@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Store, Building2, ExternalLink, Copy, Check, ShoppingBag, Package } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { trackPH } from '@/lib/tracking-utils'
 
 interface OxxoData {
   method: 'oxxo'
@@ -62,6 +63,12 @@ export default function PendingPayment() {
         const parsed = JSON.parse(raw)
         if (parsed.orderId === orderId) {
           setData(parsed)
+          trackPH('pending_payment_viewed', {
+            payment_method: parsed.method,
+            order_id: orderId,
+            value: parsed.amount,
+            currency: parsed.currency,
+          })
         }
       }
     } catch {}

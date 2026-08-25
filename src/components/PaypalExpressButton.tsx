@@ -5,7 +5,7 @@ import { callEdge } from '@/lib/edge'
 import { STORE_ID } from '@/lib/config'
 import { useToast } from '@/hooks/use-toast'
 import { useNavigate } from 'react-router-dom'
-import { getAttributionPayload, trackPurchase, tracking } from '@/lib/tracking-utils'
+import { getAttributionPayload, trackPurchase, tracking, trackPH } from '@/lib/tracking-utils'
 import { useCart } from '@/contexts/CartContext'
 
 interface PaypalExpressButtonProps {
@@ -38,6 +38,14 @@ export function PaypalExpressButton({
 
   const currencyUpper = currency.toUpperCase()
 
+  const phBase = () => ({
+    order_id: orderId,
+    checkout_token: checkoutToken,
+    value: amount,
+    currency: currencyUpper,
+    payment_method: 'paypal',
+  })
+
   return (
     <div className={className}>
       {showDivider && (
@@ -63,17 +71,30 @@ export function PaypalExpressButton({
             // PayPal Express: no requiere validar el formulario — PayPal recolecta
             // la dirección de envío del comprador dentro del popup de PayPal.
             const attribution = getAttributionPayload();
-            const result = await callEdge('paypal-create-order', {
-              store_id: STORE_ID,
-              checkout_token: checkoutToken,
-              amount,
-              currency: currencyUpper,
-              items,
-              shipping: shippingCost,
-              attribution,
+            trackPH('checkout_pay_clicked', {
+              ...phBase(),
+              num_items: items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
             })
-            if (!result?.id) throw new Error('Falta el ID de la orden de PayPal')
-            return result.id
+            try {
+              const result = await callEdge('paypal-create-order', {
+                store_id: STORE_ID,
+                checkout_token: checkoutToken,
+                amount,
+                currency: currencyUpper,
+                items,
+                shipping: shippingCost,
+                attribution,
+              })
+              if (!result?.id) throw new Error('Falta el ID de la orden de PayPal')
+              return result.id
+            } catch (err: unknown) {
+              trackPH('checkout_payment_failed', {
+                ...phBase(),
+                stage: 'paypal_create_order',
+                error_message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+              })
+              throw err
+            }
           }}
           onApprove={async (data) => {
             try {
@@ -85,6 +106,12 @@ export function PaypalExpressButton({
                 attribution,
               })
               if (!res?.ok || res?.status !== 'COMPLETED') {
+                trackPH('checkout_payment_failed', {
+                  ...phBase(),
+                  stage: 'paypal_capture',
+                  paypal_status: res?.status ?? 'unknown',
+                  error_message: res?.error || 'El pago no se completó',
+                })
                 throw new Error(res?.error || 'El pago no se completó')
               }
 
@@ -122,6 +149,15 @@ export function PaypalExpressButton({
 
               // Dispara Purchase (Pixel + CAPI + PostHog) con un guard unificado en
               // sessionStorage para que ThankYou no lo vuelva a disparar para esta orden.
+              trackPH('checkout_payment_succeeded', {
+                ...phBase(),
+                order_id: ordId,
+                paypal_status: res.status,
+                has_server_order: !!res.order,
+                has_shipping_address: !!res.order?.shipping_address,
+                num_items: items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+              })
+
               const ptKey = `purchase_tracked_${ordId}`
               const alreadyTracked = (() => { try { return sessionStorage.getItem(ptKey) === '1' } catch { return false } })()
               if (!alreadyTracked) {
@@ -150,6 +186,11 @@ export function PaypalExpressButton({
               })
               navigate(`/gracias/${ordId}`)
             } catch (err: unknown) {
+              trackPH('checkout_payment_failed', {
+                ...phBase(),
+                stage: 'paypal_approve_exception',
+                error_message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+              })
               toast({
                 title: 'Error de PayPal',
                 description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
@@ -158,13 +199,21 @@ export function PaypalExpressButton({
             }
           }}
           onError={(err: unknown) => {
+            trackPH('checkout_payment_failed', {
+              ...phBase(),
+              stage: 'paypal_sdk',
+              error_message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+            })
             toast({
               title: 'Error de PayPal',
               description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
               variant: 'destructive',
             })
           }}
-          onCancel={() => { /* el usuario cerró el popup — sin acción */ }}
+          onCancel={() => {
+            // El usuario cerró el popup de PayPal sin completar el pago.
+            trackPH('checkout_paypal_cancelled', phBase())
+          }}
         />
       </PayPalScriptProvider>
     </div>
