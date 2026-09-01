@@ -15,6 +15,9 @@ interface SettingsContextType {
   pickupLocations: any
   deliveryExpectations: any
   metaPixelId: string | null
+  googleAdsId: string | null
+  googleAdsPurchaseLabel: string | null
+  googleAdsLabels: Record<string, string> | null
   paymentMethods: PaymentMethods
   stripeAccountId: string | null
   chargeType: string | null
@@ -32,7 +35,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 const fetchStoreSettings = async (): Promise<StoreSettings> => {
   const { data, error } = await supabase
     .from('store_settings')
-    .select('currency_code, store_id, id, updated_at, store_name, social_links, store_language, date_format, shipping_coverage, pickup_locations, delivery_expectations, meta_pixel_id, payment_methods')
+    .select('currency_code, store_id, id, updated_at, store_name, social_links, store_language, date_format, shipping_coverage, pickup_locations, delivery_expectations, meta_pixel_id, payment_methods, google_ads_conversion_id, google_ads_purchase_label, google_ads_labels')
     .eq('store_id', STORE_ID)
     .maybeSingle()
 
@@ -126,6 +129,9 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const pickupLocations = settings?.pickup_locations || null
   const deliveryExpectations = settings?.delivery_expectations || null
   const metaPixelId = settings?.meta_pixel_id || null
+  const googleAdsId = (settings as any)?.google_ads_conversion_id || null
+  const googleAdsPurchaseLabel = (settings as any)?.google_ads_purchase_label || null
+  const googleAdsLabels = ((settings as any)?.google_ads_labels as Record<string, string>) || null
   const paymentMethods: PaymentMethods = settings?.payment_methods || { card: true, oxxo: false, spei: false }
   const stripeAccountId = platformStore?.stripe_account_id || null
   const chargeType = platformStore?.charge_type || null
@@ -149,6 +155,9 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
         pickupLocations,
         deliveryExpectations,
         metaPixelId,
+        googleAdsId,
+        googleAdsPurchaseLabel,
+        googleAdsLabels,
         paymentMethods,
         stripeAccountId,
         chargeType,

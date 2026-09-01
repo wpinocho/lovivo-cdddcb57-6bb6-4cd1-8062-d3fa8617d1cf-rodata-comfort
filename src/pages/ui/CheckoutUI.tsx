@@ -20,6 +20,7 @@ import { useTokenCheckout } from "@/hooks/useTokenCheckout";
 import { formatMoney } from "@/lib/money";
 import { countryNameToCode, countryCodeToName } from "@/lib/country-codes";
 import { trackPH, identifyCustomer } from "@/lib/tracking-utils";
+import { googleAds } from "@/lib/google-ads";
 
 // ── PostHog: fires checkout_shipping_unavailable when the shipping banner appears ──
 function ShippingErrorTracker({
@@ -463,6 +464,8 @@ export default function CheckoutUI() {
                             if (valid && trackedEmailRef.current !== clean) {
                               trackedEmailRef.current = clean;
                               identifyCustomer(clean, { store: 'rodata-mx' });
+                              // Google Ads enhanced conversions
+                              googleAds.setUserData({ email: clean });
                               trackPH('checkout_contact_completed', {
                                 has_email: true,
                                 order_id: logic.orderId,

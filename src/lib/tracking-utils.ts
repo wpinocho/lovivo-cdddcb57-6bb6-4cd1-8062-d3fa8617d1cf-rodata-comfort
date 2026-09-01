@@ -2,6 +2,7 @@ import { facebookPixel } from '@/lib/facebook-pixel';
 import { callEdge } from '@/lib/edge';
 import { STORE_ID } from '@/lib/config';
 import posthog from 'posthog-js';
+import { googleAds } from '@/lib/google-ads';
 
 // Types for tracking parameters
 export interface TrackingProduct {
@@ -77,6 +78,19 @@ class TrackingUtility {
     return products
       .map(p => p.id)
       .filter(id => typeof id === 'string' && id.length > 0);
+  }
+
+  // Maps our products to the Google Ads `items` array format
+  private gaItems(products?: TrackingProduct[]) {
+    if (!Array.isArray(products)) return [];
+    return products
+      .filter(p => p && typeof p.id === 'string' && p.id.length > 0)
+      .map(p => ({
+        item_id: p.id,
+        item_name: p.name,
+        price: this.formatValue(p.price),
+        quantity: 1
+      }));
   }
 
   private buildStandardParams(params: TrackingParams) {
@@ -202,6 +216,12 @@ class TrackingUtility {
 
       const vcStableId = products?.[0]?.id;
       this.trackHybrid('ViewContent', browserParams, customData, vcStableId);
+
+      googleAds.event('view_item', {
+        value: browserParams.value,
+        currency: browserParams.currency.toUpperCase(),
+        items: this.gaItems(products)
+      });
     } catch (error) {
       this.logError('ViewContent', error);
     }
@@ -234,6 +254,12 @@ class TrackingUtility {
 
       const atcStableId = products?.[0]?.id;
       this.trackHybrid('AddToCart', browserParams, customData, atcStableId);
+
+      googleAds.event('add_to_cart', {
+        value: browserParams.value,
+        currency: browserParams.currency.toUpperCase(),
+        items: this.gaItems(products)
+      });
     } catch (error) {
       this.logError('AddToCart', error);
     }
@@ -270,6 +296,12 @@ class TrackingUtility {
 
       const icStableId = params.order_id || products?.[0]?.id;
       this.trackHybrid('InitiateCheckout', browserParams, customData, icStableId);
+
+      googleAds.event('begin_checkout', {
+        value: browserParams.value,
+        currency: browserParams.currency.toUpperCase(),
+        items: this.gaItems(products)
+      });
     } catch (error) {
       this.logError('InitiateCheckout', error);
     }
@@ -302,6 +334,13 @@ class TrackingUtility {
       };
 
       this.trackHybrid('Purchase', browserParams, customData, order_id);
+
+      googleAds.purchase({
+        value: browserParams.value,
+        currency: browserParams.currency,
+        transactionId: order_id,
+        items: this.gaItems(products)
+      });
     } catch (error) {
       this.logError('Purchase', error);
     }
@@ -334,6 +373,8 @@ class TrackingUtility {
 
       // Server-side
       this.sendToServer('Search', eventId, browserParams);
+
+      googleAds.event('search', { search_term: search_string.trim() });
       
       if (this.isPostHogLoaded()) {
         posthog.capture('search_performed', {

@@ -10,6 +10,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { CartUIProvider } from "@/components/CartProvider";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { PixelProvider } from "@/contexts/PixelContext";
+import { GoogleAdsProvider } from "@/contexts/GoogleAdsContext";
 import { PostHogProvider } from "@/contexts/PostHogContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
@@ -61,6 +62,7 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                  <GoogleAdsProvider>
                   <CartUIProvider>
                     <PageViewTracker />
                     <URLCartLoader />
@@ -87,6 +89,7 @@ const App = () => (
                       </Routes>
                     </Suspense>
                   </CartUIProvider>
+                  </GoogleAdsProvider>
                 </BrowserRouter>
               </TooltipProvider>
             </CartProvider>
