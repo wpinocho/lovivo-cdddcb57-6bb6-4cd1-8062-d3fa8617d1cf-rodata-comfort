@@ -39,6 +39,16 @@ interface ProductExpressCheckoutProps {
   unitPrice: number
   disabled?: boolean
   /**
+   * Unit price authorized by the central `experiment-resolve` edge function.
+   * When present it supersedes `unitPrice` for every wallet amount.
+   */
+  resolvedUnitPrice?: number
+  priceExperiment?: {
+    id?: string
+    key: string
+    variant: 'control' | 'test'
+  } | null
+  /**
    * Called when Stripe finishes detecting whether a wallet is available.
    * `available` is true only if the browser has an authenticated wallet ready
    * (Apple Pay/GPay with saved card, or Link logged in). Use this in the parent
@@ -54,6 +64,8 @@ function PaymentRequestInner({
   quantity,
   unitPrice,
   disabled,
+  resolvedUnitPrice,
+  priceExperiment,
   onAvailabilityChange,
 }: ProductExpressCheckoutProps) {
   const stripe = useStripe()
@@ -92,13 +104,22 @@ function PaymentRequestInner({
     })
   }, [deliveryExpectations])
 
-  const subtotalCents = Math.max(50, Math.round(unitPrice * quantity * 100))
+  // The experiment-resolved price is authoritative for every wallet amount.
+  const authorizedUnitPrice = resolvedUnitPrice ?? unitPrice
+
+  const subtotalCents = Math.max(50, Math.round(authorizedUnitPrice * quantity * 100))
   const defaultShipCents = walletShippingOptions[0]?.amount ?? 0
   const totalCents = subtotalCents + defaultShipCents
 
   // Initialize PaymentRequest and check wallet availability
   useEffect(() => {
-    if (!stripe || disabled) return
+    if (!stripe || disabled) {
+      // Never leave a wallet mounted with a stale price while the
+      // experiment price is still resolving.
+      setPaymentRequest(null)
+      onAvailabilityChange?.(false)
+      return
+    }
 
     const pr = stripe.paymentRequest({
       country: 'MX',
@@ -218,13 +239,24 @@ function PaymentRequestInner({
         setProcessing(true)
 
         // 1. Build a one-item cart from current PDP selection
+        // Selling plans never carry product_price experiment metadata
+        const experimentMeta = sellingPlan ? null : priceExperiment
         const buyNowItems: CartItem[] = [{
-          key: `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}`,
+          // Experiment suffix keeps different assignments from merging
+          key: `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}${experimentMeta ? `:exp-${experimentMeta.key}-${experimentMeta.variant}` : ''}`,
           type: 'product' as const,
           product,
           variant,
           sellingPlan: sellingPlan || undefined,
           quantity,
+          resolvedUnitPrice: authorizedUnitPrice,
+          ...(experimentMeta ? {
+            experiment: {
+              id: experimentMeta.id,
+              key: experimentMeta.key,
+              variant: experimentMeta.variant,
+            },
+          } : {}),
         }]
 
         // 2. Extract customer + shipping info from the wallet event
@@ -268,7 +300,7 @@ function PaymentRequestInner({
 
         const orderId = order.order_id
         const checkoutToken = order.checkout_token
-        const totalAmount = (order.order?.total_amount ?? unitPrice * quantity)
+        const totalAmount = (order.order?.total_amount ?? authorizedUnitPrice * quantity)
         const orderTotalCents = Math.max(50, Math.round(totalAmount * 100))
 
         // 4. Create PaymentIntent
@@ -314,7 +346,8 @@ function PaymentRequestInner({
               product_id: product.id,
               quantity,
               ...(variant?.id ? { variant_id: variant.id } : {}),
-              price: Math.round(unitPrice * 100),
+              // Compatibility field only — Lovivo central uses the persisted order
+              price: Math.round(authorizedUnitPrice * 100),
             }],
           },
         }
@@ -371,7 +404,7 @@ function PaymentRequestInner({
               products: [tracking.createTrackingProduct({
                 id: product.id,
                 title: product.title,
-                price: unitPrice,
+                price: authorizedUnitPrice,
                 category: 'product',
                 variant,
               })],
@@ -425,7 +458,7 @@ function PaymentRequestInner({
     return () => {
       paymentRequest.off('paymentmethod', handlePaymentMethod)
     }
-  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, unitPrice, currencyCode, clearCart, navigate, toast])
+  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, authorizedUnitPrice, priceExperiment, currencyCode, clearCart, navigate, toast])
 
   if (disabled || !paymentRequest) return null
 

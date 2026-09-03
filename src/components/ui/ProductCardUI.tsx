@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 import { HeadlessProductCard } from "@/components/headless/HeadlessProductCard"
 import { PriceRuleBadge } from "@/components/ui/PriceRuleBadge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { usePriceRules } from "@/hooks/usePriceRules"
 import type { Product } from "@/lib/supabase"
 
@@ -165,10 +166,14 @@ export const ProductCardUI = ({ product }: ProductCardUIProps) => {
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-black font-semibold">
-                  {logic.formatMoney(logic.currentPrice)}
-                </span>
-                {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
+                {logic.isPriceResolving ? (
+                  <Skeleton className="h-6 w-20" />
+                ) : (
+                  <span className="text-black font-semibold">
+                    {logic.formatMoney(logic.currentPrice)}
+                  </span>
+                )}
+                {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
                   <span className="text-gray-400 text-xs line-through">
                     {logic.formatMoney(logic.currentCompareAt)}
                   </span>
@@ -181,7 +186,7 @@ export const ProductCardUI = ({ product }: ProductCardUIProps) => {
                   logic.onAddToCartSuccess() // Hook para features adicionales
                   logic.handleAddToCart()
                 }}
-                disabled={!logic.canAddToCart}
+                disabled={!logic.canAddToCart || logic.isPriceResolving}
                 className="text-black border-black hover:bg-black hover:text-white disabled:opacity-50"
               >
                 {logic.inStock ? 'Agregar' : 'Agotado'}

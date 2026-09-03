@@ -126,6 +126,8 @@ interface ProductPageUIProps {
     selected: Record<string, string>; quantity: number; matchingVariant: any
     currentPrice: number; currentCompareAt: number | null; currentImage: string | null
     displayImages?: string[]; inStock: boolean
+    isPriceResolving?: boolean
+    priceExperiment?: { id?: string; key: string; variant: 'control' | 'test'; displayedPrice: number } | null
     handleOptionSelect: (n: string, v: string) => void
     handleQuantityChange: (q: number) => void
     handleAddToCart: () => void; handleBuyNow: () => void
@@ -277,8 +279,12 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               {/* Price + badge */}
               <div className="space-y-2">
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
-                  {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
+                  {logic.isPriceResolving ? (
+                    <Skeleton className="h-10 w-40" />
+                  ) : (
+                    <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
+                  )}
+                  {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && (
                     <>
                       <span className="text-brand-steel/70 text-2xl line-through font-inter font-normal">{logic.formatMoney(logic.currentCompareAt)}</span>
                       <span className="bg-brand-amber text-brand-carbon text-xs font-bold px-2.5 py-1.5 rounded-md font-sora tracking-wide">{discountPct}% OFF</span>
@@ -384,6 +390,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       sellingPlan={logic.selectedPlan ?? null}
                       quantity={logic.quantity}
                       unitPrice={logic.currentPrice}
+                      resolvedUnitPrice={logic.currentPrice}
+                      priceExperiment={logic.priceExperiment}
+                      disabled={logic.isPriceResolving}
                       onAvailabilityChange={setExpressAvailable}
                     />
                     {expressAvailable && (
@@ -393,10 +402,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                         <div className="flex-1 h-px bg-white/[0.1]" />
                       </div>
                     )}
-                    <button onClick={handlePrimary} className="btn-amber-lg amber-glow font-sora w-full text-base">
-                      <ShoppingCart size={18}/>Comprar ahora · {logic.formatMoney(logic.currentPrice)}
+                    <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber-lg amber-glow font-sora w-full text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                      <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(logic.currentPrice)}`}
                     </button>
-                    <button onClick={logic.handleAddToCart} className="btn-outline-light font-sora w-full">Agregar al carrito</button>
+                    <button onClick={logic.handleAddToCart} disabled={logic.isPriceResolving} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
                     <p className="text-brand-steel text-[11px] font-inter text-center">
                       🔒 Pago seguro · Envío gratis · 30 días de prueba
                     </p>
@@ -635,10 +644,14 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">¿Cuántas rodadas más vas a terminar con dolor de espalda?</h2>
           <p className="text-brand-smoke font-inter text-sm mb-8">Envío gratis en México · 30 días de prueba · Cambio de talla fácil</p>
           <div className="flex items-baseline justify-center gap-3 mb-7">
-            <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
-            {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
+            {logic.isPriceResolving ? (
+              <Skeleton className="h-10 w-40" />
+            ) : (
+              <span className="font-sora font-bold text-brand-offwhite text-4xl">{logic.formatMoney(logic.currentPrice)}</span>
+            )}
+            {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
           </div>
-          <button onClick={handlePrimary} className="btn-amber-lg amber-glow font-sora text-base px-12">Comprar ahora<ChevronRight size={18}/></button>
+          <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora<ChevronRight size={18}/></button>
         </div>
       </section>
 
@@ -650,21 +663,29 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div className="flex items-center gap-4 min-w-0">
                 <h3 className="font-sora font-semibold text-brand-offwhite text-sm truncate">{logic.product.title}</h3>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(logic.currentPrice)}</span>
-                  {logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-sm line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
+                  {logic.isPriceResolving ? (
+                    <Skeleton className="h-5 w-20" />
+                  ) : (
+                    <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(logic.currentPrice)}</span>
+                  )}
+                  {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-sm line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <button onClick={handlePrimary} className="btn-amber amber-glow font-sora px-8"><ShoppingCart size={14}/>Comprar ahora</button>
-                <button onClick={logic.handleAddToCart} className="btn-outline-light font-sora">Agregar al carrito</button>
+                <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber amber-glow font-sora px-8 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
+                <button onClick={logic.handleAddToCart} disabled={logic.isPriceResolving} className="btn-outline-light font-sora disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
               </div>
             </div>
             <div className="md:hidden flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(logic.currentPrice)}</p>
+                {logic.isPriceResolving ? (
+                  <Skeleton className="h-4 w-20" />
+                ) : (
+                  <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(logic.currentPrice)}</p>
+                )}
                 <p className="text-brand-steel text-xs font-inter truncate">{logic.product.title}</p>
               </div>
-              <button onClick={handlePrimary} className="btn-amber amber-glow font-sora flex-shrink-0"><ShoppingCart size={14}/>Comprar ahora</button>
+              <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber amber-glow font-sora flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
             </div>
           </div>
         </div>

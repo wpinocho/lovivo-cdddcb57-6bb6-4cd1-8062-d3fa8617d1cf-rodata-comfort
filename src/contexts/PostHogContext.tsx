@@ -29,7 +29,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         loaded: (ph) => {
           console.log('✅ PostHog loaded successfully!');
           console.log('🏪 Store ID:', STORE_ID);
-          
+
+          // store_id on every event — experiment analytics depend on it
+          ph.register({ store_id: STORE_ID });
+
           ph.group('store', STORE_ID, {
             store_id: STORE_ID,
             domain: window.location.hostname,
@@ -46,6 +49,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
             $pathname: window.location.pathname,
           });
           console.log('📄 Initial pageview captured after group setup');
+
+          // Re-evaluate flags now that the store group is set, so experiment
+          // assignments are correct for this store before any experiment runs.
+          ph.reloadFeatureFlags();
         },
       });
     }

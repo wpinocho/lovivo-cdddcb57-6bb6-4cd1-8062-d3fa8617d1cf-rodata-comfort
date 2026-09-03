@@ -1,9 +1,23 @@
 import { supabase, supabaseUrl, supabaseKey, Order } from './supabase'
 import { callEdge } from './edge'
 import { STORE_ID } from './config'
+import posthog from 'posthog-js'
 import type { CartItem } from '@/contexts/CartContext'
 import type { CheckoutPayload, CheckoutResponse, CheckoutItem } from './supabase'
 import { cartToApiItems } from './cart-utils'
+
+/**
+ * PostHog distinct_id, used by central analytics to join an order back to the
+ * experiment exposures of the same visitor. Never throws: analytics must not be
+ * able to break checkout.
+ */
+export const getAnalyticsDistinctId = (): string | undefined => {
+  try {
+    return posthog.get_distinct_id() || undefined
+  } catch {
+    return undefined
+  }
+}
 
 export const createCheckoutFromCart = async (
   cartItems: CartItem[],
@@ -30,10 +44,13 @@ export const createCheckoutFromCart = async (
   // Descompone bundles en productos individuales y merge duplicados
   const items: CheckoutItem[] = cartToApiItems(cartItems)
 
+  const analyticsDistinctId = getAnalyticsDistinctId()
+
   const payload: CheckoutPayload = {
     store_id: STORE_ID,
     items,
     user_id: user?.id, // Link order to authenticated user
+    ...(analyticsDistinctId && { analytics_distinct_id: analyticsDistinctId }),
     ...(discountCode && { discount_code: discountCode }),
     ...(customerInfo && { customer: customerInfo }),
     ...(shippingAddress && { shipping_address: shippingAddress }),

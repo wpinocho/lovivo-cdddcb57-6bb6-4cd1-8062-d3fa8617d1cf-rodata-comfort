@@ -93,6 +93,10 @@ export interface CheckoutItem {
   selling_plan_id?: string
   customization_data?: Record<string, any>
   preview_image_url?: string
+  // A/B experiment attribution — the backend remains the pricing authority
+  experiment_id?: string
+  experiment_key?: string
+  experiment_variant?: 'control' | 'test'
 }
 
 export interface OrderItem {
@@ -108,6 +112,9 @@ export interface OrderItem {
   selling_plan_id?: string
   customization_data?: Record<string, any>
   preview_image_url?: string
+  experiment_id?: string | null
+  experiment_key?: string | null
+  experiment_variant?: 'control' | 'test' | null
 }
 
 export interface AppliedRule {
@@ -137,6 +144,7 @@ export interface Order {
   checkout_token: string
   created_at: string
   updated_at: string
+  analytics_distinct_id?: string | null
   order_items: OrderItem[]
   customers?: {
     email: string
@@ -160,6 +168,8 @@ export interface CheckoutPayload {
   billing_address?: any
   notes?: string
   currency_code?: string
+  /** PostHog distinct_id, so central analytics can join orders to experiments. */
+  analytics_distinct_id?: string
 }
 
 export interface CheckoutResponse {

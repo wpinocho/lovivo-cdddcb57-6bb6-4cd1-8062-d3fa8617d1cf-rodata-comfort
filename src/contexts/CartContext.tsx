@@ -1,8 +1,16 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import type { Product, ProductVariant, Bundle, SellingPlan } from '@/lib/supabase'
 import { calcSubscriptionPrice } from '@/lib/subscription-utils'
+import type { ExperimentVariantKey } from '@/types/experiments'
 
 // --- Cart Item Types (Union) ---
+
+/** Price-experiment assignment carried by a cart line. */
+export interface CartItemExperiment {
+  id?: string
+  key: string
+  variant: ExperimentVariantKey
+}
 
 export interface CartProductItem {
   type: 'product'
@@ -14,6 +22,12 @@ export interface CartProductItem {
   isBogoGift?: boolean
   customizationData?: Record<string, any>
   previewImageUrl?: string
+  /**
+   * Unit price authorized by the central `experiment-resolve` edge function.
+   * Present only for lines under an active product_price experiment.
+   */
+  resolvedUnitPrice?: number
+  experiment?: CartItemExperiment
 }
 
 export interface BundleItemEntry {
@@ -43,7 +57,7 @@ const normalizeItem = (item: any): CartItem => {
 const getItemPrice = (item: CartItem): number => {
   if (item.type === 'bundle') return item.bundle.bundle_price * item.quantity
   if (item.isBogoGift) return 0
-  const basePrice = (item.variant?.price ?? item.product.price) || 0
+  const basePrice = (item.resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
   const unitPrice = item.sellingPlan
     ? calcSubscriptionPrice(basePrice, item.sellingPlan)
     : basePrice
@@ -61,7 +75,7 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: { product: Product; variant?: ProductVariant; sellingPlan?: SellingPlan; isBogoGift?: boolean; customizationData?: Record<string, any>; previewImageUrl?: string } }
+  | { type: 'ADD_ITEM'; payload: { product: Product; variant?: ProductVariant; sellingPlan?: SellingPlan; isBogoGift?: boolean; customizationData?: Record<string, any>; previewImageUrl?: string; resolvedUnitPrice?: number; experiment?: CartItemExperiment } }
   | { type: 'ADD_BUNDLE'; payload: { bundle: Bundle; bundleItems: BundleItemEntry[] } }
   | { type: 'REMOVE_ITEM'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { key: string; quantity: number } }
@@ -72,13 +86,19 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const { product, variant, sellingPlan, isBogoGift, customizationData, previewImageUrl } = action.payload
+      // Selling plans and BOGO gifts never carry product_price experiment metadata
+      const carriesExperiment = !sellingPlan && !isBogoGift
+      const experiment = carriesExperiment ? action.payload.experiment : undefined
+      const resolvedUnitPrice = carriesExperiment ? action.payload.resolvedUnitPrice : undefined
+      // Different assignments must never merge into the same line
+      const experimentSuffix = experiment ? `:exp-${experiment.key}-${experiment.variant}` : ''
       // Customized items are always unique (append timestamp to key)
       const isCustomized = !!(customizationData || previewImageUrl)
       const key = isBogoGift
         ? `bogo-gift:${product.id}`
         : isCustomized
           ? `${product.id}${variant ? `:${variant.id}` : ''}:custom-${Date.now()}`
-          : `${product.id}${variant ? `:${variant.id}` : ''}${sellingPlan ? `:${sellingPlan.id}` : ''}`
+          : `${product.id}${variant ? `:${variant.id}` : ''}${sellingPlan ? `:${sellingPlan.id}` : ''}${experimentSuffix}`
       const existingItem = !isCustomized ? state.items.find(item => item.key === key) : undefined
 
       let newItems: CartItem[]
@@ -94,6 +114,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           ...(isBogoGift ? { isBogoGift: true } : {}),
           ...(customizationData ? { customizationData } : {}),
           ...(previewImageUrl ? { previewImageUrl } : {}),
+          ...(typeof resolvedUnitPrice === 'number' ? { resolvedUnitPrice } : {}),
+          ...(experiment ? { experiment } : {}),
         }]
       }
       return { items: newItems, total: calcTotal(newItems) }
@@ -145,7 +167,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState
-  addItem: (product: Product, variant?: ProductVariant, sellingPlan?: SellingPlan, isBogoGift?: boolean, options?: { customizationData?: Record<string, any>; previewImageUrl?: string }) => boolean
+  addItem: (product: Product, variant?: ProductVariant, sellingPlan?: SellingPlan, isBogoGift?: boolean, options?: { customizationData?: Record<string, any>; previewImageUrl?: string; resolvedUnitPrice?: number; experiment?: CartItemExperiment }) => boolean
   addBundle: (bundle: Bundle, bundleItems: BundleItemEntry[]) => void
   removeItem: (key: string) => void
   updateQuantity: (key: string, quantity: number) => void
@@ -199,7 +221,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  const addItem = (product: Product, variant?: ProductVariant, sellingPlan?: SellingPlan, isBogoGift?: boolean, options?: { customizationData?: Record<string, any>; previewImageUrl?: string }): boolean => {
+  const addItem = (product: Product, variant?: ProductVariant, sellingPlan?: SellingPlan, isBogoGift?: boolean, options?: { customizationData?: Record<string, any>; previewImageUrl?: string; resolvedUnitPrice?: number; experiment?: CartItemExperiment }): boolean => {
     // V1 validation: only one selling plan per cart
     if (sellingPlan) {
       const existingPlanItem = state.items.find(

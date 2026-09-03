@@ -6,6 +6,7 @@ import type { Product, ProductVariant, ProductOption } from "@/lib/supabase"
 import { useMemo, useState, useEffect } from "react"
 import { trackAddToCart, tracking } from "@/lib/tracking-utils"
 import { isVariantAvailable } from "@/lib/utils"
+import { usePriceExperiment } from "@/hooks/usePriceExperiment"
 
 /**
  * FORBIDDEN HEADLESS COMPONENT - HeadlessProductCard
@@ -105,7 +106,7 @@ export const useProductCardLogic = (product: Product) => {
   }, [hasVariants, options, variants, selected])
 
   // Calculate price - if has variants, show selected variant price or minimum variant price
-  const currentPrice = useMemo(() => {
+  const catalogPrice = useMemo(() => {
     if (matchingVariant) return matchingVariant.price as number
     if (hasVariants && variants?.length) {
       // Show minimum price from variants when no selection is made
@@ -114,7 +115,36 @@ export const useProductCardLogic = (product: Product) => {
     return product.price as number
   }, [matchingVariant, hasVariants, variants, product.price])
 
+  // A/B price experiment. Without an active manifest this returns catalogPrice
+  // synchronously and issues no requests.
+  const {
+    resolvedPrice,
+    isReady: isPriceReady,
+    experiment: priceExperiment,
+  } = usePriceExperiment({
+    productId: product.id,
+    variantId: matchingVariant?.id,
+    catalogPrice,
+  })
+
+  const currentPrice = resolvedPrice
+  const isPriceResolving = !isPriceReady
+
+  /** Cart options that keep the displayed price and its experiment together. */
+  const experimentCartOptions = priceExperiment
+    ? {
+        resolvedUnitPrice: resolvedPrice,
+        experiment: {
+          id: priceExperiment.id,
+          key: priceExperiment.key,
+          variant: priceExperiment.variant,
+        },
+      }
+    : {}
+
   const handleAddToCart = () => {
+    if (isPriceResolving) return
+
     const variantToAdd = hasVariants ? matchingVariant : undefined
     if (hasVariants && !variantToAdd) {
       toast({
@@ -123,7 +153,7 @@ export const useProductCardLogic = (product: Product) => {
       })
       return
     }
-    addItem(product, variantToAdd)
+    addItem(product, variantToAdd, undefined, undefined, experimentCartOptions)
     
     // Track AddToCart event with proper formatting
     trackAddToCart({
@@ -171,6 +201,10 @@ export const useProductCardLogic = (product: Product) => {
     inStock,
     currentPrice,
     currentCompareAt,
+
+    // Price experiment
+    isPriceResolving,
+    priceExperiment,
     
     // Calculated values
     discountPercentage: currentCompareAt && currentPrice && currentCompareAt > currentPrice 
@@ -186,7 +220,7 @@ export const useProductCardLogic = (product: Product) => {
     formatMoney,
     
     // States for UI
-    canAddToCart: inStock && (!hasVariants || !!matchingVariant),
+    canAddToCart: inStock && (!hasVariants || !!matchingVariant) && !isPriceResolving,
     
     // Events for additional features
     onAddToCartSuccess: () => {

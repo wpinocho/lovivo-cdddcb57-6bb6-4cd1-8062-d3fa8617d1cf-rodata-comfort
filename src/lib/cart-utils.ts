@@ -4,7 +4,13 @@ import type { CheckoutItem } from '@/lib/supabase'
 /**
  * Decomposes cart items (including bundles) into flat API items
  * for checkout-create / checkout-update.
- * Merges duplicates by product_id + variant_id + selling_plan_id.
+ * Merges duplicates by product_id + variant_id + selling_plan_id +
+ * experiment_key + experiment_variant, so two different experiment
+ * assignments of the same product never collapse into one line.
+ *
+ * Experiment metadata travels for attribution only — the backend already knows
+ * the authorized price, so `resolvedUnitPrice` is deliberately NOT sent.
+ * Bundle components never inherit experiment metadata.
  */
 export function cartToApiItems(cartItems: CartItem[]): CheckoutItem[] {
   const map = new Map<string, CheckoutItem>()
@@ -32,10 +38,11 @@ export function cartToApiItems(cartItems: CartItem[]): CheckoutItem[] {
       const variant = productItem.variant
       const sellingPlan = productItem.sellingPlan
       const isCustomized = !!(productItem.customizationData || productItem.previewImageUrl)
+      const experiment = productItem.experiment
       // Customized items never merge — use their unique cart key
       const key = isCustomized
         ? productItem.key
-        : `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}`
+        : `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}:${experiment?.key || ''}:${experiment?.variant || ''}`
       const existing = !isCustomized ? map.get(key) : undefined
       if (existing) {
         existing.quantity += item.quantity
@@ -47,6 +54,8 @@ export function cartToApiItems(cartItems: CartItem[]): CheckoutItem[] {
           ...(sellingPlan && { selling_plan_id: sellingPlan.id }),
           ...(productItem.customizationData && { customization_data: productItem.customizationData }),
           ...(productItem.previewImageUrl && { preview_image_url: productItem.previewImageUrl }),
+          ...(experiment?.id && { experiment_id: experiment.id }),
+          ...(experiment && { experiment_key: experiment.key, experiment_variant: experiment.variant }),
         })
       }
     }
