@@ -107,7 +107,7 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
         total += item.bundle.bundle_price * item.quantity
       } else {
         if ((item as CartProductItem).isBogoGift) continue
-        const basePrice = (item.variant?.price ?? item.product.price) || 0
+        const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
         const volumeRules = getVolumeRulesForProduct(item.product.id)
         const bogoRules = getBogoRulesForProduct(item.product.id)
         const sp = (item as CartProductItem).sellingPlan || null
@@ -267,7 +267,7 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                                   </div>
                                   <div className="text-right">
                                     {(() => {
-                                      const basePrice = (item.variant?.price ?? item.product.price) || 0
+                                      const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
                                       const volumeRules = getVolumeRulesForProduct(item.product.id)
                                       const bogoRulesForItem = getBogoRulesForProduct(item.product.id)
                                       const sp = (item as CartProductItem).sellingPlan || null

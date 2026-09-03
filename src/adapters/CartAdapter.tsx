@@ -26,7 +26,7 @@ export const useCartLogic = () => {
     if (item.type === 'bundle') {
       return { unitPrice: item.bundle.bundle_price, volumeDiscount: null, bogoDiscount: null }
     }
-    const basePrice = (item.variant?.price ?? item.product.price) || 0
+    const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
     const volumeRules = getVolumeRulesForProduct(item.product.id)
     const bogoRules = getBogoRulesForProduct(item.product.id)
     const sp = (item as CartProductItem).sellingPlan || null
