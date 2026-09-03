@@ -14,6 +14,14 @@ import { useCart } from "@/contexts/CartContext"
 import { useCheckoutState } from "@/hooks/useCheckoutState"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackPurchase, tracking, trackPH } from "@/lib/tracking-utils"
+import { mapPaymentError } from "@/lib/payment-errors"
+import {
+  reportPaymentFailure,
+  clearPaymentFailure,
+  setPaymentAlternatives,
+  PAYMENT_SECTION_ANCHOR_ID,
+} from "@/lib/payment-recovery"
+import PaymentRecoveryBanner from "@/components/PaymentRecoveryBanner"
 import type { PaymentMethods } from "@/lib/supabase"
 
 /** Build Stripe payment_method_types array from store_settings.payment_methods */
@@ -278,7 +286,17 @@ function PaymentForm({
     return false
   }
 
+  // Registra qué métodos alternativos existen realmente en esta tienda,
+  // para que el banner de recuperación no ofrezca métodos apagados.
+  useEffect(() => {
+    setPaymentAlternatives({
+      oxxo: !!paymentMethods?.oxxo,
+      spei: !!paymentMethods?.spei,
+    })
+  }, [paymentMethods])
+
   const handlePayment = async () => {
+    clearPaymentFailure()
     if (!stripe || !elements) {
       toast({ title: "Error", description: "Stripe no está listo", variant: "destructive" })
       return
@@ -312,7 +330,11 @@ function PaymentForm({
           error_type: submitError.type,
           error_message: submitError.message,
         })
-        toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
+        reportPaymentFailure(mapPaymentError({
+          code: submitError.code,
+          type: submitError.type,
+          message: submitError.message,
+        }))
         return
       }
 
@@ -393,7 +415,12 @@ function PaymentForm({
           error_type: result.error.type,
           error_message: result.error.message,
         })
-        toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
+        reportPaymentFailure(mapPaymentError({
+          code: result.error.code,
+          declineCode: (result.error as any).decline_code,
+          type: result.error.type,
+          message: result.error.message,
+        }))
         return
       }
 
@@ -522,17 +549,17 @@ function PaymentForm({
     }
     const lowered = (message || "").toLowerCase()
     if (lowered.includes("stripe_not_connected") || lowered.includes("stripe not connected")) {
-      toast({
-        title: "Pagos no configurados",
-        description: "Esta tienda aún no ha configurado un método de pago. Ve al dashboard de Lovivo para conectar Stripe y empezar a recibir pagos.",
-      })
+      // El detalle técnico se queda en consola + PostHog. El cliente final NO debe verlo.
+      console.error("[pagos] Stripe no está conectado para esta tienda.")
+      reportPaymentFailure(mapPaymentError({ code: 'card_payments_unavailable' }))
       return
     }
-    toast({ title: "Error de pago", description: "No se pudo procesar el pago. Intenta de nuevo.", variant: "destructive" })
+    reportPaymentFailure(mapPaymentError({ message }))
   }
 
   const handleExpressCheckoutConfirm = useCallback(async (ev?: any) => {
     if (!stripe || !elements) return
+    clearPaymentFailure()
     const wallet = ev?.expressPaymentType || 'unknown'
     trackPH('checkout_pay_clicked', { ...phBase(), payment_method: 'express_checkout', wallet })
     try {
@@ -548,7 +575,11 @@ function PaymentForm({
           error_type: submitError.type,
           error_message: submitError.message,
         })
-        toast({ title: "Error", description: submitError.message || "Verifica los datos de pago", variant: "destructive" })
+        reportPaymentFailure(mapPaymentError({
+          code: submitError.code,
+          type: submitError.type,
+          message: submitError.message,
+        }), { focus: true })
         return
       }
 
@@ -673,7 +704,12 @@ function PaymentForm({
           error_type: result.error.type,
           error_message: result.error.message,
         })
-        toast({ title: "Error de pago", description: result.error.message || "No se pudo procesar el pago", variant: "destructive" })
+        reportPaymentFailure(mapPaymentError({
+          code: result.error.code,
+          declineCode: (result.error as any).decline_code,
+          type: result.error.type,
+          message: result.error.message,
+        }), { focus: true })
         return
       }
 
@@ -874,6 +910,11 @@ function PaymentForm({
         </>
       )}
 
+      {/* Banner persistente de recuperación de pago (reemplaza los toasts efímeros) */}
+      <div id={PAYMENT_SECTION_ANCHOR_ID} className="scroll-mt-24 empty:hidden">
+        <PaymentRecoveryBanner />
+      </div>
+
       {/* Unified Payment Element - shows card, OXXO, SPEI, wallets automatically */}
       <PaymentElement
         options={{
@@ -988,6 +1029,8 @@ export default function StripePayment(props: StripePaymentProps) {
     currency: (props.currency || 'mxn').toLowerCase(),
     paymentMethodTypes: buildPaymentMethodTypes(props.paymentMethods),
     appearance: getStripeAppearance('dark'),
+    // Fuerza que Stripe muestre sus propios mensajes inline en español.
+    locale: 'es-419' as const,
   }), [props.amountCents, props.currency, props.paymentMethods])
 
   return (

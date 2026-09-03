@@ -438,14 +438,15 @@ function PaymentRequestInner({
         console.error("PaymentRequestButton error (PDP):", err)
         const msg = (err?.message || "").toLowerCase()
         if (msg.includes("stripe_not_connected") || msg.includes("stripe not connected")) {
+          console.error("[pagos] Stripe no está conectado para esta tienda.")
           toast({
-            title: "Pagos no configurados",
-            description: "Esta tienda aún no ha configurado un método de pago. Ve al dashboard de Lovivo para conectar Stripe y empezar a recibir pagos.",
+            title: "Pago rápido no disponible",
+            description: "Los pagos con tarjeta están temporalmente fuera de servicio. Agrega el producto al carrito para ver otros métodos de pago.",
           })
         } else {
           toast({
-            title: "Error en el pago rápido",
-            description: "No se pudo completar el pago. Intenta de nuevo.",
+            title: "No pudimos completar tu pago",
+            description: "No se te cobró nada. Intenta de nuevo o agrega el producto al carrito para pagar con otro método.",
             variant: "destructive",
           })
         }

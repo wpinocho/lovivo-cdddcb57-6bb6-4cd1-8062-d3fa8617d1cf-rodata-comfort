@@ -7,6 +7,13 @@ import { useToast } from '@/hooks/use-toast'
 import { useNavigate } from 'react-router-dom'
 import { getAttributionPayload, trackPurchase, tracking, trackPH } from '@/lib/tracking-utils'
 import { useCart } from '@/contexts/CartContext'
+import { mapPaymentError } from '@/lib/payment-errors'
+import {
+  reportPaymentFailure,
+  clearPaymentFailure,
+  setPaymentAlternatives,
+  PAYPAL_ANCHOR_ID,
+} from '@/lib/payment-recovery'
 
 interface PaypalExpressButtonProps {
   orderId: string
@@ -34,6 +41,11 @@ export function PaypalExpressButton({
   const navigate = useNavigate()
   const { clearCart } = useCart()
 
+  React.useEffect(() => {
+    const available = !!(paypalEnabled && paypalClientId && checkoutToken)
+    setPaymentAlternatives({ paypal: available })
+  }, [paypalEnabled, paypalClientId, checkoutToken])
+
   if (!paypalEnabled || !paypalClientId || !checkoutToken) return null
 
   const currencyUpper = currency.toUpperCase()
@@ -56,6 +68,8 @@ export function PaypalExpressButton({
         </div>
       )}
 
+      <div id={PAYPAL_ANCHOR_ID} className="scroll-mt-24" />
+
       <PayPalScriptProvider
         key={`${paypalClientId}-${currencyUpper}`}
         options={{
@@ -70,6 +84,7 @@ export function PaypalExpressButton({
           createOrder={async () => {
             // PayPal Express: no requiere validar el formulario — PayPal recolecta
             // la dirección de envío del comprador dentro del popup de PayPal.
+            clearPaymentFailure()
             const attribution = getAttributionPayload();
             trackPH('checkout_pay_clicked', {
               ...phBase(),
@@ -191,11 +206,10 @@ export function PaypalExpressButton({
                 stage: 'paypal_approve_exception',
                 error_message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
               })
-              toast({
-                title: 'Error de PayPal',
-                description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
-                variant: 'destructive',
-              })
+              reportPaymentFailure(
+                mapPaymentError({ message: err instanceof Error ? err.message : String(err) }),
+                { focus: true }
+              )
             }
           }}
           onError={(err: unknown) => {
@@ -204,15 +218,17 @@ export function PaypalExpressButton({
               stage: 'paypal_sdk',
               error_message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
             })
-            toast({
-              title: 'Error de PayPal',
-              description: err instanceof Error ? err.message : 'Algo salió mal. Intenta de nuevo.',
-              variant: 'destructive',
-            })
+            reportPaymentFailure(
+              mapPaymentError({ message: err instanceof Error ? err.message : String(err) }),
+              { focus: true }
+            )
           }}
           onCancel={() => {
             // El usuario cerró el popup de PayPal sin completar el pago.
             trackPH('checkout_paypal_cancelled', phBase())
+            // Lo regresamos al bloque de pago con un aviso neutro: su carrito
+            // y sus datos siguen intactos.
+            reportPaymentFailure(mapPaymentError({ code: 'paypal_cancelled' }), { focus: true })
           }}
         />
       </PayPalScriptProvider>

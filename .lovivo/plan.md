@@ -21,172 +21,80 @@
   imágenes, reviews y FAQ. Nunca reinventar el esqueleto.
 - **Regla del cliente (2026-08-20)**: en `/repartidores` SOLO fotos reales del cliente.
 - **Errores de pago (2026-09-03)**: nunca culpar al cliente, nunca mostrar el string crudo de
-  Stripe. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
+  Stripe/PayPal. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
+  Nunca exponer texto interno de plataforma ("dashboard de Lovivo") al cliente final.
 
 ---
 
-## Active Plan — 📋 Recuperación de pagos rechazados y cancelaciones (2026-09-03)
+## Active Plan — ✅ Recuperación de pagos rechazados IMPLEMENTADA (2026-09-03)
 
-### Objetivo de negocio
-El tracking ya mide `checkout_payment_failed` y `checkout_paypal_cancelled`, pero el storefront
-**no hace nada para recuperar** a ese usuario. Cada rechazo hoy = venta perdida silenciosa.
-Meta: convertir el rechazo en un segundo intento con un método alternativo.
+### Qué se construyó
+Arquitectura elegida: **store externo con `useSyncExternalStore`** en lugar de un React Context.
+Razón: `StripePayment` vive dentro de `<Elements>` y `PaypalExpressButton` es hermano fuera de él;
+un store a nivel de módulo comparte estado sin reestructurar `CheckoutUI` (0 cambios ahí).
 
-### AUDITORÍA — estado actual (verificado en código, 2026-09-03)
+**Archivos nuevos (3)**
+1. `src/lib/payment-errors.ts` — `mapPaymentError()` + `FriendlyPaymentError`.
+   ~30 códigos mapeados (decline_code primero, luego error_code, luego `type`, luego heurística
+   sobre el mensaje crudo, luego fallback). Kinds: `declined | funds | card_data | auth | network |
+   cancelled | unavailable | unknown`. Cada receta trae `tone` ('error' rojo / 'neutral' ámbar) y
+   `suggestAlternatives`.
+2. `src/lib/payment-recovery.ts` — store + `usePaymentRecovery()`.
+   Estado: `failure`, `attempts`, `focusToken`, `alternatives {paypal, oxxo, spei}`.
+   API: `reportPaymentFailure(err, {focus})`, `clearPaymentFailure()`, `requestPaymentFocus()`,
+   `setPaymentAlternatives()`, `resetPaymentRecovery()`.
+   Constantes de ancla: `PAYMENT_SECTION_ANCHOR_ID`, `PAYPAL_ANCHOR_ID`.
+3. `src/components/PaymentRecoveryBanner.tsx` — banner persistente, dismissible, `role="alert"`.
+   Scroll automático (`scrollIntoView`, respeta `prefers-reduced-motion`) al aparecer o cuando
+   sube `focusToken`. Chips de alternativas solo si `suggestAlternatives || attempts >= 2`,
+   filtradas por los métodos REALMENTE activos.
 
-**1. Rechazo de tarjeta (Stripe) — `StripePayment.tsx`**
-- 4 puntos de fallo: `elements.submit()` (L306), `confirmPayment` (L386), excepción genérica
-  `handlePaymentError` (L505), y express checkout / wallets (L542, L665).
-- **Todos terminan en un `toast({ variant: 'destructive' })` y nada más.**
-- Problemas concretos:
-  - El toast es **efímero** (se va en ~4s). Si el usuario está mirando el teclado, no lo ve.
-  - Muestra `result.error.message` **crudo de Stripe** → texto genérico y a veces en inglés
-    ("Your card was declined."). No hay `locale` configurado en `<Elements>`.
-  - **No sugiere ninguna alternativa** (PayPal / OXXO / SPEI / otra tarjeta).
-  - `handlePaymentError` genérico dice literal: "No se pudo procesar el pago. Intenta de nuevo."
-    → cero información accionable.
-  - Fuga grave de UX: el mensaje "Ve al dashboard de Lovivo para conectar Stripe" (L527)
-    es texto interno de plataforma visible al **cliente final**. Hay que cambiarlo.
-  - No hay contador de intentos → no se puede escalar el mensaje tras 2 fallos.
+**Archivos modificados (3)**
+- `StripePayment.tsx`: 4 puntos de fallo migrados de toast → `reportPaymentFailure`
+  (elements.submit, confirmPayment, express submit, express confirm) + `handlePaymentError`.
+  `clearPaymentFailure()` al inicio de `handlePayment` y `handleExpressCheckoutConfirm`.
+  Banner renderizado arriba del `<PaymentElement>` en `<div id={ANCHOR} class="empty:hidden">`.
+  `locale: 'es-419'` añadido a `elementsOptions`. Mensaje "dashboard de Lovivo" eliminado →
+  ahora `card_payments_unavailable` + `console.error` con el detalle técnico.
+  `useEffect` registra oxxo/spei desde `props.paymentMethods`.
+- `PaypalExpressButton.tsx`: `onCancel` ahora dispara banner neutro + scroll (además del
+  `trackPH('checkout_paypal_cancelled')` intacto). `onError` y el catch de `onApprove` usan
+  `mapPaymentError` en vez de `err.message` crudo. `useEffect` registra `paypal: true`.
+  Ancla `#paypal-express-anchor` añadida.
+- `ProductExpressCheckout.tsx`: mismo mensaje interno "dashboard de Lovivo" eliminado (L443).
 
-**2. Cancelación de PayPal — `PaypalExpressButton.tsx` L213-216**
-- `onCancel` **solo** dispara `trackPH('checkout_paypal_cancelled')`. **Cero feedback visual.**
-  El usuario cierra el popup y vuelve a una página que parece congelada.
-- Lo bueno: `clearCart()` solo corre en éxito → **el carrito NO se pierde**.
-- Lo bueno: contacto/dirección se autoguardan server-side vía `clients-upsert`
-  (`CheckoutAdapter` L227-278, debounce 600ms) y la orden vive en
-  `localStorage['checkout:${STORE_ID}']` con TTL de 7 días (`useCheckoutState`).
-  → **Los datos SÍ se conservan**; lo que falta es devolver al usuario al punto de pago
-  y decirle qué hacer.
-- `onError` de PayPal muestra `err.message` crudo del SDK → poco útil.
-
-**3. Arquitectura relevante**
-- El checkout es **una sola página** (no hay stepper: 0 matches de `currentStep|setStep`).
-  Por lo tanto "volver a la sección de pagos" = **scroll + foco**, no cambio de paso.
-- `StripePayment` (CheckoutUI L300) y `PaypalExpressButton` (CheckoutUI L319) son **hermanos
-  adyacentes** en `CheckoutUI` → un provider que envuelva a ambos resuelve el estado compartido.
-
-### Comparación con Shopify (mejores prácticas)
-| Práctica Shopify | Rodata hoy |
-|---|---|
-| Banner de error **persistente** arriba del bloque de pago | ❌ solo toast efímero |
-| Mensajes por `decline_code` en el idioma de la tienda | ❌ string crudo de Stripe |
-| Carrito + dirección intactos tras el fallo | ✅ ya funciona |
-| Métodos alternativos visibles tras el fallo | ❌ no se destacan |
-| Regreso al bloque de pago tras cancelar wallet/PayPal | ❌ no pasa nada |
-| Email de checkout abandonado | ⚠️ se configura en el Dashboard, no aquí |
-
-### IMPLEMENTACIÓN
-
-**Paso 1 — `src/lib/payment-errors.ts` (nuevo)**
-Mapa `decline_code` / `error_code` → copy en español accionable. Firma:
-```ts
-export type PaymentFailureKind = 'declined' | 'funds' | 'card_data' | 'auth' | 'network' | 'unknown' | 'cancelled'
-export interface FriendlyPaymentError { kind, title, body, suggestAlternatives: boolean }
-export function mapPaymentError(input: { code?, declineCode?, type?, message? }): FriendlyPaymentError
-```
-Copy (tono Rodata: directo, tú, sin culpar, siguiente paso concreto):
-- `insufficient_funds` → **"Tu tarjeta no tenía fondos suficientes"** /
-  "Prueba con otra tarjeta, o paga en efectivo en OXXO o por transferencia SPEI."
-- `card_declined` (genérico) / `do_not_honor` / `generic_decline` →
-  **"Tu banco rechazó el cargo"** / "No es un error tuyo: pasa seguido con compras en línea.
-  Prueba otra tarjeta o paga con PayPal — tarda lo mismo."
-- `incorrect_cvc` / `invalid_cvc` → **"Revisa el código de 3 dígitos"** /
-  "Está al reverso de tu tarjeta, junto a la firma."
-- `expired_card` → **"Esa tarjeta ya venció"** / "Usa otra tarjeta o paga con PayPal."
-- `incorrect_number` / `invalid_number` → **"El número de tarjeta no cuadra"** /
-  "Revísalo y vuelve a intentar."
-- `authentication_required` → **"Tu banco pidió confirmar la compra"** /
-  "Completa la verificación que te mandó tu banco y vuelve a darle a pagar."
-- `processing_error` / `api_connection_error` → **"Se cayó la conexión con el banco"** /
-  "No se te cobró nada. Vuelve a intentar en unos segundos."
-- fallback → **"No pudimos completar tu pago"** /
-  "No se te cobró nada. Tus datos y tu carrito siguen guardados. Prueba con otra tarjeta,
-  con PayPal, o paga en OXXO o por SPEI."
-- `cancelled` (PayPal) → **"Cancelaste el pago con PayPal"** /
-  "Tu carrito y tus datos siguen aquí. Puedes pagar con tarjeta o volver a intentar con PayPal."
-Regla: NUNCA mostrar `error.message` crudo al usuario; solo va a PostHog.
-
-**Paso 2 — `src/contexts/PaymentRecoveryContext.tsx` (nuevo)**
-Provider ligero (sin dependencias nuevas) con:
-- `failure: FriendlyPaymentError | null`
-- `attempts: number` (se incrementa en cada fallo; ≥2 → forzar `suggestAlternatives`)
-- `reportFailure(err)`, `clearFailure()`
-- `paymentSectionRef: RefObject<HTMLDivElement>` + `focusPaymentSection()` →
-  `scrollIntoView({ behavior:'smooth', block:'center' })` (con guard de `prefers-reduced-motion`)
-- `clearFailure()` se llama automáticamente cuando el usuario vuelve a darle a pagar.
-
-**Paso 3 — `src/components/PaymentRecoveryBanner.tsx` (nuevo)**
-Banner **persistente** (no toast), dismissible, renderizado arriba del bloque de pago:
-- Fondo `bg-red-500/10`, borde `border-red-500/30`, ícono `AlertCircle` (lucide, ya instalado).
-  Para `kind === 'cancelled'` usar tono neutro/amber en lugar de rojo (no es un error).
-- Título Sora bold + body en `text-brand-smoke`, máx 2 líneas.
-- Si `suggestAlternatives || attempts >= 2`: fila de chips con las alternativas **realmente
-  activas** (leer `paymentMethods` de `useSettings`: PayPal, OXXO, SPEI) que hacen scroll
-  al método correspondiente. No inventar métodos que la tienda no tenga prendidos.
-- `role="alert"` + `aria-live="polite"`.
-
-**Paso 4 — `StripePayment.tsx`**
-- Consumir `usePaymentRecovery()`. En los 5 puntos de fallo, además del `trackPH` existente
-  (no tocar los eventos), llamar `reportFailure(mapPaymentError({...}))`.
-- **Quitar los toasts destructivos de error de pago** (el banner los reemplaza; mantener el
-  toast de éxito y el de productos agotados).
-- `clearFailure()` al inicio de `handlePayment` y `handleExpressCheckoutConfirm`.
-- Renderizar `<PaymentRecoveryBanner />` justo arriba del `<PaymentElement>`.
-- Cambiar el mensaje de `stripe_not_connected`: el cliente final debe ver
-  "Los pagos con tarjeta están temporalmente fuera de servicio. Puedes pagar con PayPal."
-  El detalle técnico se queda en `console.error` + PostHog.
-- Agregar `locale: 'es-419'` a las options de `<Elements>` para que Stripe localice sus
-  propios mensajes inline (validación de campos).
-
-**Paso 5 — `PaypalExpressButton.tsx`**
-- `onCancel`: mantener `trackPH('checkout_paypal_cancelled')` **igual** (no romper el funnel),
-  y agregar `reportFailure(mapPaymentError({ code:'paypal_cancelled' }))` +
-  `focusPaymentSection()` → el usuario vuelve a ver el bloque de tarjeta con el banner puesto.
-- `onError` y `onApprove` catch: usar `mapPaymentError` en vez de `err.message` crudo.
-  El mensaje técnico sigue yendo a PostHog en `error_message`.
-
-**Paso 6 — `CheckoutUI.tsx`**
-- Envolver el bloque de pago (StripePayment L300 + PaypalExpressButton L319) con
-  `<PaymentRecoveryProvider>` y colgar `paymentSectionRef` del contenedor.
-
-### Eventos nuevos de PostHog (2, aditivos)
+**Eventos nuevos de PostHog (aditivos, no se tocó ninguno existente)**
 - `payment_recovery_shown` — `{ kind, error_code, decline_code, attempts, alternatives_shown }`
-- `payment_recovery_alternative_clicked` — `{ from_kind, alternative }` (paypal | oxxo | spei | card)
-Solo PostHog (`trackPH`). **No tocar Meta ni Google Ads** — decisión del cliente.
+- `payment_recovery_alternative_clicked` — `{ from_kind, alternative }`
 
-### Fuera de alcance (Dashboard, no este repo)
-- Email de checkout abandonado / recuperación de pago fallido → automatización del Dashboard.
-- Insight en PostHog: `checkout_payment_failed` → `checkout_payment_succeeded` en la misma
-  sesión = tasa de recuperación. Es la métrica que valida todo este trabajo.
+### Pendiente de validar en vivo
+1. Tarjeta `4000000000000002` (declined) → banner rojo persistente, sin toast, carrito intacto.
+2. Tarjeta `4000000000009995` → copy específico de fondos insuficientes.
+3. Abrir PayPal y cerrar el popup → banner ámbar + scroll al bloque de pago.
+4. Segundo fallo consecutivo → chips visibles aunque el código no las pida.
+5. Confirmar que los 14 eventos de checkout previos siguen disparándose idénticos.
 
-### Criterios de aceptación
-1. Tarjeta de prueba `4000000000000002` (declined) → banner rojo persistente, sin toast,
-   carrito intacto, campos intactos, alternativas visibles.
-2. Tarjeta `4000000000009995` (insufficient_funds) → copy específico de fondos.
-3. Abrir PayPal y cerrar el popup → banner neutro + scroll al bloque de pago + datos intactos.
-4. Segundo fallo consecutivo → chips de alternativas visibles aunque el código no lo pida.
-5. Ningún string crudo de Stripe ni mención a "dashboard de Lovivo" visible al cliente.
-6. Los eventos existentes de checkout siguen disparándose idénticos.
+### Fuera de alcance (Dashboard)
+- Email de checkout abandonado / pago fallido → automatización del Dashboard.
+- Insight PostHog: `checkout_payment_failed` → `checkout_payment_succeeded` en la misma sesión
+  = tasa de recuperación. Es la métrica que valida todo este trabajo.
 
 ---
 
 ## Recent Changes
-- **📋 Plan: recuperación de pagos rechazados y cancelación de PayPal** (2026-09-03) — auditoría:
-  hoy solo hay toasts efímeros con texto crudo de Stripe y `onCancel` de PayPal sin feedback.
-  Carrito y datos SÍ se conservan. Plan de 6 pasos + 3 archivos nuevos.
+- **✅ Recuperación de pagos rechazados IMPLEMENTADA** (2026-09-03) — 3 archivos nuevos
+  (`payment-errors.ts`, `payment-recovery.ts`, `PaymentRecoveryBanner.tsx`) + 3 modificados.
+  Store externo en vez de Context → `CheckoutUI.tsx` no se tocó. Falta validación en vivo.
+- **📋 Plan: recuperación de pagos rechazados y cancelación de PayPal** (2026-09-03) — auditoría.
 - **✅ Google Ads (gtag.js) implementado** (2026-09-01) — 2 archivos nuevos + 4 modificados.
   Multitenant, no inyecta nada sin conversion ID. Falta validar con Tag Assistant.
 - **✅ Instrumentación completa de checkout en PostHog** (2026-08-25) — 14 eventos nuevos +
   `trackPH`/`identifyCustomer` en `tracking-utils.ts`. Falta armar los insights en PostHog.
-- **📋 Plan: instrumentación de eventos de checkout en PostHog** (2026-08-25) — auditoría previa.
 - **✅ Ajustes finos `/repartidores`** (2026-08-20, tanda 3) — swap Beneficio 01↔03, reseñas a
   `aspect-square` (+`width=700`), copy de "Se paga solo" a horizonte semanal.
-- **✅ Reasignación de fotos `/repartidores`** (2026-08-20, tanda 2) — lifestyle, 3 beneficios,
-  quote break y 5 reseñas remapeados; se agregó reseña "Marco V." (Querétaro).
+- **✅ Reasignación de fotos `/repartidores`** (2026-08-20, tanda 2).
 - **✅ Fotografía real en `/repartidores`** (2026-08-20, tanda 1) — galería del producto (5 fotos).
 - **✅ Fix PayPal → `/gracias` implementado** (2026-08-18). **Falta prueba real.**
-- **🚨 Auditoría PayPal → `/gracias`** (2026-08-18) — detectado el 404 y 4 bugs secundarios.
 - **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06) — `src/pages/ui/DeliveryPDPUI.tsx`.
 - **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
 - **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
@@ -222,10 +130,11 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **UX de pago rechazado (2026-09-03)**: solo toast efímero con texto crudo de Stripe; PayPal
-  `onCancel` sin feedback; mensaje interno "dashboard de Lovivo" visible al cliente final.
-  → cubierto por el Active Plan.
-- **`<Elements>` sin `locale` (2026-09-03)**: Stripe puede devolver mensajes en inglés.
+- **Banner de recuperación sin probar en vivo (2026-09-03)**: código completo, faltan las 5
+  pruebas de aceptación con tarjetas de test de Stripe.
+- **Banner acoplado a StripePayment (2026-09-03)**: si algún día se apaga el pago con tarjeta,
+  el banner no se renderiza (la cancelación de PayPal quedaría sin feedback visual). Hoy no
+  aplica porque `CheckoutUI` siempre monta `StripePayment`.
 - **Google Ads sin validar (2026-09-01)**: código listo, falta confirmar que el conversion ID
   esté guardado en `store_settings` y ver el tag en vivo con Tag Assistant.
 - **Tipo `StoreSettings` (2026-09-01)**: no incluye las columnas de Google Ads; se leen con
@@ -240,29 +149,29 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
-- `src/lib/payment-errors.ts` — **(pendiente)** mapa decline_code → copy en español
-- `src/contexts/PaymentRecoveryContext.tsx` — **(pendiente)** estado de fallo + scroll a pago
-- `src/components/PaymentRecoveryBanner.tsx` — **(pendiente)** banner persistente de recuperación
+- `src/lib/payment-errors.ts` — mapa decline_code/error_code → copy accionable en español
+- `src/lib/payment-recovery.ts` — store externo (useSyncExternalStore) + anclas de scroll
+- `src/components/PaymentRecoveryBanner.tsx` — banner persistente + chips de alternativas
 - `src/lib/google-ads.ts` — loader gtag.js multitenant + purchase/event/setUserData
 - `src/contexts/GoogleAdsContext.tsx` — init + page_view por ruta (dentro de BrowserRouter)
 - `src/contexts/PostHogContext.tsx` — init PostHog (autocapture off, identified_only)
 - `src/lib/tracking-utils.ts` — `trackHybrid` (Pixel + CAPI + PostHog), `gaItems`, `getAttributionPayload`,
   `trackPH` y `identifyCustomer` (PostHog-only, al final del archivo)
 - `src/adapters/CheckoutAdapter.tsx` — `initiatecheckout` + autosave de cliente (`clients-upsert`)
-- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página; StripePayment L300, PayPal L319
-- `src/components/StripePayment.tsx` — `phBase()`, `handlePayment`, `handlePaymentError` (L505),
-  `handleExpressCheckoutConfirm`
-- `src/components/PaypalExpressButton.tsx` — `phBase()`, createOrder/onApprove/onError/onCancel (L213)
+- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página (NO se tocó en 2026-09-03)
+- `src/components/StripePayment.tsx` — `phBase()`, `handlePayment`, `handlePaymentError`,
+  `handleExpressCheckoutConfirm`, banner arriba del `<PaymentElement>`
+- `src/components/PaypalExpressButton.tsx` — createOrder/onApprove/onError/onCancel + ancla PayPal
+- `src/components/ProductExpressCheckout.tsx` — express checkout de la PDP
 - `src/hooks/useCheckoutState.ts` — orden en localStorage, TTL 7 días
-- `src/components/headless/HeadlessProduct.tsx` — viewcontent, addtocart
-- `src/pages/ThankYou.tsx` — resumen post-compra (localStorage `completed_order`, TTL 2h)
-- `src/pages/PendingPayment.tsx` — OXXO / SPEI + `pending_payment_viewed`
+- `src/pages/ThankYou.tsx` / `src/pages/PendingPayment.tsx`
 - `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7
 - `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fotografía real, 6 reseñas)
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Implementar el Active Plan de recuperación de pagos (6 pasos).
+- **[CRÍTICA]** Probar el banner con tarjetas de test de Stripe (declined + insufficient_funds)
+  y con cancelación real de PayPal.
 - **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba (transaction_id).
 - **[CRÍTICA]** Verificar en PostHog Activity que los 14 eventos de checkout lleguen.
 - **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
