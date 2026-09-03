@@ -12,6 +12,7 @@ import { isVariantAvailable } from '@/lib/utils'
 import { useSellingPlans } from '@/hooks/useSellingPlans'
 import { calcSubscriptionPrice } from '@/lib/subscription-utils'
 import { useCheckout } from '@/hooks/useCheckout'
+import { usePriceExperiment } from '@/hooks/usePriceExperiment'
 
 /**
  * FORBIDDEN HEADLESS COMPONENT - HeadlessProduct
@@ -234,8 +235,38 @@ export const useProductLogic = (slugOverride?: string) => {
     return (anyProduct.inventory_quantity ?? 0) > 0
   }
 
+  // ── Price experiment (A/B) ──
+  // Selling plans opt out entirely. With no active manifest for this product
+  // this returns the catalog price synchronously and issues zero requests.
+  const catalogPrice = getCurrentPrice()
+  const {
+    resolvedPrice,
+    isReady: isPriceReady,
+    experiment: priceExperiment,
+  } = usePriceExperiment({
+    productId: product?.id,
+    variantId: getMatchingVariant()?.id,
+    catalogPrice,
+    disabled: !!selectedPlan,
+  })
+  const currentPrice = resolvedPrice
+  const isPriceResolving = !isPriceReady
+
+  /** Cart options that keep the displayed price and its experiment together. */
+  const experimentCartOptions = priceExperiment
+    ? {
+        resolvedUnitPrice: currentPrice,
+        experiment: {
+          id: priceExperiment.id,
+          key: priceExperiment.key,
+          variant: priceExperiment.variant,
+        },
+      }
+    : {}
+
   const handleAddToCart = () => {
     if (!product) return
+    if (isPriceResolving) return
     
     const variants = (product as any).variants
     const hasVariants = Array.isArray(variants) && variants.length > 0
@@ -250,7 +281,7 @@ export const useProductLogic = (slugOverride?: string) => {
     }
     
     for (let i = 0; i < quantity; i++) {
-      const added = addItem(product, variantToAdd, selectedPlan || undefined)
+      const added = addItem(product, variantToAdd, selectedPlan || undefined, undefined, experimentCartOptions)
       if (!added) {
         toast({
           title: "Solo un plan de suscripción por carrito",
@@ -262,7 +293,6 @@ export const useProductLogic = (slugOverride?: string) => {
     }
     
     // Track AddToCart event with proper formatting
-    const currentPrice = getCurrentPrice()
     trackAddToCart({
       products: [tracking.createTrackingProduct({
         id: product.id,
@@ -281,6 +311,7 @@ export const useProductLogic = (slugOverride?: string) => {
 
   const handleBuyNow = async () => {
     if (!product) return
+    if (isPriceResolving) return
     
     const variants = (product as any).variants
     const hasVars = Array.isArray(variants) && variants.length > 0
@@ -294,7 +325,7 @@ export const useProductLogic = (slugOverride?: string) => {
       return
     }
     
-    const currentP = getCurrentPrice()
+    const currentP = currentPrice
     trackAddToCart({
       products: [tracking.createTrackingProduct({
         id: product.id,
@@ -313,13 +344,24 @@ export const useProductLogic = (slugOverride?: string) => {
       // Construir items localmente — SIN leer el estado del carrito de React
       // Esto elimina la race condition: addItem() es async por setState,
       // pero checkoutWithItems() no depende del estado actualizado
+      // El experimento de precio no viaja con selling plans
+      const experimentMeta = selectedPlan ? null : priceExperiment
       const buyNowItems: CartProductItem[] = [{
-        key: `${product.id}${variantToAdd ? `:${variantToAdd.id}` : ''}${selectedPlan ? `:${selectedPlan.id}` : ''}`,
+        // El sufijo del experimento evita fusionar assignments distintos
+        key: `${product.id}${variantToAdd ? `:${variantToAdd.id}` : ''}${selectedPlan ? `:${selectedPlan.id}` : ''}${experimentMeta ? `:exp-${experimentMeta.key}-${experimentMeta.variant}` : ''}`,
         type: 'product' as const,
         product,
         variant: variantToAdd,
         sellingPlan: selectedPlan || undefined,
         quantity,
+        ...(experimentMeta ? {
+          resolvedUnitPrice: currentPrice,
+          experiment: {
+            id: experimentMeta.id,
+            key: experimentMeta.key,
+            variant: experimentMeta.variant,
+          },
+        } : {}),
       }]
 
       // Crear la orden directamente y guardar en localStorage
@@ -349,7 +391,6 @@ export const useProductLogic = (slugOverride?: string) => {
   const options = product ? (product as any).options : undefined
   const variants = product ? (product as any).variants : undefined
   const hasVariants = Array.isArray(variants) && variants.length > 0
-  const currentPrice = getCurrentPrice()
   const currentCompareAt = getCurrentCompareAt()
   const currentImage = getCurrentImage()
   const inStock = isInStock()
@@ -382,6 +423,11 @@ export const useProductLogic = (slugOverride?: string) => {
     matchingVariant,
     discountPercentage,
     displayImages,
+
+    // Price experiment (A/B)
+    isPriceResolving,
+    priceExperiment,
+    experimentCartOptions,
     
     // Selling plans (subscriptions)
     sellingPlans,
@@ -409,7 +455,7 @@ export const useProductLogic = (slugOverride?: string) => {
     formatMoney,
     
     // States for UI
-    canAddToCart: inStock && (!hasVariants || !!matchingVariant),
+    canAddToCart: inStock && (!hasVariants || !!matchingVariant) && !isPriceResolving,
     
     // Events for additional features
     onAddToCartSuccess: () => {

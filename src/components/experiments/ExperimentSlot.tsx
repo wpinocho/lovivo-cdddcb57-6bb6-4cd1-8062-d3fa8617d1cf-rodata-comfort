@@ -1,16 +1,19 @@
 import React from 'react';
-import { useFeatureFlagVariantKey } from '@posthog/react';
+import { useExperiment } from '@/hooks/useExperiment';
+import type { ExperimentMetadata } from '@/types/experiments';
 
 interface ExperimentSlotProps {
   experimentKey: string;
   variants: Record<string, React.ReactNode>;
   fallback?: React.ReactNode;
+  /** Extra context attached to the `experiment_exposure` event. */
+  metadata?: ExperimentMetadata;
 }
 
 /**
  * Renders the correct variant based on a PostHog feature flag.
- * The useFeatureFlagVariantKey hook automatically sends the
- * $feature_flag_called exposure event to PostHog.
+ * `useExperiment` handles the assignment and sends `experiment_exposure`
+ * once a real variant has been assigned.
  *
  * Usage:
  *   <ExperimentSlot
@@ -22,11 +25,11 @@ interface ExperimentSlotProps {
  *     fallback={<Button className="bg-green-600">Comprar</Button>}
  *   />
  */
-export function ExperimentSlot({ experimentKey, variants, fallback }: ExperimentSlotProps) {
-  const variant = useFeatureFlagVariantKey(experimentKey);
+export function ExperimentSlot({ experimentKey, variants, fallback, metadata }: ExperimentSlotProps) {
+  const { variant } = useExperiment(experimentKey, metadata);
 
   // While loading or if flag not found, show fallback (always control/original)
-  if (!variant || typeof variant !== 'string' || !(variant in variants)) {
+  if (!variant || !(variant in variants)) {
     return <>{fallback || variants['control'] || Object.values(variants)[0]}</>;
   }
 

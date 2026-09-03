@@ -199,7 +199,11 @@ export const useCheckout = () => {
             product_id: item.product_id,
             quantity: item.quantity,
             ...(item.variant_id && { variant_id: item.variant_id }),
-            ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id })
+            ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id }),
+            // Keep A/B attribution when the caller already resolved it
+            ...(item.experiment_id && { experiment_id: item.experiment_id }),
+            ...(item.experiment_key && { experiment_key: item.experiment_key }),
+            ...(item.experiment_variant && { experiment_variant: item.experiment_variant })
           }))
 
       if (immediate) {

@@ -26,7 +26,18 @@ export interface OrderItem {
     name: string
     price: number
   }
+  // A/B experiment attribution, preserved across checkout updates
+  experiment_id?: string
+  experiment_key?: string
+  experiment_variant?: 'control' | 'test'
 }
+
+/** Experiment fields to forward on checkout-update so attribution survives edits. */
+const experimentFields = (item: OrderItem) => ({
+  ...(item.experiment_id && { experiment_id: item.experiment_id }),
+  ...(item.experiment_key && { experiment_key: item.experiment_key }),
+  ...(item.experiment_variant && { experiment_variant: item.experiment_variant }),
+})
 
 // Helper: merge flat checkout-update response fields into the cached order
 const mergeResponseIntoCache = (
@@ -152,6 +163,8 @@ export const useOrderItems = () => {
         ? {
             id: variant_id,
             name: variantName,
+            // Catálogo únicamente. Nunca usar para totales de checkout:
+            // el precio autoritativo de la línea es item.price.
             price: (item.variant_price ?? fallback?.variant?.price ?? item.price)
           }
         : undefined
@@ -209,8 +222,12 @@ export const useOrderItems = () => {
         productName = 'Producto sin nombre'
       }
 
+      const experimentKey = item.experiment_key || undefined
+      const experimentVariant = item.experiment_variant || undefined
+
       return {
-        key: `${item.product_id}${variant_id ? `:${variant_id}` : ''}${item.selling_plan_id ? `:${item.selling_plan_id}` : ''}`,
+        // Experiment suffix keeps control/test lines of the same product apart
+        key: `${item.product_id}${variant_id ? `:${variant_id}` : ''}${item.selling_plan_id ? `:${item.selling_plan_id}` : ''}${experimentKey && experimentVariant ? `:exp-${experimentKey}-${experimentVariant}` : ''}`,
         product_id: item.product_id,
         variant_id,
         selling_plan_id: item.selling_plan_id || undefined,
@@ -223,7 +240,10 @@ export const useOrderItems = () => {
           price: item.price,
           images: productImages
         },
-        variant
+        variant,
+        ...(item.experiment_id ? { experiment_id: item.experiment_id } : {}),
+        ...(experimentKey ? { experiment_key: experimentKey } : {}),
+        ...(experimentVariant ? { experiment_variant: experimentVariant } : {}),
       } as OrderItem
     })
   }, [])
@@ -395,7 +415,8 @@ export const useOrderItems = () => {
           product_id: item.product_id,
           quantity: item.key === key ? newQuantity : item.quantity,
           ...(item.variant_id && { variant_id: item.variant_id }),
-          ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id })
+          ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id }),
+          ...experimentFields(item)
         }))
 
         console.log('Sending debounced update with items:', updatedItems)
@@ -483,7 +504,8 @@ export const useOrderItems = () => {
           product_id: item.product_id,
           quantity: item.quantity,
           ...(item.variant_id && { variant_id: item.variant_id }),
-          ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id })
+          ...(item.selling_plan_id && { selling_plan_id: item.selling_plan_id }),
+          ...experimentFields(item)
         }))
 
       logger.debug(`removeItem: Calling updateCheckoutItems with:`, updatedItems)
@@ -540,10 +562,14 @@ export const useOrderItems = () => {
   }, [])
 
   // Calcular totales
-  const total = orderItems.reduce((sum, item) => {
-    const unitPrice = item.variant?.price ?? item.product.price
-    return sum + (unitPrice * item.quantity)
-  }, 0)
+  // item.price es el precio unitario PERSISTIDO en la orden y es la autoridad:
+  // bajo un price experiment puede diferir del precio de catálogo de la variante.
+  // Se recalcula con la cantidad (en vez de usar item.total) para que el optimistic
+  // update de cantidad se refleje al instante.
+  const total = orderItems.reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity,
+    0
+  )
 
   const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0)
 

@@ -183,7 +183,8 @@ function PaymentForm({
       product_id: it.product_id || it.product?.id || '',
       variant_id: it.variant_id || it.variant?.id,
       quantity: Number(it.quantity ?? 0),
-      price: Number(it.variant_price ?? it.variant?.price ?? it.price ?? it.unit_price ?? 0),
+      // El precio persistido en la línea manda sobre el de catálogo de la variante
+      price: Number(it.price ?? it.unit_price ?? it.variant_price ?? it.variant?.price ?? 0),
       selling_plan_id: it.selling_plan_id || undefined,
       product_name: it.product_name || it.product?.name || '',
     }))
