@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFeatureFlagVariantKey, usePostHog } from '@posthog/react';
 import { captureExperimentExposure, trackExperimentEvent } from '@/lib/experiments';
+import { getExperimentPreview } from '@/lib/experimentPreview';
 import { isExperimentVariantKey, type ExperimentMetadata, type ExperimentVariantKey } from '@/types/experiments';
 
 /**
@@ -58,8 +59,11 @@ export function useFeatureFlagsReady(enabled = true): boolean {
  *   // track('cta_clicked') → sends event with experiment context
  */
 export function useExperiment(experimentKey: string, metadata?: ExperimentMetadata) {
-  const rawVariant = useFeatureFlagVariantKey(experimentKey);
-  const isReady = useFeatureFlagsReady();
+  const posthogVariant = useFeatureFlagVariantKey(experimentKey);
+  const flagsReady = useFeatureFlagsReady();
+  const pv = getExperimentPreview();
+  const rawVariant = pv?.exp === experimentKey ? pv.variant : posthogVariant;
+  const isReady = pv?.exp === experimentKey ? true : flagsReady;
 
   /** A real PostHog assignment, as opposed to the control fallback. */
   const assignedVariant: ExperimentVariantKey | null = isExperimentVariantKey(rawVariant)

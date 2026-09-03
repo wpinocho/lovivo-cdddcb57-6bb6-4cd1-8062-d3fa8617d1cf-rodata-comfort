@@ -1,5 +1,6 @@
 import posthog from 'posthog-js';
 import { STORE_ID } from '@/lib/config';
+import { getExperimentPreview } from '@/lib/experimentPreview';
 import { isExperimentVariantKey, type ExperimentType, type ExperimentVariantKey } from '@/types/experiments';
 
 /** Drops undefined/null entries so PostHog events stay clean. */
@@ -24,7 +25,8 @@ export function trackExperimentEvent(
   eventName: string,
   properties?: Record<string, any>
 ) {
-  const variant = posthog.getFeatureFlag(experimentKey);
+  const pv = getExperimentPreview();
+  const variant = pv?.exp === experimentKey ? pv.variant : posthog.getFeatureFlag(experimentKey);
   if (variant) {
     posthog.capture(eventName, {
       ...properties,

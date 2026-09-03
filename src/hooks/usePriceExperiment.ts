@@ -4,6 +4,7 @@ import { useFeatureFlagVariantKey } from '@posthog/react'
 import { callEdge } from '@/lib/edge'
 import { STORE_ID } from '@/lib/config'
 import { captureExperimentExposure } from '@/lib/experiments'
+import { getExperimentPreview } from '@/lib/experimentPreview'
 import { getActivePriceExperiment } from '@/experiments'
 import { useFeatureFlagsReady } from '@/hooks/useExperiment'
 import {
@@ -48,8 +49,11 @@ export const usePriceExperiment = ({
   const flagKey = manifest?.flag_key ?? ''
 
   // Hooks must run unconditionally; an empty flag key is a no-op for PostHog.
-  const rawVariant = useFeatureFlagVariantKey(flagKey)
-  const flagsReady = useFeatureFlagsReady(!!manifest)
+  const posthogVariant = useFeatureFlagVariantKey(flagKey)
+  const flagsReadyFromPh = useFeatureFlagsReady(!!manifest)
+  const pv = getExperimentPreview()
+  const rawVariant = pv?.exp === flagKey ? pv.variant : posthogVariant
+  const flagsReady = pv?.exp === flagKey ? true : flagsReadyFromPh
 
   const assignedVariant: ExperimentVariantKey | null =
     manifest && isExperimentVariantKey(rawVariant) ? rawVariant : null
