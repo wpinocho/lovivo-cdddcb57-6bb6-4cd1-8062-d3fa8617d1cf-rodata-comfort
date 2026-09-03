@@ -23,65 +23,34 @@
 - **Errores de pago (2026-09-03)**: nunca culpar al cliente, nunca mostrar el string crudo de
   Stripe/PayPal. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
   Nunca exponer texto interno de plataforma ("dashboard de Lovivo") al cliente final.
+- **ETA de entrega (2026-09-03)**: se cuenta en **días NATURALES**, no hábiles. Los tiempos reales
+  de la paquetería incluyen fines de semana; contar hábiles inflaba la fecha ~4 días.
 
 ---
 
-## Active Plan — ✅ Recuperación de pagos rechazados IMPLEMENTADA (2026-09-03)
+## Active Plan — ✅ ETA del checkout corregido (2026-09-03)
 
-### Qué se construyó
-Arquitectura elegida: **store externo con `useSyncExternalStore`** en lugar de un React Context.
-Razón: `StripePayment` vive dentro de `<Elements>` y `PaypalExpressButton` es hermano fuera de él;
-un store a nivel de módulo comparte estado sin reestructurar `CheckoutUI` (0 cambios ahí).
+### Qué cambió
+`src/pages/ui/CheckoutUI.tsx`:
+- `addBusinessDays()` **eliminada** (ya no existe en todo el repo, verificado con grep).
+- Nueva `addCalendarDays()` + constantes `DELIVERY_MIN_DAYS = 4` / `DELIVERY_MAX_DAYS = 7`.
+- `getEstimatedDelivery()` ahora devuelve hoy+4 … hoy+7 en días naturales.
+- Formato y consumidores intactos: la fila ámbar "Envío gratis · Llega el {rango}" se sigue
+  renderizando igual en el resumen desktop (L~683) y en el mobile (L~770).
 
-**Archivos nuevos (3)**
-1. `src/lib/payment-errors.ts` — `mapPaymentError()` + `FriendlyPaymentError`.
-   ~30 códigos mapeados (decline_code primero, luego error_code, luego `type`, luego heurística
-   sobre el mensaje crudo, luego fallback). Kinds: `declined | funds | card_data | auth | network |
-   cancelled | unavailable | unknown`. Cada receta trae `tone` ('error' rojo / 'neutral' ámbar) y
-   `suggestAlternatives`.
-2. `src/lib/payment-recovery.ts` — store + `usePaymentRecovery()`.
-   Estado: `failure`, `attempts`, `focusToken`, `alternatives {paypal, oxxo, spei}`.
-   API: `reportPaymentFailure(err, {focus})`, `clearPaymentFailure()`, `requestPaymentFocus()`,
-   `setPaymentAlternatives()`, `resetPaymentRecovery()`.
-   Constantes de ancla: `PAYMENT_SECTION_ANCHOR_ID`, `PAYPAL_ANCHOR_ID`.
-3. `src/components/PaymentRecoveryBanner.tsx` — banner persistente, dismissible, `role="alert"`.
-   Scroll automático (`scrollIntoView`, respeta `prefers-reduced-motion`) al aparecer o cuando
-   sube `focusToken`. Chips de alternativas solo si `suggestAlternatives || attempts >= 2`,
-   filtradas por los métodos REALMENTE activos.
+Antes (3 sep): "11 sep – 15 sep". Después: "7 sep – 10 sep".
 
-**Archivos modificados (3)**
-- `StripePayment.tsx`: 4 puntos de fallo migrados de toast → `reportPaymentFailure`
-  (elements.submit, confirmPayment, express submit, express confirm) + `handlePaymentError`.
-  `clearPaymentFailure()` al inicio de `handlePayment` y `handleExpressCheckoutConfirm`.
-  Banner renderizado arriba del `<PaymentElement>` en `<div id={ANCHOR} class="empty:hidden">`.
-  `locale: 'es-419'` añadido a `elementsOptions`. Mensaje "dashboard de Lovivo" eliminado →
-  ahora `card_payments_unavailable` + `console.error` con el detalle técnico.
-  `useEffect` registra oxxo/spei desde `props.paymentMethods`.
-- `PaypalExpressButton.tsx`: `onCancel` ahora dispara banner neutro + scroll (además del
-  `trackPH('checkout_paypal_cancelled')` intacto). `onError` y el catch de `onApprove` usan
-  `mapPaymentError` en vez de `err.message` crudo. `useEffect` registra `paypal: true`.
-  Ancla `#paypal-express-anchor` añadida.
-- `ProductExpressCheckout.tsx`: mismo mensaje interno "dashboard de Lovivo" eliminado (L443).
-
-**Eventos nuevos de PostHog (aditivos, no se tocó ninguno existente)**
-- `payment_recovery_shown` — `{ kind, error_code, decline_code, attempts, alternatives_shown }`
-- `payment_recovery_alternative_clicked` — `{ from_kind, alternative }`
-
-### Pendiente de validar en vivo
-1. Tarjeta `4000000000000002` (declined) → banner rojo persistente, sin toast, carrito intacto.
-2. Tarjeta `4000000000009995` → copy específico de fondos insuficientes.
-3. Abrir PayPal y cerrar el popup → banner ámbar + scroll al bloque de pago.
-4. Segundo fallo consecutivo → chips visibles aunque el código no las pida.
-5. Confirmar que los 14 eventos de checkout previos siguen disparándose idénticos.
-
-### Fuera de alcance (Dashboard)
-- Email de checkout abandonado / pago fallido → automatización del Dashboard.
-- Insight PostHog: `checkout_payment_failed` → `checkout_payment_succeeded` en la misma sesión
-  = tasa de recuperación. Es la métrica que valida todo este trabajo.
+### Inconsistencia detectada, NO tocada
+`ProductPageUI.tsx` (L440) y `DeliveryPDPUI.tsx` (L480) siguen diciendo
+**"En 4 días hábiles · llega el {deliveryDate}"** con su propia lógica local.
+El user solo pidió el checkout. Si se quiere alinear, hay que cambiar el copy a
+"4 a 7 días" y la función de fecha en ambas PDPs.
 
 ---
 
 ## Recent Changes
+- **✅ ETA del checkout a días naturales 4–7** (2026-09-03) — `CheckoutUI.tsx`. Antes eran 6–8
+  días hábiles (fecha inflada). PDPs quedaron sin alinear a propósito.
 - **✅ Recuperación de pagos rechazados IMPLEMENTADA** (2026-09-03) — 3 archivos nuevos
   (`payment-errors.ts`, `payment-recovery.ts`, `PaymentRecoveryBanner.tsx`) + 3 modificados.
   Store externo en vez de Context → `CheckoutUI.tsx` no se tocó. Falta validación en vivo.
@@ -130,6 +99,8 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
+- **ETA desalineado PDP vs checkout (2026-09-03)**: checkout dice 4–7 días naturales, las dos PDPs
+  siguen diciendo "4 días hábiles". Alinear cuando el user lo pida.
 - **Banner de recuperación sin probar en vivo (2026-09-03)**: código completo, faltan las 5
   pruebas de aceptación con tarjetas de test de Stripe.
 - **Banner acoplado a StripePayment (2026-09-03)**: si algún día se apaga el pago con tarjeta,
@@ -149,6 +120,8 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
+- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página. ETA: `addCalendarDays` +
+  `DELIVERY_MIN_DAYS`/`DELIVERY_MAX_DAYS` (L~58-77), render en L~683 (desktop) y L~770 (mobile)
 - `src/lib/payment-errors.ts` — mapa decline_code/error_code → copy accionable en español
 - `src/lib/payment-recovery.ts` — store externo (useSyncExternalStore) + anclas de scroll
 - `src/components/PaymentRecoveryBanner.tsx` — banner persistente + chips de alternativas
@@ -158,18 +131,18 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `src/lib/tracking-utils.ts` — `trackHybrid` (Pixel + CAPI + PostHog), `gaItems`, `getAttributionPayload`,
   `trackPH` y `identifyCustomer` (PostHog-only, al final del archivo)
 - `src/adapters/CheckoutAdapter.tsx` — `initiatecheckout` + autosave de cliente (`clients-upsert`)
-- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página (NO se tocó en 2026-09-03)
 - `src/components/StripePayment.tsx` — `phBase()`, `handlePayment`, `handlePaymentError`,
   `handleExpressCheckoutConfirm`, banner arriba del `<PaymentElement>`
 - `src/components/PaypalExpressButton.tsx` — createOrder/onApprove/onError/onCancel + ancla PayPal
 - `src/components/ProductExpressCheckout.tsx` — express checkout de la PDP
 - `src/hooks/useCheckoutState.ts` — orden en localStorage, TTL 7 días
 - `src/pages/ThankYou.tsx` / `src/pages/PendingPayment.tsx`
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7
-- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (fotografía real, 6 reseñas)
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 (ETA local L440)
+- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (ETA local L480)
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
+- **[MEDIA]** Alinear el ETA de las dos PDPs con el checkout (4–7 días naturales).
 - **[CRÍTICA]** Probar el banner con tarjetas de test de Stripe (declined + insufficient_funds)
   y con cancelación real de PayPal.
 - **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba (transaction_id).

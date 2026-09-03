@@ -56,21 +56,21 @@ function ShippingErrorTracker({
 }
 
 // ── Estimated delivery date ──────────────────────────────────────────────────
-function addBusinessDays(date: Date, days: number): Date {
+// Días naturales (calendario), no hábiles: los tiempos reales de entrega
+// incluyen fines de semana, así que contar hábiles inflaba la fecha.
+const DELIVERY_MIN_DAYS = 4;
+const DELIVERY_MAX_DAYS = 7;
+
+function addCalendarDays(date: Date, days: number): Date {
   const result = new Date(date);
-  let added = 0;
-  while (added < days) {
-    result.setDate(result.getDate() + 1);
-    const dow = result.getDay();
-    if (dow !== 0 && dow !== 6) added++;
-  }
+  result.setDate(result.getDate() + days);
   return result;
 }
 
 function getEstimatedDelivery(): string {
   const today = new Date();
-  const earliest = addBusinessDays(today, 6);
-  const latest = addBusinessDays(today, 8);
+  const earliest = addCalendarDays(today, DELIVERY_MIN_DAYS);
+  const latest = addCalendarDays(today, DELIVERY_MAX_DAYS);
   const fmt = (d: Date) =>
     d.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
   return `${fmt(earliest)} – ${fmt(latest)}`;
