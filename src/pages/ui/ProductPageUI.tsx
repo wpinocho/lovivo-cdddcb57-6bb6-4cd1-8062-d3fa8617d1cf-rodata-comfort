@@ -11,6 +11,7 @@ import {
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
 
 // ── Image constants (with Supabase image transform for performance) ──
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
@@ -40,16 +41,8 @@ const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 const getSizeKey = (value: string) =>
   value.includes('(') ? value.split('(')[0].trim() : value
 
-/** Estimated delivery date (4 business days out) */
-const getDeliveryDate = () => {
-  const d = new Date()
-  let added = 0
-  while (added < 4) {
-    d.setDate(d.getDate() + 1)
-    if (d.getDay() !== 0 && d.getDay() !== 6) added++
-  }
-  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-}
+/** Fecha estimada de entrega — lógica compartida con el checkout */
+const getDeliveryDate = () => getDeliveryRangeLong()
 
 // ── Data ──
 const SIZE_GUIDE = [
@@ -437,7 +430,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   </AccordionTrigger>
                   <AccordionContent className="text-brand-steel text-xs font-inter leading-relaxed pb-4 space-y-2">
                     <p><span className="text-brand-smoke font-semibold">🚚 Envío gratis</span> a todo México. Sin costo mínimo de compra.</p>
-                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En 4 días hábiles · llega el {deliveryDate}.</p>
+                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En {DELIVERY_RANGE_LABEL} · llega entre el {deliveryDate}.</p>
                     <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos con el cambio sin costo.</p>
                     <p><span className="text-brand-smoke font-semibold">✅ 30 días de prueba:</span> Si no queda como esperabas, lo resolvemos.</p>
                   </AccordionContent>

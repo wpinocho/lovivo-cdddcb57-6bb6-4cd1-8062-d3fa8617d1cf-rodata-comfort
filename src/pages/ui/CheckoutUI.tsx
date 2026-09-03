@@ -21,6 +21,7 @@ import { formatMoney } from "@/lib/money";
 import { countryNameToCode, countryCodeToName } from "@/lib/country-codes";
 import { trackPH, identifyCustomer } from "@/lib/tracking-utils";
 import { googleAds } from "@/lib/google-ads";
+import { getDeliveryRangeShort } from "@/lib/delivery-estimate";
 
 // ── PostHog: fires checkout_shipping_unavailable when the shipping banner appears ──
 function ShippingErrorTracker({
@@ -53,27 +54,6 @@ function ShippingErrorTracker({
     });
   }, [error, orderId, checkoutToken, postalCode, country]);
   return null;
-}
-
-// ── Estimated delivery date ──────────────────────────────────────────────────
-// Días naturales (calendario), no hábiles: los tiempos reales de entrega
-// incluyen fines de semana, así que contar hábiles inflaba la fecha.
-const DELIVERY_MIN_DAYS = 4;
-const DELIVERY_MAX_DAYS = 7;
-
-function addCalendarDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function getEstimatedDelivery(): string {
-  const today = new Date();
-  const earliest = addCalendarDays(today, DELIVERY_MIN_DAYS);
-  const latest = addCalendarDays(today, DELIVERY_MAX_DAYS);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
-  return `${fmt(earliest)} – ${fmt(latest)}`;
 }
 
 // ── Dark theme utility constants ─────────────────────────────────────────────
@@ -680,7 +660,7 @@ export default function CheckoutUI() {
                       </div>
                       <div className="flex items-center gap-2 mt-1 pt-3 border-t border-white/[0.08] text-xs text-brand-steel">
                         <Truck size={12} className="text-brand-amber flex-shrink-0" />
-                        <span>Envío gratis · <span className="text-brand-smoke">Llega el {getEstimatedDelivery()}</span></span>
+                        <span>Envío gratis · <span className="text-brand-smoke">Llega el {getDeliveryRangeShort()}</span></span>
                       </div>
                     </div>
                   </div>
@@ -767,7 +747,7 @@ function MobileOrderSummary({ logic }: { logic: any }) {
             </div>
             <div className="flex items-center gap-2 pt-2 text-xs text-brand-steel">
               <Truck size={11} className="text-brand-amber flex-shrink-0" />
-              <span>Envío gratis · <span className="text-brand-smoke">Llega el {getEstimatedDelivery()}</span></span>
+              <span>Envío gratis · <span className="text-brand-smoke">Llega el {getDeliveryRangeShort()}</span></span>
             </div>
           </div>
 

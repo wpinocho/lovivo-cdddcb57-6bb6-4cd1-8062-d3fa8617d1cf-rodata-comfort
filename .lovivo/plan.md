@@ -23,34 +23,44 @@
 - **Errores de pago (2026-09-03)**: nunca culpar al cliente, nunca mostrar el string crudo de
   Stripe/PayPal. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
   Nunca exponer texto interno de plataforma ("dashboard de Lovivo") al cliente final.
-- **ETA de entrega (2026-09-03)**: se cuenta en **días NATURALES**, no hábiles. Los tiempos reales
-  de la paquetería incluyen fines de semana; contar hábiles inflaba la fecha ~4 días.
+- **ETA de entrega (2026-09-03)**: días **NATURALES**, 4 a 7. Fuente única de verdad:
+  `src/lib/delivery-estimate.ts`. NUNCA duplicar la lógica de fecha en un componente —
+  importar `getDeliveryRangeShort` / `getDeliveryRangeLong` / `DELIVERY_RANGE_LABEL`.
 
 ---
 
-## Active Plan — ✅ ETA del checkout corregido (2026-09-03)
+## Active Plan — ✅ ETA unificado en toda la tienda (2026-09-03)
 
 ### Qué cambió
-`src/pages/ui/CheckoutUI.tsx`:
-- `addBusinessDays()` **eliminada** (ya no existe en todo el repo, verificado con grep).
-- Nueva `addCalendarDays()` + constantes `DELIVERY_MIN_DAYS = 4` / `DELIVERY_MAX_DAYS = 7`.
-- `getEstimatedDelivery()` ahora devuelve hoy+4 … hoy+7 en días naturales.
-- Formato y consumidores intactos: la fila ámbar "Envío gratis · Llega el {rango}" se sigue
-  renderizando igual en el resumen desktop (L~683) y en el mobile (L~770).
+**Nuevo `src/lib/delivery-estimate.ts`** — fuente única de verdad:
+- `DELIVERY_MIN_DAYS = 4`, `DELIVERY_MAX_DAYS = 7`, `DELIVERY_RANGE_LABEL = "4 a 7 días"`
+- `getDeliveryRangeShort()` → "7 sep – 10 sep" (checkout)
+- `getDeliveryRangeLong()` → "lunes 7 y el jueves 10 de septiembre" (PDPs). Maneja el caso
+  de rango que cruza de mes ("lunes 28 de septiembre y el jueves 1 de octubre").
 
-Antes (3 sep): "11 sep – 15 sep". Después: "7 sep – 10 sep".
+Consumidores actualizados (ya NO tienen lógica propia de fechas):
+- `CheckoutUI.tsx` — se borró el bloque local `addCalendarDays`/`getEstimatedDelivery`; ahora
+  importa `getDeliveryRangeShort`. Render en resumen desktop (~L664) y mobile (~L751).
+- `ProductPageUI.tsx` — `getDeliveryDate = () => getDeliveryRangeLong()`. Copy: "En 4 a 7 días ·
+  llega entre el {rango}".
+- `DeliveryPDPUI.tsx` — igual + FAQ de envío de "3 a 5 días hábiles" → "4 a 7 días".
+- `DeliveryLandingUI.tsx` — igual + "Llega aprox. entre el {rango}" + FAQ alineada.
 
-### Inconsistencia detectada, NO tocada
-`ProductPageUI.tsx` (L440) y `DeliveryPDPUI.tsx` (L480) siguen diciendo
-**"En 4 días hábiles · llega el {deliveryDate}"** con su propia lógica local.
-El user solo pidió el checkout. Si se quiere alinear, hay que cambiar el copy a
-"4 a 7 días" y la función de fecha en ambas PDPs.
+Verificado con grep: **cero** ocurrencias de "hábiles" o de una `getEstimatedDelivery` local
+fuera de `delivery-estimate.ts`.
+
+### Nota sobre el reporte del user
+El user vio "11 sep – 15 sep" DESPUÉS del fix del turno anterior. El código staged ya era
+correcto (4–7 naturales = 7–10 sep); era **caché del bundle JS en su navegador**. Si vuelve a
+reportarlo: hard refresh (Cmd/Ctrl+Shift+R), no re-editar la lógica.
 
 ---
 
 ## Recent Changes
-- **✅ ETA del checkout a días naturales 4–7** (2026-09-03) — `CheckoutUI.tsx`. Antes eran 6–8
-  días hábiles (fecha inflada). PDPs quedaron sin alinear a propósito.
+- **✅ ETA centralizado en `src/lib/delivery-estimate.ts`** (2026-09-03) — 1 archivo nuevo +
+  4 modificados (Checkout, ProductPage, DeliveryPDP, DeliveryLanding). Se eliminaron las 3
+  copias duplicadas de `getDeliveryDate` con días hábiles. Falsa alarma del user = caché.
+- **✅ ETA del checkout a días naturales 4–7** (2026-09-03) — `CheckoutUI.tsx`.
 - **✅ Recuperación de pagos rechazados IMPLEMENTADA** (2026-09-03) — 3 archivos nuevos
   (`payment-errors.ts`, `payment-recovery.ts`, `PaymentRecoveryBanner.tsx`) + 3 modificados.
   Store externo en vez de Context → `CheckoutUI.tsx` no se tocó. Falta validación en vivo.
@@ -69,7 +79,6 @@ El user solo pidió el checkout. Si se quiere alinear, hay que cambiar el copy a
 - **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
 - **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
 - **Order Tracking — frontend completo** ✅ (2026-06-24)
-- **BUG FIX: Sticky bar no aparece en PDP — RESUELTO ✅** (2026-06-18)
 
 ## Image Inventory
 Base URLs:
@@ -99,8 +108,9 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **ETA desalineado PDP vs checkout (2026-09-03)**: checkout dice 4–7 días naturales, las dos PDPs
-  siguen diciendo "4 días hábiles". Alinear cuando el user lo pida.
+- **Caché de navegador post-deploy (2026-09-03)**: el user reportó dos veces un cambio "no
+  aplicado" que sí estaba en el código. Antes de re-editar, verificar con grep y pedirle
+  hard refresh.
 - **Banner de recuperación sin probar en vivo (2026-09-03)**: código completo, faltan las 5
   pruebas de aceptación con tarjetas de test de Stripe.
 - **Banner acoplado a StripePayment (2026-09-03)**: si algún día se apaga el pago con tarjeta,
@@ -120,8 +130,10 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
 
 ## Key Files
-- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página. ETA: `addCalendarDays` +
-  `DELIVERY_MIN_DAYS`/`DELIVERY_MAX_DAYS` (L~58-77), render en L~683 (desktop) y L~770 (mobile)
+- `src/lib/delivery-estimate.ts` — **fuente única del ETA**. 4–7 días naturales.
+  `getDeliveryRangeShort()`, `getDeliveryRangeLong()`, `DELIVERY_RANGE_LABEL`
+- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página. Render del ETA en el resumen
+  desktop (~L664) y mobile (~L751)
 - `src/lib/payment-errors.ts` — mapa decline_code/error_code → copy accionable en español
 - `src/lib/payment-recovery.ts` — store externo (useSyncExternalStore) + anclas de scroll
 - `src/components/PaymentRecoveryBanner.tsx` — banner persistente + chips de alternativas
@@ -137,12 +149,12 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `src/components/ProductExpressCheckout.tsx` — express checkout de la PDP
 - `src/hooks/useCheckoutState.ts` — orden en localStorage, TTL 7 días
 - `src/pages/ThankYou.tsx` / `src/pages/PendingPayment.tsx`
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 (ETA local L440)
-- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (ETA local L480)
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7
+- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores
+- `src/pages/ui/DeliveryLandingUI.tsx` — landing repartidores (tráfico pagado)
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[MEDIA]** Alinear el ETA de las dos PDPs con el checkout (4–7 días naturales).
 - **[CRÍTICA]** Probar el banner con tarjetas de test de Stripe (declined + insufficient_funds)
   y con cancelación real de PayPal.
 - **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba (transaction_id).
@@ -153,6 +165,8 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - **[ALTA]** Confirmar claves de `google_ads_labels` (view_item, add_to_cart, begin_checkout, search).
 - **[ALTA]** Armar en PostHog el funnel de 6 pasos y el insight de `error_code` / `decline_code`.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs y anotar CR benchmark.
+- **[MEDIA]** Guardar `estimated_delivery_at` en la orden usando el mismo rango 4–7 para que el
+  email de confirmación y `/rastrear` digan lo mismo que el checkout.
 - **[MEDIA]** Enhanced conversions con teléfono/dirección además del email.
 - **[MEDIA]** Hidratar `/gracias/:id` desde el backend por `checkout_token`.
 - **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).

@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import type { useProductLogic } from "@/components/headless/HeadlessProduct"
+import { getDeliveryRangeLong } from "@/lib/delivery-estimate"
 
 // ── Imágenes (Supabase image transform para performance) ──
 const SB_PROD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf'
@@ -30,15 +31,8 @@ const AVATAR_3 = `${SB_PROD}/avatar-andres-v3.webp?width=72&height=72&resize=cov
 // ── Helpers ──
 const getSizeKey = (value: string) => (value.includes('(') ? value.split('(')[0].trim() : value)
 
-const getDeliveryDate = () => {
-  const d = new Date()
-  let added = 0
-  while (added < 4) {
-    d.setDate(d.getDate() + 1)
-    if (d.getDay() !== 0 && d.getDay() !== 6) added++
-  }
-  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-}
+/** Fecha estimada de entrega — lógica compartida con el checkout */
+const getDeliveryDate = () => getDeliveryRangeLong()
 
 // ── Data ──
 const SIZE_GUIDE = [
@@ -129,7 +123,7 @@ const FAQS = [
   },
   {
     q: '¿Cuánto tarda en llegar y cuánto cuesta el envío?',
-    a: 'Envío gratis a todo México. Normalmente llega en 3 a 5 días hábiles con número de rastreo.',
+    a: 'Envío gratis a todo México. Normalmente llega en 4 a 7 días con número de rastreo.',
   },
   {
     q: '¿Y si no me funciona?',
@@ -487,7 +481,7 @@ export const DeliveryLandingUI = ({ logic }: DeliveryLandingUIProps) => {
 
           <ul className="mt-5 space-y-2 text-xs text-brand-smoke">
             {[
-              `Llega aprox. el ${getDeliveryDate()}`,
+              `Llega aprox. entre el ${getDeliveryDate()}`,
               'Envío gratis a todo México con número de rastreo',
               '30 días para probarlo trabajando',
             ].map((t) => (

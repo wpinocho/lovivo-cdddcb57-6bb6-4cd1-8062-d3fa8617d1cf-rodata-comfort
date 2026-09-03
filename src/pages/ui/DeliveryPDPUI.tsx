@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
 
 // ── Image constants (Supabase image transform) ──
 const SUPABASE_PROD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf'
@@ -59,15 +60,8 @@ const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 const getSizeKey = (value: string) =>
   value.includes('(') ? value.split('(')[0].trim() : value
 
-const getDeliveryDate = () => {
-  const d = new Date()
-  let added = 0
-  while (added < 4) {
-    d.setDate(d.getDate() + 1)
-    if (d.getDay() !== 0 && d.getDay() !== 6) added++
-  }
-  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-}
+/** Fecha estimada de entrega — lógica compartida con el checkout */
+const getDeliveryDate = () => getDeliveryRangeLong()
 
 // ── Data ──
 const SIZE_GUIDE = [
@@ -126,7 +120,7 @@ const FAQS = [
   { q: '¿Da calor en jornadas largas?', a: 'Tiene malla perforada transpirable en los laterales, que es la zona donde más se acumula el calor. En clima de ciudad mexicana funciona bien incluso en turnos de 10 a 12 horas.' },
   { q: '¿Sirve igual en scooter que en moto de trabajo?', a: 'Sí. Lo que importa no es la moto, es la postura inclinada y las horas encima. Funciona en scooter, motoneta y motos de trabajo por igual.' },
   { q: '¿Qué talla pido?', a: 'Mide tu cintura por encima del pantalón, a la altura del ombligo. S: 60–75 cm · M: 75–90 cm · L: 90–100 cm · XL: 100–115 cm. Si quedas justo entre dos, pide la mayor.' },
-  { q: '¿Cuánto tarda en llegar y cuánto cuesta el envío?', a: 'Envío gratis a todo México. Normalmente llega en 3 a 5 días hábiles con número de rastreo.' },
+  { q: '¿Cuánto tarda en llegar y cuánto cuesta el envío?', a: 'Envío gratis a todo México. Normalmente llega en 4 a 7 días con número de rastreo.' },
   { q: '¿Y si no me funciona?', a: 'Tienes 30 días para probarlo trabajando. Si no te sirve, escríbenos por WhatsApp y te ayudamos con el cambio o la devolución.' },
 ]
 
@@ -477,7 +471,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
                   </AccordionTrigger>
                   <AccordionContent className="text-brand-steel text-xs font-inter leading-relaxed pb-4 space-y-2">
                     <p><span className="text-brand-smoke font-semibold">🚚 Envío gratis</span> a todo México. Sin costo mínimo de compra.</p>
-                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En 4 días hábiles · llega el {deliveryDate}.</p>
+                    <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En {DELIVERY_RANGE_LABEL} · llega entre el {deliveryDate}.</p>
                     <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos con el cambio sin costo.</p>
                     <p><span className="text-brand-smoke font-semibold">✅ 30 días de prueba:</span> Pruébalo trabajando. Si no te sirve, lo resolvemos.</p>
                   </AccordionContent>
