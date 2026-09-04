@@ -6,8 +6,8 @@
  *
  * V1 supports two experiment types:
  *   - `ui`            → PostHog decides the variant, the component renders it.
- *   - `product_price` → PostHog decides the variant, the Lovivo `experiment-resolve`
- *                       edge function is the authority for the price.
+ *   - `product_price` → PostHog decides the variant, the manifest price is shown,
+ *                       and `checkout-create` is the authority for the charge.
  */
 
 export const EXPERIMENT_SCHEMA_VERSION = 1 as const
@@ -23,8 +23,9 @@ export interface ExperimentVariant {
   name: string
   weight: number
   /**
-   * Informational only. NEVER used as an authoritative price —
-   * `experiment-resolve` is the single source of truth.
+   * PRESENTATION only — the price shown for this variant. It is never sent to
+   * the backend as authority; `checkout-create` re-validates the charge against
+   * `store_experiments` from experiment_key + experiment_variant.
    */
   price?: number
 }
@@ -32,6 +33,11 @@ export interface ExperimentVariant {
 export interface ExperimentManifestBase {
   schema_version: 1
   name: string
+  /**
+   * Optional central experiment id. `flag_key` is the identity used for
+   * exposure and checkout, so this may be absent.
+   */
+  id?: string
   flag_key: string
   type: ExperimentType
   status: ExperimentStatus

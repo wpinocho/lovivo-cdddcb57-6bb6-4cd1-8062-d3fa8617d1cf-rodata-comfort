@@ -30,29 +30,36 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ PostHog loaded successfully!');
           console.log('🏪 Store ID:', STORE_ID);
 
-          // store_id on every event — experiment analytics depend on it
-          ph.register({ store_id: STORE_ID });
-
-          ph.group('store', STORE_ID, {
+          const storeProperties = {
             store_id: STORE_ID,
             domain: window.location.hostname,
             environment: process.env.NODE_ENV || 'production',
             initialized_at: new Date().toISOString(),
-          });
-          
+          };
+
+          // store_id on every event — experiment analytics depend on it
+          ph.register({ store_id: STORE_ID });
+
+          ph.group('store', STORE_ID, storeProperties);
+
+          // Send the group properties with the flag evaluation request itself,
+          // so group-scoped experiments resolve on the first decide call.
+          // `false` avoids a duplicate reload — we trigger it explicitly below.
+          ph.setGroupPropertiesForFlags({ store: storeProperties }, false);
+
+          // Re-evaluate flags now that the store group is set, so experiment
+          // assignments are correct for this store before any experiment runs.
+          ph.reloadFeatureFlags();
+
           const groups = ph.getGroups();
           console.log('✅ PostHog group created for store:', STORE_ID);
           console.log('📊 Active groups:', groups);
-          
+
           ph.capture('$pageview', {
             $current_url: window.location.href,
             $pathname: window.location.pathname,
           });
           console.log('📄 Initial pageview captured after group setup');
-
-          // Re-evaluate flags now that the store group is set, so experiment
-          // assignments are correct for this store before any experiment runs.
-          ph.reloadFeatureFlags();
         },
       });
     }
