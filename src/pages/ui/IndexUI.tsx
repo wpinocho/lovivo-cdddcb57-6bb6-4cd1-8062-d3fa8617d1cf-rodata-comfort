@@ -1,5 +1,9 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { EcommerceTemplate } from '@/templates/EcommerceTemplate'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useSettings } from '@/contexts/SettingsContext'
+import { usePriceExperiment } from '@/hooks/usePriceExperiment'
 import {
   Accordion,
   AccordionContent,
@@ -38,15 +42,51 @@ const PROBLEMA_REAL_IMG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/o
 const PRODUCT_WORN = '/product-worn.jpg'
 const PRODUCT_FLAT = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1775767354281-gqxi2j4hklp.webp'
 const PRODUCT_FEATURES = '/product-worn.jpg'
-const BUY_URL = '/productos/soporte-lumbar-rodata-one'
+const PRODUCT_SLUG = 'soporte-lumbar-rodata-one'
+const BUY_URL = `/productos/${PRODUCT_SLUG}`
 
 interface IndexUIProps {
   logic: UseIndexLogicReturn
 }
 
 export const IndexUI = ({ logic }: IndexUIProps) => {
-  const productSlug = logic.filteredProducts[0]?.slug
+  const { formatMoney } = useSettings()
+
+  /**
+   * Producto estrella de la home. Se busca por slug para que el precio mostrado
+   * corresponda siempre al Rodata One, sin depender del orden del catálogo.
+   */
+  const heroProduct = useMemo(
+    () =>
+      logic.filteredProducts.find((p) => p.slug === PRODUCT_SLUG) ??
+      logic.filteredProducts[0],
+    [logic.filteredProducts],
+  )
+
+  const productSlug = heroProduct?.slug
   const buyUrl = productSlug ? `/productos/${productSlug}` : BUY_URL
+
+  const catalogPrice = (heroProduct?.price as number | undefined) ?? 0
+  const compareAtPrice = (heroProduct as any)?.compare_at_price as number | undefined
+
+  /**
+   * El precio de la home NUNCA se escribe a mano: sale del catálogo y respeta el
+   * experimento de precio activo, para que coincida con la PDP y el checkout.
+   */
+  const { resolvedPrice, isReady: isPriceReady } = usePriceExperiment({
+    productId: heroProduct?.id,
+    catalogPrice,
+  })
+
+  const isPriceLoading = logic.loading || !heroProduct || !isPriceReady
+  const priceLabel = isPriceLoading ? null : formatMoney(resolvedPrice)
+  const showCompareAt =
+    !isPriceLoading && !!compareAtPrice && compareAtPrice > resolvedPrice
+  const discountPct = showCompareAt
+    ? Math.round(((compareAtPrice! - resolvedPrice) / compareAtPrice!) * 100)
+    : null
+  const ctaWithPrice = (label: string) =>
+    priceLabel ? `${label} — ${priceLabel}` : label
 
   return (
     <EcommerceTemplate showCart layout="full-width" noPadding>
@@ -114,12 +154,22 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
             </ul>
 
             {/* Price */}
-            <div className="flex items-baseline gap-3 mb-8">
-              <span style={{ letterSpacing: '0px' }} className="font-sora font-bold text-brand-offwhite text-4xl">MX$799</span>
-              <span className="text-brand-steel text-xl line-through font-inter">MX$999</span>
-              <span className="bg-brand-amber/15 border border-brand-amber/30 text-brand-amber text-xs font-semibold px-2.5 py-1 rounded font-sora">
-                20% OFF
-              </span>
+            <div className="flex items-baseline gap-3 mb-8 min-h-[2.75rem]">
+              {isPriceLoading ? (
+                <Skeleton className="h-10 w-44 bg-white/10" />
+              ) : (
+                <>
+                  <span style={{ letterSpacing: '0px' }} className="font-sora font-bold text-brand-offwhite text-4xl">{priceLabel}</span>
+                  {showCompareAt && (
+                    <>
+                      <span className="text-brand-steel text-xl line-through font-inter">{formatMoney(compareAtPrice!)}</span>
+                      <span className="bg-brand-amber/15 border border-brand-amber/30 text-brand-amber text-xs font-semibold px-2.5 py-1 rounded font-sora">
+                        {discountPct}% OFF
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             {/* CTAs */}
@@ -358,7 +408,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
 
               <Link to={buyUrl}>
                 <button className="btn-amber amber-glow font-sora">
-                  Comprar ahora — MX$799
+                  {ctaWithPrice('Comprar ahora')}
                   <ArrowRight size={16} />
                 </button>
               </Link>
@@ -479,7 +529,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
           <div className="mt-10 text-center">
             <Link to={buyUrl}>
               <button className="btn-amber-lg amber-glow font-sora">
-                Comprar Rodata One — MX$799
+                {ctaWithPrice('Comprar Rodata One')}
                 <ArrowRight size={16} />
               </button>
             </Link>
@@ -709,9 +759,17 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
           </p>
 
           {/* Price */}
-          <div className="flex items-baseline justify-center gap-3 mb-8">
-            <span className="font-sora font-bold text-brand-offwhite text-4xl">MX$799</span>
-            <span className="text-brand-steel text-xl line-through font-inter">MX$999</span>
+          <div className="flex items-baseline justify-center gap-3 mb-8 min-h-[2.75rem]">
+            {isPriceLoading ? (
+              <Skeleton className="h-10 w-44 bg-white/10 mx-auto" />
+            ) : (
+              <>
+                <span className="font-sora font-bold text-brand-offwhite text-4xl">{priceLabel}</span>
+                {showCompareAt && (
+                  <span className="text-brand-steel text-xl line-through font-inter">{formatMoney(compareAtPrice!)}</span>
+                )}
+              </>
+            )}
           </div>
 
           <Link to={buyUrl}>

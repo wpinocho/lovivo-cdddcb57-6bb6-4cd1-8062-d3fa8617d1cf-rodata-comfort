@@ -28,109 +28,56 @@
   Stripe/PayPal. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
 - **ETA de entrega (2026-09-03)**: días **NATURALES**, 4 a 7. Fuente única de verdad:
   `src/lib/delivery-estimate.ts`. NUNCA duplicar la lógica de fecha en un componente.
-- **Precios en UI (2026-09-04)**: NUNCA hardcodear el precio en JSX. Siempre desde el producto vía
-  `logic.currentPrice` / `usePriceExperiment`. Un precio hardcodeado rompe los tests de precio.
+- **Precios en UI (2026-09-04)**: NUNCA hardcodear el precio en JSX **ni en meta descriptions**.
+  Siempre desde el producto vía `logic.currentPrice` / `usePriceExperiment`, y el % OFF calculado
+  contra `compare_at_price`. Un precio hardcodeado rompe los tests de precio.
+  Verificación obligatoria antes de cerrar: grep de `799|MX\$` en el archivo tocado → cero.
 
 ---
 
-## Active Plan — 📋 A/B test de precio: MX$799 (control) vs MX$899 (test)
+## Active Plan — 🚀 Test de precio $799 vs $899 IMPLEMENTADO (esperando publicación)
 
-### Qué quiere el usuario
-Probar si subir el Rodata One de MX$799 a MX$899 gana o pierde dinero. No sabe cómo hacerlo
-ni si va a funcionar. Quiere un test, no un cambio a ciegas.
+### Estado: código listo. **NO está corriendo todavía.**
+El manifiesto se validó ✅ contra schema V1, runtime y catálogo. La sincronización con PostHog
+ocurre **después** del commit. Se activa al publicar.
 
-### Viabilidad — VERIFICADO ✅ (2026-09-04)
-- **Runtime de experimentos instalado**: `src/experiments/index.ts` exporta
-  `EXPERIMENT_RUNTIME_VERSION = 1` y `src/hooks/usePriceExperiment.ts` existe y está completo.
-  → El manifiesto de tipo `product_price` NO será rechazado por `store_not_experiment_ready`.
-- **Experimentos existentes**: `experiment-list` devuelve VACÍO. Cero conflictos, cero
-  contaminación. Este sería el primer experimento de la tienda.
-- **Tráfico PDP**: 5,793 únicos / 30d ≈ **1,350/semana**. Por encima del umbral de 1,000/semana
-  de la skill. ✅
-- **Volumen de conversión**: ~30 órdenes/semana → **~15 por variante/semana**. En 4 semanas:
-  ~60 órdenes por variante. Suficiente para detectar una diferencia GRANDE, insuficiente para
-  detectar una diferencia sutil (<10%). Comunicar esto al usuario sin adornos.
-- **Precio de catálogo consistente**: producto y las 4 variantes (S/M/L/XL) están TODAS en 799.
-  → Se puede hacer test a nivel producto (`variant_id: null`) sin rechazo por precios dispares. ✅
-- **Sin selling plans / suscripciones** en este producto. ✅
+### Qué se implementó (2026-09-04)
+1. **`src/experiments/rodata-one-price-899.json`** — manifiesto `product_price`, validado.
+   - `flag_key`: `exp-cdddcb57-rodata-one-price-899`
+   - Nivel PRODUCTO (`variant_id: null`) — las 4 tallas están todas en 799
+   - `control` 799 / `test` 899, 50/50
+   - `primary_metric`: `revenue_per_exposed_visitor`
+2. **`src/pages/ui/IndexUI.tsx`** — bloqueador resuelto. Ya NO hay precios hardcodeados:
+   - `heroProduct` se busca por `PRODUCT_SLUG` en `logic.filteredProducts` (no por índice 0)
+   - `usePriceExperiment({ productId, catalogPrice })` llamado **una sola vez** en el componente;
+     los 4 puntos de precio consumen ese resultado (evita 4 eventos de exposure duplicados)
+   - `formatMoney` desde `useSettings()`; `discountPct` calculado contra `compare_at_price`
+   - `Skeleton` + `min-h-[2.75rem]` mientras `isPriceLoading` (evita layout shift)
+   - Helper `ctaWithPrice(label)` para los dos botones
+   - Grep verificado: **cero** ocurrencias de `799|999|MX\$|20% OFF`
+3. **`src/pages/ui/DeliveryLandingUI.tsx`** — se quitó `$799 MXN` del meta description (L170).
+4. **`.lovivo/cro-log.md`** — baseline de 30d + entrada completa en `## Active Experiments`.
 
-### Matemática del punto de equilibrio (usar en el reporte al usuario)
+### Matemática del punto de equilibrio (el número que decide)
 - Hoy: CVR ≈ 2.2% × $799 = **RPV ≈ $17.6** por visitante de PDP.
-- A $899, el break-even es CVR = 17.6 / 899 = **1.96%**.
-- Traducción: la conversión puede caer hasta **~11%** y aún así se gana lo mismo.
-  Si cae menos de 11% → **más utilidad** (y además $100 extra de margen por unidad).
-  Si cae más de 11% → se revierte.
-- Este es el número que decide el test. No mirar CVR sola: mirar **revenue per exposed visitor**.
+- A $899, break-even es CVR = 17.6 / 899 = **1.96%**.
+- La conversión puede caer hasta **~11%** y se gana lo mismo. Menos de 11% → más utilidad.
+- Mirar **revenue per exposed visitor**, NUNCA CVR sola.
 
-### Decisiones tomadas
-1. **Test a nivel PRODUCTO** (`variant_id: null`), no por talla. Las 4 tallas cuestan lo mismo y
-   partir por talla mataría el volumen.
-2. **`compare_at_price` se queda en 999 para ambas variantes.** No se toca. Consecuencia natural:
-   el grupo test verá "10% OFF" en vez de "20% OFF" — el badge es dinámico (`discountPct`
-   calculado en `ProductPageUI.tsx` L283 y `DeliveryPDPUI.tsx` L325). Esto es un confound conocido
-   y ACEPTADO: se está probando "la oferta a $899", no el precio en abstracto. Documentarlo.
-3. **NO tocar `products.price`.** Sigue en 799. Mover el catálogo destruiría el control.
-4. **NO tocar** `ProductAdapter`, `CartContext`, `CheckoutUI`, `StripePayment`, `PaypalExpressButton`.
-   El runtime ya propaga el precio autorizado punta a punta vía `resolvedUnitPrice`
-   (verificado: `CartContext` L60/L92/L117, `CartSidebar` L110/L270, `CartAdapter` L29,
-   `ProductExpressCheckout` L108/L252, `cart-utils.ts` no lo envía a propósito).
+### Decisiones tomadas y por qué
+1. Test a nivel PRODUCTO, no por talla: partir por talla mataría el volumen.
+2. **`compare_at_price` se queda en 999 para ambas variantes.** Consecuencia natural: el grupo
+   test verá "10% OFF" en vez de "20% OFF" (el badge es dinámico). Confound conocido y
+   **ACEPTADO**: se prueba "la oferta a $899", no el precio en abstracto.
+3. **NO se tocó `products.price`.** Sigue en 799. Mover el catálogo destruiría el control.
+4. **NO se tocó** `ProductAdapter`, `CartContext`, `CheckoutUI`, `StripePayment`,
+   `PaypalExpressButton`. El runtime propaga el precio autorizado punta a punta vía
+   `resolvedUnitPrice`.
 
-### Bloqueador a resolver ANTES de lanzar: precio hardcodeado en la home
-`src/pages/ui/IndexUI.tsx` tiene **MX$799 escrito a mano en 4 lugares** + un "20% OFF" fijo:
-- L118 — bloque de precio del hero
-- L121 — badge `20% OFF`
-- L361 — botón "Comprar ahora — MX$799"
-- L482 — botón "Comprar Rodata One — MX$799"
-- L713 — bloque de precio del CTA final
-
-Si el test corre tal cual, un visitante del grupo test ve $799 en la home y $899 en la PDP.
-Es incoherente y erosiona confianza. Riesgo real pero acotado: la home solo tuvo **344 únicos
-en 30 días (5% del tráfico)** porque los ads van directo a la PDP.
-
-**Fix requerido (Craft Mode), en el MISMO commit que el manifiesto:**
-- Conectar `IndexUI.tsx` al precio real del producto. Usar el mismo camino que
-  `HeadlessProductCard.tsx` (L121-136): `usePriceExperiment({ productId, catalogPrice })`
-  y renderizar `resolvedPrice` con `formatMoney`.
-- Calcular el % OFF dinámicamente contra `compare_at_price` (999), igual que hace
-  `ProductPageUI.tsx` con `discountPct`. Nada de "20%" literal.
-- Los dos botones deben mostrar el precio resuelto, no una cadena fija.
-- Verificar con grep que quedan **cero** ocurrencias de `799` en `src/pages/ui/IndexUI.tsx`.
-
-Alternativa más barata si el usuario tiene prisa: quitar el precio de la home y dejarlo solo en
-la PDP. Menos trabajo pero pierde fuerza el hero. Preferir el fix dinámico.
-
-### Chequeo externo — creativos de Meta Ads
-Los ads de Facebook/Instagram traen el 80% del tráfico. **Si algún creativo o copy de anuncio
-dice "$799", el grupo test aterriza con una promesa rota.** Hay que revisarlo desde el Dashboard
-(Meta Ads) antes de lanzar. Si los ads mencionan precio, quitarlo del copy del anuncio durante
-el test. Esto NO lo puede hacer el agente del Visual Editor — es tarea del Dashboard.
-
-### Implementation steps (Craft Mode)
-1. Crear `src/experiments/rodata-one-price-899.json`:
-```json
-{
-  "schema_version": 1,
-  "name": "Rodata One — $799 vs $899",
-  "flag_key": "exp-cdddcb57-rodata-one-price-899",
-  "type": "product_price",
-  "status": "active",
-  "hypothesis": "Subir el Rodata One a $899 aumenta el ingreso por visitante porque la caída de conversión será menor al 11% que se necesita para compensar los $100 extra de margen.",
-  "target": { "product_id": "400026a2-c277-407c-abbb-d1683f415120", "variant_id": null },
-  "variants": [
-    { "key": "control", "name": "$799 (actual)", "weight": 50 },
-    { "key": "test", "name": "$899", "weight": 50 }
-  ],
-  "primary_metric": { "kind": "revenue_per_exposed_visitor" }
-}
-```
-   - `control.price` DEBE ser 799 y `test.price` 899 en el archivo final (los campos `price` van
-     dentro de cada variante). Verificar contra el catálogo antes de escribir: hoy es 799.
-   - `flag_key` DEBE empezar con `exp-cdddcb57-`.
-2. Arreglar `src/pages/ui/IndexUI.tsx` (ver bloqueador arriba). Grep final: cero `799`.
-3. Registrar la hipótesis en `.lovivo/cro-log.md` bajo `## Active Experiments` con fecha,
-   break-even de 1.96% CVR y la duración mínima acordada.
-4. **NO** decirle al usuario que el experimento ya está corriendo. La sincronización con PostHog
-   ocurre después del mensaje. Se activa al publicar.
+### Riesgo abierto — creativos de Meta Ads (NO lo puede hacer este agente)
+Facebook + Instagram traen ~80% del tráfico. **Si algún creativo o copy de anuncio dice "$799",
+el grupo test aterriza con una promesa rota.** Revisar desde el Dashboard → Meta Ads antes de
+que el test acumule datos. Si los ads mencionan precio, quitarlo del copy durante el test.
 
 ### Reglas de lectura del resultado (para sesiones futuras)
 - Leer con `experiment-results --flag_key exp-cdddcb57-rodata-one-price-899`.
@@ -153,9 +100,11 @@ el test. Esto NO lo puede hacer el agente del Visual Editor — es tarea del Das
 ---
 
 ## Recent Changes
+- **🚀 Test de precio $799 vs $899 IMPLEMENTADO** (2026-09-04) — manifiesto validado +
+  `IndexUI.tsx` conectado al precio dinámico (4 hardcodes eliminados) + meta description de
+  `DeliveryLandingUI.tsx` limpiada + cro-log con baseline e hipótesis. **Se activa al publicar.**
 - **📋 Plan: A/B test de precio $799 vs $899** (2026-09-04) — viabilidad verificada (runtime OK,
-  cero experimentos previos, 1,350 únicos/sem en PDP, las 4 variantes a 799). Bloqueador
-  detectado: 4 precios hardcodeados en `IndexUI.tsx`.
+  cero experimentos previos, 1,350 únicos/sem en PDP, las 4 variantes a 799).
 - **✅ ETA centralizado en `src/lib/delivery-estimate.ts`** (2026-09-03) — 1 archivo nuevo +
   4 modificados (Checkout, ProductPage, DeliveryPDP, DeliveryLanding).
 - **✅ ETA del checkout a días naturales 4–7** (2026-09-03) — `CheckoutUI.tsx`.
@@ -171,7 +120,6 @@ el test. Esto NO lo puede hacer el agente del Visual Editor — es tarea del Das
 - **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
 - **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
 - **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
-- **Order Tracking — frontend completo** ✅ (2026-06-24)
 
 ## Image Inventory
 Base URLs:
@@ -189,6 +137,11 @@ Base URLs:
 - REVIEW_IMG_1-5: `SB_PROD/review-1..5.webp`
 - AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
 
+### Home (`IndexUI.tsx`)
+- HERO_IMG: `SB_MSG/1775772513540-16g7elmcuii.webp`
+- LIFESTYLE_WORN/BELT/DETAIL: `SB_MSG/1775771349198-676o65sijn4.webp`, `-tl8qt6nmo8.webp`, `-z730si7cdto.webp`
+- PROBLEMA_REAL_IMG: `SB_MSG/1775770729257-1nufsuab1jt.webp`
+
 ### Avatar repartidor — fotografía REAL vigente
 Bucket `SB_MSG`. Galería producto (prefijo `1787249204164-`): `ifubpmh955s`, `h4pa1xnbjw`,
 `5rlwxy193t3`, `r9dtbwqmwaa`, `7ws595nt61i`.
@@ -204,10 +157,13 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **Precio hardcodeado en `IndexUI.tsx` (2026-09-04)**: 4 ocurrencias de `MX$799` + un `20% OFF`
-  literal. BLOQUEA el test de precio. Ver Active Plan.
+- **Experimento de precio sin confirmar sync (2026-09-04)**: el manifiesto es válido pero la
+  sincronización con PostHog corre post-commit. Verificar con `experiment-list` que
+  `sync_status: synced` ANTES de asumir que hay datos.
 - **Creativos de Meta Ads con precio (2026-09-04, sin verificar)**: si algún anuncio dice $799,
-  el grupo test llega a una promesa rota. Revisar desde el Dashboard antes de lanzar.
+  el grupo test llega a una promesa rota. Revisar desde el Dashboard antes de que acumule datos.
+- **Volumen justo para el test (2026-09-04)**: ~15 órdenes por variante/semana. Detecta
+  diferencias grandes; una diferencia <10% probablemente quede inconclusa.
 - **Caché de navegador post-deploy (2026-09-03)**: el user reportó dos veces un cambio "no
   aplicado" que sí estaba en el código. Antes de re-editar, verificar con grep y pedirle
   hard refresh.
@@ -226,11 +182,12 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 
 ## Key Files
 ### Experimentos (runtime write-protected — CONSUMIR, nunca reescribir)
+- `src/experiments/rodata-one-price-899.json` — **manifiesto activo del test de precio**
 - `src/experiments/index.ts` — `EXPERIMENT_RUNTIME_VERSION = 1`, `getActivePriceExperiment()`
 - `src/hooks/usePriceExperiment.ts` — resuelve el precio vía edge `experiment-resolve`
 - `src/hooks/useExperiment.ts`, `src/lib/experiments.ts`, `src/types/experiments.ts`
 - `src/components/headless/HeadlessProduct.tsx` L243-258 — patrón de consumo en PDP
-- `src/components/headless/HeadlessProductCard.tsx` L121-136 — patrón para la home
+- `src/components/headless/HeadlessProductCard.tsx` L109-143 — patrón de referencia (card)
 - `src/contexts/CartContext.tsx` L60/L92/L117 — propagación de `resolvedUnitPrice`
 
 ### Resto
@@ -245,18 +202,20 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `src/hooks/useCheckoutState.ts` / `src/pages/ThankYou.tsx` / `src/pages/PendingPayment.tsx`
 - `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 (precio L278, badge L283)
 - `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (precio L320, badge L325)
-- `src/pages/ui/DeliveryLandingUI.tsx` — landing repartidores
-- `src/pages/ui/IndexUI.tsx` — home (⚠️ precios hardcodeados L118/121/361/482/713)
+- `src/pages/ui/DeliveryLandingUI.tsx` — landing repartidores (meta description ~L170)
+- `src/pages/ui/IndexUI.tsx` — home. **Precio 100% dinámico** (hook en L76, helpers L81-89)
+- `src/components/headless/HeadlessIndex.tsx` — FORBIDDEN. `filteredProducts`, `loading`
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Lanzar el test de precio: manifiesto + fix de `IndexUI.tsx` en el mismo commit.
-- **[CRÍTICA]** Revisar creativos de Meta Ads por menciones de "$799" antes de lanzar el test.
+- **[CRÍTICA]** Al publicar: correr `experiment-list` y confirmar `sync_status: synced`.
+- **[CRÍTICA]** Revisar creativos de Meta Ads por menciones de "$799" (Dashboard → Meta Ads).
 - **[CRÍTICA]** Probar el banner con tarjetas de test de Stripe y con cancelación real de PayPal.
 - **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba.
 - **[CRÍTICA]** Verificar en PostHog Activity que los 14 eventos de checkout lleguen.
 - **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
-- **[ALTA]** A las 3 semanas del test: leer `experiment-results` y decidir con RPV, no con CVR.
+- **[ALTA]** A las 3 semanas del test (≈ 2026-09-25): leer `experiment-results` y decidir con
+  RPV, no con CVR. No declarar ganador antes.
 - **[ALTA]** Insight PostHog: tasa de recuperación (failed → succeeded en la misma sesión).
 - **[ALTA]** Automatización de email de checkout abandonado / pago fallido (Dashboard).
 - **[ALTA]** Armar en PostHog el funnel de 6 pasos y el insight de `error_code`.

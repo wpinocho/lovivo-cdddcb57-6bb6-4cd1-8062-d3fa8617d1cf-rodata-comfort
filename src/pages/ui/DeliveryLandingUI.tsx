@@ -167,7 +167,7 @@ export const DeliveryLandingUI = ({ logic }: DeliveryLandingUIProps) => {
       return { el, created }
     }
 
-    const desc = setMeta('name', 'description', 'Soporte lumbar diseñado para la postura inclinada al manejar. Aguanta turnos de 8 a 12 horas sobre la moto sin que la espalda te obligue a parar. $799 MXN, envío gratis en México.')
+    const desc = setMeta('name', 'description', 'Soporte lumbar diseñado para la postura inclinada al manejar. Aguanta turnos de 8 a 12 horas sobre la moto sin que la espalda te obligue a parar. Envío gratis en México.')
     const robots = setMeta('name', 'robots', 'noindex, follow')
     const canonical = setMeta('rel', 'canonical', `${window.location.origin}/productos/soporte-lumbar-rodata-one`, 'link')
 
