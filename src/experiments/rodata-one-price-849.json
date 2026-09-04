@@ -10,8 +10,20 @@
     "variant_id": null
   },
   "variants": [
-    { "key": "control", "name": "$799 (actual)", "weight": 50, "price": 799 },
-    { "key": "test", "name": "$849", "weight": 50, "price": 849 }
+    {
+      "key": "control",
+      "name": "$799 (actual)",
+      "weight": 50,
+      "price": 799
+    },
+    {
+      "key": "test",
+      "name": "$849",
+      "weight": 50,
+      "price": 849
+    }
   ],
-  "primary_metric": { "kind": "revenue_per_exposed_visitor" }
+  "primary_metric": {
+    "kind": "revenue_per_exposed_visitor"
+  }
 }

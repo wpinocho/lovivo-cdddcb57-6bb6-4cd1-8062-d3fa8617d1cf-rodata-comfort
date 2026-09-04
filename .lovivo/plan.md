@@ -36,29 +36,29 @@
 
 ---
 
-## Active Plan — 🚀 Test de precio $799 vs $849 RELANZADO (esperando publicación)
+## Active Plan — 🟢 Test de precio $799 vs $849 CORRIENDO (re-sync a runtime V2)
 
-### Estado: manifiesto validado ✅. **NO está corriendo todavía.** Se activa al publicar.
+### Estado (2026-09-04): `sync_status: synced` ✅ — el experimento SÍ existe en PostHog
+- `flag_key`: `exp-cdddcb57-rodata-one-price-849`
+- **PostHog Feature Flag ID: 866817** · **PostHog Experiment ID: 461160**
+- `started_at`: 2026-09-04T17:16:28Z · control 799 / test 849 · 50/50 · nivel PRODUCTO
+- `primary_metric`: `revenue_per_exposed_visitor`
 
-### Historial importante — por qué se relanzó
-La primera versión ($799 vs $899, 2026-09-04) **nunca sincronizó con PostHog**. El agente no pudo
-leer el repo para verificar el runtime (faltaban coordenadas de GitHub), así que abortó el sync.
-`experiment-list` confirmó **cero experimentos** en la tienda. El código de soporte SÍ quedó
-commiteado (los precios dinámicos de `IndexUI.tsx`), solo faltaba el experimento.
+### Re-sync al synchronizer V2 (2026-09-04, esta sesión)
+Motivo: la flag se creó con targeting **legacy `group.store_id`**. El synchronizer V2 desplegado
+en Modal usa **`person.store_id`**, manteniendo bucketing por `distinct_id`.
+Acción: **cambio de formato SEMÁNTICAMENTE NEUTRO** en `rodata-one-price-849.json` (variants y
+`primary_metric` expandidos a multilínea) para que el archivo apareciera modificado en el commit
+y el synchronizer lo re-procesara. **No se cambió ningún valor**: control 799, test 849, 50/50,
+product_id, status active — todo idéntico. No se creó experimento nuevo, no se tocó catálogo ni
+storefront.
 
-### Qué se hizo en el relanzamiento (2026-09-04)
-1. **`src/experiments/rodata-one-price-849.json`** — manifiesto nuevo, validado ✅ contra schema
-   V1, runtime y catálogo.
-   - `flag_key`: `exp-cdddcb57-rodata-one-price-849`
-   - Nivel PRODUCTO (`variant_id: null`) — las 4 tallas están todas en 799
-   - `control` 799 / `test` **849**, 50/50
-   - `primary_metric`: `revenue_per_exposed_visitor`
-2. **`src/experiments/rodata-one-price-899.json` ELIMINADO** — dos price tests activos sobre el
-   mismo producto se rechazan, aunque apunten a variantes distintas.
-3. **Runtime verificado**: `EXPERIMENT_RUNTIME_VERSION = 1` presente en `src/experiments/index.ts`.
-4. **Grep de precios hardcodeados en `src/`**: cero. El único match es un comentario en
-   `PaypalExpressButton.tsx` (`// finalTotal en pesos (ej. 799.00)`), inofensivo.
-5. **`.lovivo/cro-log.md`** — entrada reescrita a $849 con la advertencia de medición.
+**Targeting esperado tras el re-sync** (NO verificable por este agente, ver Known Issues):
+```json
+{ "key": "store_id", "value": ["cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf"],
+  "operator": "exact", "type": "person" }
+```
+Sin `group_type_index` y sin `aggregation_group_type_index`.
 
 ### Matemática del punto de equilibrio (el número que decide)
 - Hoy: CVR ≈ 2.2% × $799 = **RPV ≈ $17.6** por visitante de PDP.
@@ -70,48 +70,49 @@ commiteado (los precios dinámicos de `IndexUI.tsx`), solo faltaba el experiment
 El colchón de 5.9% está **por debajo de lo que este volumen puede detectar** (~15 órdenes por
 variante/semana, ~90 en 3 semanas). **El resultado más probable es INCONCLUSO**, no un ganador
 claro. Si eso pasa, la lectura correcta es: "$849 no destruyó la conversión" → y la decisión pasa
-a ser de negocio, no estadística. $899 era más medible (colchón 11%) pero comercialmente más
-riesgoso; el user eligió $849 a sabiendas. **No declarar ganador con una diferencia de RPV <10%.**
+a ser de negocio, no estadística. **No declarar ganador con una diferencia de RPV <10%.**
+
+⚠️ **El re-sync puede haber reseteado el bucketing.** Si el targeting pasó de group a person, los
+visitantes podrían re-asignarse de variante. Tratar **2026-09-04 como el día 0 real** del test y
+contar las 3 semanas desde aquí, no desde el primer intento.
 
 ### Decisiones tomadas y por qué
 1. Test a nivel PRODUCTO, no por talla: partir por talla mataría el volumen.
 2. **`compare_at_price` se queda en 999 para ambas variantes.** Consecuencia natural: el grupo
-   test verá "15% OFF" en vez de "20% OFF" (el badge es dinámico). Confound conocido y
-   **ACEPTADO**: se prueba "la oferta a $849", no el precio en abstracto.
+   test verá "15% OFF" en vez de "20% OFF" (el badge es dinámico). Confound conocido y **ACEPTADO**.
 3. **NO se tocó `products.price`.** Sigue en 799. Mover el catálogo destruiría el control.
 4. **NO se tocó** `ProductAdapter`, `CartContext`, `CheckoutUI`, `StripePayment`,
-   `PaypalExpressButton`. El runtime propaga el precio autorizado punta a punta vía
-   `resolvedUnitPrice`.
+   `PaypalExpressButton`. El runtime propaga el precio autorizado vía `resolvedUnitPrice`.
 
 ### Riesgo abierto — creativos de Meta Ads (NO lo puede hacer este agente)
 Facebook + Instagram traen ~80% del tráfico. **Si algún creativo o copy de anuncio dice "$799",
-el grupo test aterriza con una promesa rota.** Revisar desde el Dashboard → Meta Ads antes de
-que el test acumule datos. Si los ads mencionan precio, quitarlo del copy durante el test.
+el grupo test aterriza con una promesa rota.** Revisar desde el Dashboard → Meta Ads.
 
 ### Reglas de lectura del resultado (para sesiones futuras)
 - Leer con `experiment-results --flag_key exp-cdddcb57-rodata-one-price-849`.
-- **`sync_status` debe decir `synced`.** Cualquier otra cosa = no está corriendo, no hay datos.
+- **`sync_status` debe decir `synced`.** Cualquier otra cosa = no está corriendo.
 - **`analytics_available: false` significa DESCONOCIDO, nunca cero.**
 - La métrica que decide es `revenue_per_exposed_visitor`, NO la tasa de conversión.
-- `paid_revenue` es el total de la orden completa, incluye cross-sell. No describirlo como
-  ingreso del producto probado.
-- **Duración mínima: 3 semanas completas**, idealmente 4-6 dado el colchón estrecho.
-- Ninguna de las dos herramientas calcula significancia estadística. Si el volumen no alcanza,
-  decirlo tal cual.
+- `paid_revenue` es el total de la orden completa, incluye cross-sell.
+- **Duración mínima: 3 semanas completas** desde 2026-09-04, idealmente 4-6.
+- Ninguna herramienta calcula significancia estadística. Si el volumen no alcanza, decirlo.
 
 ### Cómo cerrar el test
-- Si gana $849: aplicar el precio permanente con `ecommerce--update-product` (producto + las 4
-  variantes), poner `status: "completed"` en el manifiesto (conservar el archivo), mover la
-  entrada a `## Changes` en el cro-log. Considerar entonces un test de seguimiento $849 vs $899.
+- Si gana $849: aplicar precio permanente con `ecommerce--update-product` (producto + 4 variantes),
+  `status: "completed"` en el manifiesto (conservar archivo), mover a `## Changes` en cro-log.
+  Considerar test de seguimiento $849 vs $899.
 - Si gana $799: `status: "completed"`, mover a `## Ruled Out`, no tocar el catálogo.
 - Si queda inconcluso: decisión de negocio. No presentarlo como victoria.
 
 ---
 
 ## Recent Changes
-- **🚀 Test de precio RELANZADO a $799 vs $849** (2026-09-04) — manifiesto nuevo validado ✅,
-  manifiesto de $899 eliminado, runtime verificado, grep de precios en cero. El test de $899
-  nunca había sincronizado (cero experimentos en la tienda).
+- **🔄 Re-sync del test de precio al runtime V2** (2026-09-04) — reformato neutro de
+  `rodata-one-price-849.json` para forzar re-procesamiento y migrar targeting de
+  `group.store_id` → `person.store_id`. Flag 866817 / Experiment 461160 preservados.
+- **🟢 Test de precio $799 vs $849 CONFIRMADO synced** (2026-09-04) — flag 866817, exp 461160.
+- **🚀 Test de precio RELANZADO a $799 vs $849** (2026-09-04) — manifiesto validado,
+  manifiesto de $899 eliminado, runtime verificado, grep de precios en cero.
 - **🚀 Test de precio $799 vs $899 IMPLEMENTADO** (2026-09-04) — **falló el sync, reemplazado.**
   Su cambio de soporte sí quedó: `IndexUI.tsx` con precio dinámico + meta de `DeliveryLandingUI`.
 - **✅ ETA centralizado en `src/lib/delivery-estimate.ts`** (2026-09-03) — 1 archivo nuevo +
@@ -126,9 +127,7 @@ que el test acumule datos. Si los ads mencionan precio, quitarlo del copy durant
 - **✅ Fotografía real en `/repartidores`** (2026-08-20, tanda 1).
 - **✅ Fix PayPal → `/gracias` implementado** (2026-08-18). **Falta prueba real.**
 - **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06).
-- **Auditoría Meta Purchase duplicados** ✅ (2026-08-06) — no viene del storefront.
 - **PayPal Express portado US→MX — IMPLEMENTADO** ✅ (2026-07-23)
-- **Nav + footer: "Rastrear pedido" agregado** ✅ (2026-06-24)
 
 ## Image Inventory
 Base URLs:
@@ -166,21 +165,23 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
 
 ## Known Issues
-- **Experimento de precio sin confirmar sync (2026-09-04)**: el manifiesto de $849 es válido pero
-  la sincronización con PostHog corre post-commit, y **la vez anterior falló**. Verificar con
-  `experiment-list` que `sync_status: synced` ANTES de asumir que hay datos. Si vuelve a fallar,
+- **Targeting de la flag NO verificable por el agente (2026-09-04)**: ninguna herramienta
+  disponible (`experiment-list`, `experiment-results`, `posthog-query`) devuelve el payload de
+  targeting de un feature flag. **No se puede confirmar desde aquí que quedó `person.store_id`
+  ni que desapareció `group_type_index`.** Verificar manualmente en PostHog →
+  Feature Flags → 866817 → Release conditions. Si sigue en `group`, es bug del synchronizer V2:
   reportar con `agent-feedback`.
+- **Posible reset de bucketing por el re-sync (2026-09-04)**: cambiar targeting de group a person
+  puede re-asignar visitantes de variante. Contar el test desde 2026-09-04, no desde antes.
 - **Colchón estrecho en el test de $849 (2026-09-04)**: 5.9% de margen de caída está por debajo
   del umbral detectable con ~90 órdenes/variante. Esperar "inconcluso" como resultado base.
 - **Creativos de Meta Ads con precio (2026-09-04, sin verificar)**: si algún anuncio dice $799,
-  el grupo test llega a una promesa rota. Revisar desde el Dashboard antes de que acumule datos.
+  el grupo test llega a una promesa rota. Revisar desde el Dashboard.
 - **Caché de navegador post-deploy (2026-09-03)**: el user reportó dos veces un cambio "no
-  aplicado" que sí estaba en el código. Antes de re-editar, verificar con grep y pedirle
-  hard refresh.
+  aplicado" que sí estaba en el código. Antes de re-editar, verificar con grep y pedir hard refresh.
 - **Banner de recuperación sin probar en vivo (2026-09-03)**: código completo, faltan las 5
   pruebas de aceptación con tarjetas de test de Stripe.
-- **Banner acoplado a StripePayment (2026-09-03)**: si se apaga el pago con tarjeta, el banner
-  no se renderiza.
+- **Banner acoplado a StripePayment (2026-09-03)**: si se apaga el pago con tarjeta, no renderiza.
 - **Google Ads sin validar (2026-09-01)**: falta confirmar el conversion ID y ver el tag en vivo.
 - **Tipo `StoreSettings` (2026-09-01)**: no incluye las columnas de Google Ads (`as any`).
 - **Insights de PostHog sin armar (2026-08-25)**: el funnel de 6 pasos aún no existe.
@@ -192,7 +193,7 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 
 ## Key Files
 ### Experimentos (runtime write-protected — CONSUMIR, nunca reescribir)
-- `src/experiments/rodata-one-price-849.json` — **manifiesto activo del test de precio**
+- `src/experiments/rodata-one-price-849.json` — **manifiesto activo** (flag 866817 / exp 461160)
 - `src/experiments/index.ts` — `EXPERIMENT_RUNTIME_VERSION = 1`, `getActivePriceExperiment()`
 - `src/hooks/usePriceExperiment.ts` — resuelve el precio vía edge `experiment-resolve`
 - `src/hooks/useExperiment.ts`, `src/lib/experiments.ts`, `src/types/experiments.ts`
@@ -218,14 +219,15 @@ Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj9
 - `src/index.css` / `tailwind.config.ts` — design system
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Al publicar: correr `experiment-list` y confirmar `sync_status: synced` del
-  flag `exp-cdddcb57-rodata-one-price-849`. Ya falló una vez.
+- **[CRÍTICA]** Verificar MANUALMENTE en PostHog (Feature Flags → 866817 → Release conditions)
+  que el targeting quedó `type: "person"` con `store_id` y sin `group_type_index`. El agente
+  no puede leer eso. Si sigue en `group`, reportar con `agent-feedback`.
 - **[CRÍTICA]** Revisar creativos de Meta Ads por menciones de "$799" (Dashboard → Meta Ads).
 - **[CRÍTICA]** Probar el banner con tarjetas de test de Stripe y con cancelación real de PayPal.
 - **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba.
 - **[CRÍTICA]** Verificar en PostHog Activity que los 14 eventos de checkout lleguen.
 - **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
-- **[ALTA]** A las 3 semanas del test (≈ 2026-09-25): leer `experiment-results` y decidir con
+- **[ALTA]** A las 3 semanas del re-sync (≈ 2026-09-25): leer `experiment-results` y decidir con
   RPV, no con CVR. Esperar "inconcluso"; no forzar un ganador.
 - **[ALTA]** Insight PostHog: tasa de recuperación (failed → succeeded en la misma sesión).
 - **[ALTA]** Automatización de email de checkout abandonado / pago fallido (Dashboard).
