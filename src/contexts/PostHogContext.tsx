@@ -40,15 +40,18 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
           // store_id on every event — experiment analytics depend on it
           ph.register({ store_id: STORE_ID });
 
+          // Keep PostHog group association for analytics/grouping.
           ph.group('store', STORE_ID, storeProperties);
 
-          // Send the group properties with the flag evaluation request itself,
-          // so group-scoped experiments resolve on the first decide call.
+          // store_id is the tenant targeting property used by experiment flags.
+          // Pass it explicitly to flag evaluation so the first evaluation can
+          // match immediately without waiting for person-property ingestion.
           // `false` avoids a duplicate reload — we trigger it explicitly below.
-          ph.setGroupPropertiesForFlags({ store: storeProperties }, false);
+          ph.setPersonPropertiesForFlags({ store_id: STORE_ID }, false);
 
-          // Re-evaluate flags now that the store group is set, so experiment
-          // assignments are correct for this store before any experiment runs.
+          // Re-evaluate flags now that store_id is available for targeting, so
+          // experiment assignments are correct for this store before any
+          // experiment runs.
           ph.reloadFeatureFlags();
 
           const groups = ph.getGroups();
