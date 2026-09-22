@@ -187,6 +187,7 @@ export const EcommerceTemplate = ({
                 { label: 'FAQ', href: '/#faq' },
                 { label: 'Rastrear pedido', href: '/orders/track' },
                 { label: 'Políticas de privacidad', href: '/aviso-de-privacidad' },
+                { label: 'Política de devoluciones', href: '/politica-de-devoluciones' },
                 { label: 'Términos y condiciones', href: '/terminos-y-condiciones' },
               ].map((link) => (
                 <Link

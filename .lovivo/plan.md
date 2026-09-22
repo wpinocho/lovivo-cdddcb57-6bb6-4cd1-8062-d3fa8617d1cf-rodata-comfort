@@ -14,6 +14,9 @@
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
 - **Tráfico (30d, medido 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads.
 - **Ventas (30d)**: ~130 purchases ≈ 30/semana. CVR PDP ≈ 2.2%.
+- **Política de devoluciones real (2026-09-22)**: 30 días naturales desde entrega, devoluciones y cambios de talla
+  si el producto no está dañado. Cliente genera la guía y envía al almacén; cuando va en camino, Rodata envía la
+  nueva talla. Contacto por WhatsApp +52 55 3121 5386.
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
@@ -28,6 +31,8 @@
   `logic.currentPrice` / `logic.packOffer` / `logic.purchaseQuote`. Grep de `799|MX\$` → cero.
 - **Pricing de reglas (2026-09-22)**: fuente única `src/lib/cart-pricing.ts` (`calcLinesPricing`,
   `calcCartPricing`). PDP y carrito la usan. BOGO `same_products` = pool por producto entre tallas.
+- **Link de política de devoluciones (2026-09-22)**: SOLO en el footer, columna "Navegación". Pedido explícito
+  del cliente: no ponerlo en PDP, checkout ni otro lugar.
 
 ---
 
@@ -53,11 +58,15 @@
   4. Recién ahí `status: "active"` en el manifiesto.
 
 ### Price test $799 vs $849 — ya CERRADO (2026-09-22, sesión anterior)
-`completed`, inconcluso / direccional a favor del control. **No se tocó en esta sesión.** Ver cro-log.
+`completed`, inconcluso / direccional a favor del control. Ver cro-log.
 
 ---
 
 ## Recent Changes
+- **✅ Página `/politica-de-devoluciones` creada** (2026-09-22) — `src/pages/ReturnPolicy.tsx`, ruta en `App.tsx`,
+  link solo en footer "Navegación" (`EcommerceTemplate.tsx`). Para Merchant Center. Incluye best practices añadidas:
+  reembolso al mismo método en hasta 10 días hábiles, envío de la nueva talla sin costo, defectuoso/equivocado = Rodata
+  cubre envíos. Indexable (Google debe rastrearla).
 - **✅ Meta `google-site-verification` añadida en `index.html`** (2026-09-22) — para Google Merchant Center.
   Token `_RBrWri4uvRAMj82sXqIHvhn8WmbjBN7S8KgDy4-20w`. NO QUITAR.
 - **⏸️ Experimento UI "2.ª unidad al 50%" PREPARADO pausado + BOGO inactiva** (2026-09-22) — nuevos:
@@ -91,27 +100,26 @@ Base URLs:
 ## Known Issues
 - **Canonical en `index.html` apunta a `https://rodata.mx`** pero producción es `rodata.store` (2026-09-22).
   Posible conflicto para Search Console / Merchant Center. Pendiente confirmar con el cliente antes de cambiar.
+- **Términos y condiciones §7 (2026-09-22)** menciona "plazo establecido en nuestra política de devoluciones" sin link;
+  se dejó así por pedido del cliente (link solo en footer).
 - **Cart line display con BOGO (2026-09-22)**: el TOTAL del carrito ya usa pricing central, pero el precio
-  por línea (`calcItemUnitPrice`) es por línea: con M+L cada línea muestra $799 y el total baja sin
-  renglón explicativo. Antes de activar: añadir renglón "Promoción 2.ª al 50% −$X" en CartSidebar/CartUI.
-- **Semántica backend BOGO sin verificar (2026-09-22)**: asumido que `same_products` agrupa variantes y
-  descuenta la más barata. Solo verificable con la regla activa creando un checkout.
-- **Stacking volume+bogo**: si algún día se crea una volume rule para Rodata One, el pack se oculta
-  (fail-safe) y se registra warning en consola.
-- **`?exp=` preview del runtime**: `useExperiment` (protegido) acepta preview por query param y
-  registra exposure. No usar en links compartidos ni anuncios.
-- **Código `DEDE` 98% activo (2026-09-22)**: riesgo comercial real hoy, independiente del test.
+  por línea (`calcItemUnitPrice`) es por línea. Antes de activar: añadir renglón "Promoción 2.ª al 50% −$X".
+- **Semántica backend BOGO sin verificar (2026-09-22)**.
+- **Stacking volume+bogo**: si se crea una volume rule para Rodata One, el pack se oculta (fail-safe).
+- **`?exp=` preview del runtime**: no usar en links compartidos ni anuncios.
+- **Código `DEDE` 98% activo (2026-09-22)**: riesgo comercial real hoy.
 - **`experiment-results` devuelve `Unauthorized` (2026-09-22)**. Reportado (`68861868-...`).
 - **Targeting de flags no legible por el agente (2026-09-04)**.
 - **Caché de navegador post-deploy**: verificar con grep y pedir hard refresh antes de re-editar.
 - **Banner de recuperación sin probar en vivo (2026-09-03)** · acoplado a StripePayment.
 - **Google Ads sin validar (2026-09-01)** · `StoreSettings` sin columnas de Google Ads (`as any`).
-- **PayPal MX — falta prueba real (2026-08-18)** · PayPal dirección depende de `paypal-capture-order`.
+- **PayPal MX — falta prueba real (2026-08-18)**.
 - **Meta Purchase server duplicados (2026-08-06)**.
 - PayPal express no está en la PDP carretera (solo Stripe PRB); si se añade, debe consumir `selectedPurchaseItems`.
 
 ## Key Files
 - `index.html` — meta `google-site-verification` (Merchant Center), canonical, OG
+- `src/pages/ReturnPolicy.tsx` — `/politica-de-devoluciones` (Merchant Center)
 - `src/lib/cart-pricing.ts` — **pricing central de reglas** (PDP + carrito)
 - `src/components/PackOfferSelector.tsx` — UI del test de oferta
 - `src/experiments/rodata-one-pack-presentation.json` — **paused**
@@ -120,19 +128,21 @@ Base URLs:
 - `src/components/headless/HeadlessProduct.tsx` — `buildPurchase()`, `packOffer`, price experiment
 - `src/components/ProductExpressCheckout.tsx` — wallet PDP (acepta `purchaseItems`)
 - `src/adapters/CartAdapter.tsx` / `src/components/CartSidebar.tsx` — `adjustedTotal` vía `calcCartPricing`
-- `src/lib/cart-utils.ts` — `cartToApiItems` (merge por product+variant+plan+experiment)
-- `src/lib/checkout.ts` — envía `analytics_distinct_id` (unión exposure ↔ order)
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera (hook del experimento al inicio del componente)
+- `src/lib/cart-utils.ts` — `cartToApiItems`
+- `src/lib/checkout.ts` — envía `analytics_distinct_id`
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera
+- `src/templates/EcommerceTemplate.tsx` — footer (columna Navegación)
 - `src/pages/ui/DeliveryPDPUI.tsx`, `DeliveryLandingUI.tsx`, `IndexUI.tsx`, `CheckoutUI.tsx`
 - `src/lib/delivery-estimate.ts`, `payment-errors.ts`, `payment-recovery.ts`, `google-ads.ts`
 
 ## PENDING / Future Sessions
+- **[ALTA]** Merchant Center: URL de devoluciones = `https://rodata.store/politica-de-devoluciones`; plazo 30 días;
+  costo de devolución = lo paga el cliente; acepta defectuosos y no defectuosos + cambios.
 - **[ALTA]** Tras deploy: usuario pulsa "Verificar" en Merchant Center; si falla, revisar que rodata.store sirva el index.html nuevo.
 - **[ALTA]** Decidir canonical `rodata.mx` vs `rodata.store`.
 - **[CRÍTICA]** Revisar/desactivar el código `DEDE` (98% activo).
 - **[CRÍTICA — antes de activar oferta]** Gates 1–4 del Active Plan + renglón de promoción en el carrito.
-- **[CRÍTICA]** Tras deploy: `experiment-list` debe mostrar el nuevo experimento `paused` + `synced`, y
-  la PDP debe verse idéntica a hoy (hard refresh).
+- **[CRÍTICA]** Tras deploy: `experiment-list` debe mostrar el nuevo experimento `paused` + `synced`.
 - **[CRÍTICA]** Probar banner de recuperación, Google Ads, eventos PostHog, PayPal real.
 - **[ALTA]** Insight de recuperación de pagos · email de checkout abandonado · funnel 6 pasos.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs.
