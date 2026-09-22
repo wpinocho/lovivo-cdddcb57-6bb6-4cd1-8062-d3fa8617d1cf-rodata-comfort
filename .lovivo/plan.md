@@ -30,26 +30,31 @@
   Carrito = líneas a precio base (+volumen por línea) + UN renglón global BOGO (`bogoLabel`) = total.
 - **Selección PDP (2026-09-22)**: fuente única `src/lib/pdp-purchase.ts` (`resolvePdpPurchase`, pura).
 - **Link de política de devoluciones**: SOLO en el footer, columna "Navegación".
+- **CUIDADO con `text-foreground`/`text-muted-foreground` (2026-09-22)**: en componentes compartidos (cart/checkout)
+  NUNCA usar estos tokens shadcn genéricos — `--foreground` es casi negro en `:root` (light). Usar SIEMPRE
+  `text-brand-smoke`/`text-brand-offwhite`/`text-brand-amber-light`/`text-brand-steel` en UI del carrito/checkout (dark).
 
 ---
 
-## Active Plan — 🚀 Experimento de oferta ACTIVADO (2026-09-22)
+## Active Plan — 🚀 Experimento de oferta ACTIVADO, QA de cliente en curso (2026-09-22)
 
 ### `exp-cdddcb57-pdp-second-belt-offer`
-- Manifiesto `src/experiments/rodata-one-pack-presentation.json` → `status: "active"` (commit 2026-09-22).
-  Sync post-commit: **confirmar con experiment-list que `started_at` ≠ null y `sync_status: synced`.**
-- BOGO `7653e73d-...` **`active: true`** desde 2026-09-22 20:23 UTC (autorizado por el cliente). Condiciones sin cambios.
-- `experiment-results` ✅ responde (analysis_version 2, margin_per_visitor). Decisión: min 14 días, 30 compradores/variante, 95%.
-- Verificado por el agente: PDP carga sin errores de consola con BOGO activa.
-- **NO verificado por el agente**: totales multi-unidad en carrito y `/pagar` (M+L, M+M, 3, 4). Motivo: loader de carrito
-  por URL roto + browser-test solo da 1 clic. QA manual pedido al cliente. Si /pagar ≠ PDP/carrito → pausar
-  (manifiesto `paused` + BOGO `active: false`).
+- Manifiesto `active`. BOGO `7653e73d-...` `active: true` desde 2026-09-22 20:23 UTC.
+- **Cliente confirmó QA manual**: carrito S+L (2 unidades, tallas distintas) en `/pagar` mostró
+  Subtotal $1,598, descuento -$400 ("Rodata One — 2.ª unidad al 50%"), Total $1,199. ✅ Coincide con lo esperado.
+  Aún falta que el cliente confirme el caso de 3 unidades ($1,997.50).
+- **Bug de contraste reportado y arreglado (2026-09-22)**: en `/pagar` la línea de descuento aplicado
+  (`CartAppliedRules.tsx`) se veía negro sobre negro. Causa: usaba `text-foreground`/`text-muted-foreground`
+  (tokens shadcn del tema claro) en vez de tokens de marca. Corregido a `text-brand-smoke` / `text-brand-amber-light`
+  / `text-brand-steel`. Afecta a `/pagar` Y `/carrito` (mismo componente compartido).
 - vitest `src/lib/__tests__/pack-pricing.test.ts` sigue SIN ejecutar.
-- No editar la BOGO mientras corre el test.
+- Próximo paso: confirmar `experiment-list` → `started_at` ≠ null y `sync_status: synced`.
 
 ---
 
 ## Recent Changes
+- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22, sesión 4)** — texto negro sobre negro en línea de
+  descuento BOGO en `/pagar` y `/carrito`. Cambiado a tokens `brand-*`. Cliente confirmó matemática del carrito OK (S+L=$1,199).
 - **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22, sesión 3)** — manifiesto `active`, BOGO `active: true`,
   entrada en cro-log. Catálogo y experimento de precio intactos. DEDE sin tocar.
 - **🔧 Experimento de pack corregido (2026-09-22, sesión 2)** — `pdp-purchase.ts`, tests vitest, `cart-pricing.ts`,
@@ -85,7 +90,7 @@ Base URLs:
 - **Loader de carrito por URL roto (2026-09-22)**: `useURLCartLoader.ts` usa join `products`↔`product_variants`
   que PostgREST no reconoce (PGRST200) → `?items=` y `?variant=` NO cargan carrito. Preexistente. Afecta links
   de email/ads que usen esos params y bloquea QA automatizado.
-- **Semántica backend BOGO entre variantes (M+L) sin verificar** — pendiente de QA manual en `/pagar`.
+- **QA de 3 unidades sin confirmar** — cliente confirmó 2 unidades (S+L) OK, falta el caso de 3 unidades ($1,997.50).
 - **Wallet: cupón en cotización** depende de `verify-discount`; si difiere, entra la re-confirmación.
 - **Wallet: re-cotización crea una orden pendiente extra** por intento fallido (sin cobro).
 - **Fallback `order.total_amount`** en express sigue siendo `unit×qty` si el backend no lo devuelve (preexistente).
@@ -100,6 +105,7 @@ Base URLs:
 ## Key Files
 - `src/lib/pdp-purchase.ts`, `src/lib/cart-pricing.ts`, `src/lib/__tests__/pack-pricing.test.ts`
 - `src/components/PackOfferSelector.tsx` — UI del test
+- `src/components/ui/CartAppliedRules.tsx` — línea de reglas aplicadas (BOGO/volume) en cart+checkout. Usa tokens `brand-*`.
 - `src/experiments/rodata-one-pack-presentation.json` — **active**
 - Runtime protegido: `src/experiments/index.ts`, `src/hooks/useExperiment.ts`, `src/hooks/usePriceExperiment.ts`, `src/lib/experiments.ts`
 - `src/components/headless/HeadlessProduct.tsx`, `src/components/ProductExpressCheckout.tsx`
@@ -108,7 +114,7 @@ Base URLs:
 
 ## PENDING / Future Sessions
 - **[CRÍTICA]** Próxima sesión: `experiment-list` → confirmar `started_at` + `synced`.
-- **[CRÍTICA]** Resultado del QA manual del cliente en `/pagar` (2 iguales, 2 tallas distintas, 3 unidades). Si no cuadra → pausar.
+- **[MEDIA]** Confirmar con cliente el caso de 3 unidades ($1,997.50) — el de 2 unidades ya quedó validado.
 - **[CRÍTICA]** Decisión del cliente sobre `DEDE`.
 - **[ALTA]** Arreglar `useURLCartLoader` (join de variantes) — con permiso del cliente; habilita QA automatizado.
 - **[ALTA]** Ejecutar `npx vitest run src/lib/__tests__`.

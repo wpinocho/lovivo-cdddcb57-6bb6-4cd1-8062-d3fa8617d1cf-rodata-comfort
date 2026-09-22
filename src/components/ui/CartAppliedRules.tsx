@@ -30,13 +30,13 @@ export const CartAppliedRules = ({ appliedRules, formatMoney }: CartAppliedRules
         const fallbackLabel = ruleLabels[rule.rule_type] || ''
 
         return (
-          <div key={rule.rule_id || index} className="flex justify-between text-sm text-foreground">
+          <div key={rule.rule_id || index} className="flex justify-between text-sm text-brand-smoke">
             <span className="flex items-center gap-1.5">
-              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+              <Icon className="h-3.5 w-3.5 text-brand-steel" />
               <span>{rule.title || fallbackLabel}</span>
             </span>
             {rule.discount > 0 && (
-              <span className="text-foreground font-medium">- {formatMoney(rule.discount)}</span>
+              <span className="text-brand-amber-light font-medium">- {formatMoney(rule.discount)}</span>
             )}
           </div>
         )
