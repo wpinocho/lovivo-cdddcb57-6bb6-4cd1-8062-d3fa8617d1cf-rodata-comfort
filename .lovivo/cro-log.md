@@ -35,10 +35,13 @@
 
 ## Active Experiments
 <!-- A/B tests currently running. Include flag_key, start date, variants, and target metric. -->
-Ninguno activo.
-
-### ⏸️ PREPARADO — NO LANZADO (2026-09-22): Presentación 2.ª unidad al 50%
-- **Estado**: `status: "paused"`. **No recolecta tráfico.** No tiene `started_at`. No hay datos.
+### 🚀 ACTIVADO (2026-09-22, por petición del cliente): Presentación 2.ª unidad al 50%
+- **Estado**: manifiesto `status: "active"` (sync post-commit, confirmar `started_at` con experiment-list).
+  BOGO `7653e73d` **`active: true`** desde 2026-09-22 20:23 UTC (global: aplica a control y test).
+- **Gates al activar**: (1) experiment-results ✅ responde (analysis_version 2). (2) Cotización multi-unidad
+  en `/pagar` ❌ NO verificada por el agente (loader `?items=`/`?variant=` roto, browser-test = 1 clic) →
+  QA manual pedido al cliente. (3) `DEDE` 98% sigue activo (sin autorización para tocarlo). vitest no ejecutado.
+- **Antes**: `status: "paused"`, sin tráfico.
 - **flag_key**: `exp-cdddcb57-pdp-second-belt-offer` · manifiesto `src/experiments/rodata-one-pack-presentation.json`
 - **Tipo**: `ui` + `purpose: "offer_presentation"` · control/test 50/50 en la MISMA PDP
   `/productos/soporte-lumbar-rodata-one` (`ProductPageUI`) · product_id `400026a2-c277-407c-abbb-d1683f415120`
