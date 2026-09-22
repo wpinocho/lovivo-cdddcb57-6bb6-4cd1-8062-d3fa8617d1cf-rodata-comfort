@@ -3,7 +3,8 @@ import { loadStripe, type Stripe, type PaymentRequest } from "@stripe/stripe-js"
 import { Elements, PaymentRequestButtonElement, useStripe } from "@stripe/react-stripe-js"
 import { useNavigate } from "react-router-dom"
 import { STORE_ID, STRIPE_PUBLISHABLE_KEY } from "@/lib/config"
-import { callEdge } from "@/lib/edge"
+import { callEdge, callEdgeFetch } from "@/lib/edge"
+import { calculateDiscountAmount } from "@/lib/discount-utils"
 import { createCheckoutFromCart } from "@/lib/checkout"
 import { useSettings } from "@/contexts/SettingsContext"
 import { useCart } from "@/contexts/CartContext"
@@ -62,8 +63,17 @@ interface ProductExpressCheckoutProps {
   purchaseItems?: CartItem[]
   /** Subtotal already quoted by central pricing for `purchaseItems`. */
   quotedSubtotal?: number
-  /** Lets the PDP lock size/quantity while the wallet is authorizing. */
+  /**
+   * Locks the PDP selection from the moment the wallet button is tapped until
+   * the sheet is cancelled or the payment finishes (not only at the end).
+   */
   onProcessingChange?: (processing: boolean) => void
+  /** Same validation as the CTAs. Returning false prevents the sheet from opening. */
+  validateSelection?: () => boolean
+}
+
+const readPendingCode = (): string | undefined => {
+  try { return sessionStorage.getItem('pendingDiscount') || undefined } catch { return undefined }
 }
 
 function PaymentRequestInner({
@@ -79,19 +89,43 @@ function PaymentRequestInner({
   purchaseItems,
   quotedSubtotal,
   onProcessingChange,
+  validateSelection,
 }: ProductExpressCheckoutProps) {
   const stripe = useStripe()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { currencyCode, deliveryExpectations, shippingCoverageV2 } = useSettings()
+  const { currencyCode, deliveryExpectations, shippingCoverageV2, formatMoney } = useSettings()
   const { clearCart } = useCart()
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null)
   const [processing, setProcessing] = useState(false)
   const processingRef = useRef(false)
-  useEffect(() => { onProcessingChange?.(processing) }, [processing, onProcessingChange])
+  // Sheet open (tap → cancel/complete). Lock covers the WHOLE authorization.
+  const [walletOpen, setWalletOpen] = useState(false)
+  useEffect(() => { onProcessingChange?.(processing || walletOpen) }, [processing, walletOpen, onProcessingChange])
 
-  // Pack mode: explicit lines + centrally quoted subtotal
+  // Explicit PDP selection + central quote (control AND test use this path)
   const lineItems = purchaseItems && purchaseItems.length > 0 && typeof quotedSubtotal === 'number' ? purchaseItems : null
+
+  // Pending coupon (same one createCheckoutFromCart sends) is part of the quote
+  const [pendingCode, setPendingCode] = useState<string | undefined>(() => readPendingCode())
+  const [pendingCoupon, setPendingCoupon] = useState<any | null>(null)
+  useEffect(() => {
+    const onFocus = () => setPendingCode(readPendingCode())
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
+  useEffect(() => {
+    if (!pendingCode) { setPendingCoupon(null); return }
+    let cancelled = false
+    callEdgeFetch('verify-discount', { store_id: STORE_ID, code: pendingCode })
+      .then((r: any) => { if (!cancelled) setPendingCoupon(r?.discount ?? null) })
+      .catch(() => { if (!cancelled) setPendingCoupon(null) })
+    return () => { cancelled = true }
+  }, [pendingCode])
+
+  // Backend re-quote accepted for THIS exact selection (requires a new tap)
+  const [repriced, setRepriced] = useState<{ sig: string; subtotalCents: number } | null>(null)
+  const snapshotRef = useRef<{ items: CartItem[] | null; subtotalCents: number; couponCode?: string; sig: string } | null>(null)
 
   // Allowed countries (ISO codes) from store shipping coverage
   const allowedCountryCodes = useMemo<string[]>(() => {
@@ -124,7 +158,17 @@ function PaymentRequestInner({
   // The experiment-resolved price is authoritative for every wallet amount.
   const authorizedUnitPrice = resolvedUnitPrice ?? unitPrice
 
-  const subtotalCents = Math.max(50, Math.round((lineItems ? (quotedSubtotal as number) : authorizedUnitPrice * quantity) * 100))
+  const baseSubtotal = lineItems ? (quotedSubtotal as number) : authorizedUnitPrice * quantity
+  const units = lineItems ? lineItems.reduce((s, i) => s + i.quantity, 0) : quantity
+  const couponAmount = pendingCoupon
+    ? Math.round(calculateDiscountAmount(baseSubtotal, pendingCoupon.discount_type, Number(pendingCoupon.value) || 0, units, pendingCoupon.volume_conditions) * 100) / 100
+    : 0
+  const selectionSig = JSON.stringify([
+    (lineItems ?? []).map((i: any) => [i.variant?.id ?? '', i.quantity]),
+    variant?.id ?? '', quantity, baseSubtotal, pendingCode ?? '',
+  ])
+  const quotedCents = Math.max(50, Math.round((baseSubtotal - couponAmount) * 100))
+  const subtotalCents = repriced && repriced.sig === selectionSig ? repriced.subtotalCents : quotedCents
   const defaultShipCents = walletShippingOptions[0]?.amount ?? 0
   const totalCents = subtotalCents + defaultShipCents
 
@@ -239,11 +283,19 @@ function PaymentRequestInner({
       })
     }
 
+    const onCancel = () => {
+      if (processingRef.current) return
+      snapshotRef.current = null
+      setWalletOpen(false)
+    }
+
     paymentRequest.on('shippingaddresschange', onShippingAddressChange)
     paymentRequest.on('shippingoptionchange', onShippingOptionChange)
+    paymentRequest.on('cancel', onCancel)
     return () => {
       paymentRequest.off('shippingaddresschange', onShippingAddressChange)
       paymentRequest.off('shippingoptionchange', onShippingOptionChange)
+      paymentRequest.off('cancel', onCancel)
     }
   }, [paymentRequest, allowedCountryCodes, walletShippingOptions, subtotalCents, product.title])
 
@@ -261,7 +313,11 @@ function PaymentRequestInner({
         // 1. Build a one-item cart from current PDP selection
         // Selling plans never carry product_price experiment metadata
         const experimentMeta = sellingPlan ? null : priceExperiment
-        const buyNowItems: CartItem[] = lineItems ?? [{
+        // Snapshot taken at tap time: what the sheet showed is what we buy
+        const snap = snapshotRef.current
+        const liveLines = snap ? snap.items : lineItems
+        const shownSubtotalCents = snap ? snap.subtotalCents : subtotalCents
+        const buyNowItems: CartItem[] = liveLines ?? [{
           // Experiment suffix keeps different assignments from merging
           key: `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}${experimentMeta ? `:exp-${experimentMeta.key}-${experimentMeta.variant}` : ''}`,
           type: 'product' as const,
@@ -305,8 +361,7 @@ function PaymentRequestInner({
         } : undefined
 
         // 3. Create the order — pass any pending discount stored in sessionStorage
-        let pendingDiscount: string | undefined
-        try { pendingDiscount = sessionStorage.getItem('pendingDiscount') || undefined } catch {}
+        const pendingDiscount: string | undefined = snap ? snap.couponCode : readPendingCode()
 
         const order = await createCheckoutFromCart(
           buyNowItems,
@@ -323,17 +378,19 @@ function PaymentRequestInner({
         const totalAmount = (order.order?.total_amount ?? authorizedUnitPrice * quantity)
         const orderTotalCents = Math.max(50, Math.round(totalAmount * 100))
 
-        // Pack mode: the amount the wallet showed MUST equal what the backend
-        // priced. If not, abort before creating any PaymentIntent (no charge).
-        if (lineItems) {
+        // The amount the wallet showed MUST equal what the backend priced.
+        // If not: no PaymentIntent (no charge), adopt the backend quote for
+        // this exact selection and ask the buyer to confirm it with a new tap.
+        {
           const shipShown = Number(ev?.shippingOption?.amount ?? defaultShipCents) || 0
-          const shownCents = subtotalCents + shipShown
+          const shownCents = shownSubtotalCents + shipShown
           if (Math.abs(orderTotalCents - shownCents) > 1) {
             console.warn('[PDP ExpressCheckout] total mismatch', { shownCents, orderTotalCents })
             ev.complete('fail')
+            if (snap) setRepriced({ sig: snap.sig, subtotalCents: Math.max(50, orderTotalCents - shipShown) })
             toast({
-              title: 'El total se actualizó',
-              description: 'No se te cobró nada. Revisa tu pedido y continúa con Comprar ahora.',
+              title: `El total es ${formatMoney(orderTotalCents / 100)}`,
+              description: 'No se te cobró nada. Vuelve a tocar el botón de pago para confirmar el importe actualizado.',
               variant: 'destructive',
             })
             return
@@ -379,8 +436,8 @@ function PaymentRequestInner({
               country: shippingAddress.country,
               name: `${shippingAddress.first_name} ${shippingAddress.last_name}`.trim(),
             } : null,
-            items: lineItems
-              ? lineItems.map((li: any) => ({
+            items: liveLines
+              ? liveLines.map((li: any) => ({
                   product_id: li.product.id,
                   quantity: li.quantity,
                   ...(li.variant?.id ? { variant_id: li.variant.id } : {}),
@@ -445,8 +502,8 @@ function PaymentRequestInner({
           if (!alreadyTracked) {
             try { sessionStorage.setItem(ptKey, '1'); } catch {}
             trackPurchase({
-              products: lineItems
-                ? lineItems.map((li: any) => tracking.createTrackingProduct({
+              products: liveLines
+                ? liveLines.map((li: any) => tracking.createTrackingProduct({
                     id: li.product.id,
                     title: li.product.title,
                     price: (li.resolvedUnitPrice ?? li.variant?.price ?? li.product.price) || 0,
@@ -504,7 +561,9 @@ function PaymentRequestInner({
         }
       } finally {
         processingRef.current = false
+        snapshotRef.current = null
         setProcessing(false)
+        setWalletOpen(false)
       }
     }
 
@@ -512,7 +571,17 @@ function PaymentRequestInner({
     return () => {
       paymentRequest.off('paymentmethod', handlePaymentMethod)
     }
-  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, authorizedUnitPrice, priceExperiment, currencyCode, clearCart, navigate, toast, lineItems, subtotalCents, defaultShipCents])
+  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, authorizedUnitPrice, priceExperiment, currencyCode, clearCart, navigate, toast, lineItems, subtotalCents, defaultShipCents, formatMoney])
+
+  // Tap on the wallet button: validate, snapshot items + amount, lock the PDP
+  const handleWalletClick = (event: { preventDefault: () => void }) => {
+    if (processingRef.current || (validateSelection && !validateSelection())) {
+      event.preventDefault()
+      return
+    }
+    snapshotRef.current = { items: lineItems, subtotalCents, couponCode: pendingCode, sig: selectionSig }
+    setWalletOpen(true)
+  }
 
   if (disabled || !paymentRequest) return null
 
@@ -524,6 +593,7 @@ function PaymentRequestInner({
         </div>
       )}
       <PaymentRequestButtonElement
+        onClick={handleWalletClick}
         options={{
           paymentRequest,
           style: {

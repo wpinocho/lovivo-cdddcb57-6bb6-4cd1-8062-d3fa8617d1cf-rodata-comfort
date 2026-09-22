@@ -42,12 +42,23 @@ export interface LinesPricingResult {
   subtotal: number
   bogoDiscount: number
   bogoRuleId: string | null
+  /** Human label for the global promo row (derived from the rule, never hardcoded) */
+  bogoLabel: string | null
   total: number
   /** a product has volume AND bogo rules → stacking not verified */
   hasStackingConflict: boolean
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100
+export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+
+/** Label for the single global promo row, e.g. "Segunda unidad al 50%". */
+export function bogoRuleLabel(cond: BogoConditions): string {
+  const buy = Number(cond.buy_quantity) || 1
+  const get = Number(cond.get_quantity) || 1
+  const pct = Number(cond.get_discount_percentage) || 0
+  if (buy === 1 && get === 1) return pct >= 100 ? 'Segunda unidad gratis' : `Segunda unidad al ${pct}%`
+  return pct >= 100 ? `Promoción ${buy}+${get} gratis` : `Promoción ${buy}+${get} al ${pct}%`
+}
 
 /** Discount granted by one same_products BOGO rule over a pool of unit prices. */
 export function calcSameProductBogoDiscount(unitPrices: number[], cond: BogoConditions): number {
@@ -74,10 +85,11 @@ export function calcLinesPricing(lines: PricingLine[], lookup: PricingLookup): L
 
   for (const line of lines) {
     if (!line || line.quantity <= 0) continue
-    listSubtotal += line.unitPrice * line.quantity
+    // Round PER LINE (cents) so the cart breakdown sums exactly to the total
+    listSubtotal += round2(line.unitPrice * line.quantity)
     const volume = calcVolumeDiscount(line.unitPrice, line.quantity, lookup.getVolumeRules(line.productId))
     const unit = volume ? volume.discountedPrice : line.unitPrice
-    subtotal += unit * line.quantity
+    subtotal += round2(unit * line.quantity)
     const pool = pools.get(line.productId) ?? []
     for (let i = 0; i < line.quantity; i++) pool.push(unit)
     pools.set(line.productId, pool)
@@ -85,20 +97,22 @@ export function calcLinesPricing(lines: PricingLine[], lookup: PricingLookup): L
 
   let bogoDiscount = 0
   let bogoRuleId: string | null = null
+  let bogoLabel: string | null = null
   for (const [productId, pool] of pools) {
     const rules = lookup.getBogoRules(productId).filter(r => isSameProductBogo(r.conditions as BogoConditions))
     if (!rules.length) continue
     if (lookup.getVolumeRules(productId).length > 0) hasStackingConflict = true
     // Same-type rules don't stack: best one wins
     let best = 0
-    let bestId: string | null = null
+    let bestRule: PriceRule | null = null
     for (const rule of rules) {
       const d = calcSameProductBogoDiscount(pool, rule.conditions as BogoConditions)
-      if (d > best) { best = d; bestId = rule.id }
+      if (d > best) { best = d; bestRule = rule }
     }
-    if (best > 0) {
+    if (best > 0 && bestRule) {
       bogoDiscount += best
-      bogoRuleId = bogoRuleId ?? bestId
+      bogoRuleId = bogoRuleId ?? bestRule.id
+      bogoLabel = bogoLabel ?? bogoRuleLabel(bestRule.conditions as BogoConditions)
     }
   }
 
@@ -107,7 +121,8 @@ export function calcLinesPricing(lines: PricingLine[], lookup: PricingLookup): L
     subtotal: round2(subtotal),
     bogoDiscount: round2(bogoDiscount),
     bogoRuleId,
-    total: round2(subtotal - bogoDiscount),
+    bogoLabel,
+    total: round2(round2(subtotal) - round2(bogoDiscount)),
     hasStackingConflict,
   }
 }
@@ -118,13 +133,37 @@ export const cartLineUnitPrice = (item: CartProductItem): number => {
   return item.sellingPlan ? calcSubscriptionPrice(base, item.sellingPlan) : base
 }
 
+export interface CartLineDisplay {
+  /** What the line row shows: base (+ subscription, + per-line volume). NEVER BOGO. */
+  lineTotal: number
+  /** Struck-through amount when a per-line volume discount applies */
+  originalLineTotal: number | null
+  savingsLabel: string | null
+}
+
+/**
+ * Line row for the cart. BOGO is intentionally NOT distributed per line: it is
+ * shown once as a global row (`bogoLabel` / `bogoDiscount`). Sum of lineTotal
+ * over product lines === calcCartPricing().subtotal (same per-line rounding).
+ */
+export function cartLineDisplay(item: CartProductItem, lookup: PricingLookup): CartLineDisplay {
+  const unit = cartLineUnitPrice(item)
+  const volume = calcVolumeDiscount(unit, item.quantity, lookup.getVolumeRules(item.product.id))
+  if (!volume) return { lineTotal: round2(unit * item.quantity), originalLineTotal: null, savingsLabel: null }
+  return {
+    lineTotal: round2(volume.discountedPrice * item.quantity),
+    originalLineTotal: round2(unit * item.quantity),
+    savingsLabel: volume.savingsLabel,
+  }
+}
+
 /** Cart total with bundles + product lines + automatic rules. */
 export function calcCartPricing(items: CartItem[], lookup: PricingLookup): LinesPricingResult {
   let bundlesTotal = 0
   const lines: PricingLine[] = []
   for (const item of items) {
     if (item.type === 'bundle') {
-      bundlesTotal += item.bundle.bundle_price * item.quantity
+      bundlesTotal += round2(item.bundle.bundle_price * item.quantity)
       continue
     }
     const p = item as CartProductItem

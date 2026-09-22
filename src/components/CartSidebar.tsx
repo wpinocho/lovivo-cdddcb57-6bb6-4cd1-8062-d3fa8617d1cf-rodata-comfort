@@ -16,8 +16,7 @@ import { STORE_ID } from "@/lib/config"
 import { validateDiscount, type Discount } from "@/lib/discount-utils"
 import { intervalLabel, calcSubscriptionPrice } from "@/lib/subscription-utils"
 import { usePriceRules } from "@/hooks/usePriceRules"
-import { calcCartPricing } from "@/lib/cart-pricing"
-import { calcItemUnitPrice } from "@/lib/price-rule-utils"
+import { calcCartPricing, cartLineDisplay } from "@/lib/cart-pricing"
 import { BOGOGiftBanner } from "@/components/ui/BOGOGiftBanner"
 
 interface CartSidebarProps {
@@ -102,10 +101,13 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
 
   // Calculate adjusted total with volume + bogo discounts
   // Central pricing (same function as the PDP pack quote)
-  const adjustedTotal = useMemo(() => calcCartPricing(state.items, {
-    getVolumeRules: (pid) => getVolumeRulesForProduct(pid),
-    getBogoRules: (pid) => getBogoRulesForProduct(pid),
-  }).total, [state.items, getVolumeRulesForProduct, getBogoRulesForProduct])
+  // ONE quote for line rows, the global promo row and the total
+  const pricingLookup = useMemo(() => ({
+    getVolumeRules: (pid: string) => getVolumeRulesForProduct(pid),
+    getBogoRules: (pid: string) => getBogoRulesForProduct(pid),
+  }), [getVolumeRulesForProduct, getBogoRulesForProduct])
+  const cartPricing = useMemo(() => calcCartPricing(state.items, pricingLookup), [state.items, pricingLookup])
+  const adjustedTotal = cartPricing.total
 
   const bogoRules = useMemo(() => priceRules.filter(r => r.rule_type === 'bogo'), [priceRules])
 
@@ -256,23 +258,18 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                                   </div>
                                   <div className="text-right">
                                     {(() => {
-                                      const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
-                                      const volumeRules = getVolumeRulesForProduct(item.product.id)
-                                      const bogoRulesForItem = getBogoRulesForProduct(item.product.id)
-                                      const sp = (item as CartProductItem).sellingPlan || null
-                                      const { unitPrice, volumeDiscount, bogoDiscount } = calcItemUnitPrice(basePrice, item.quantity, volumeRules, sp, calcSubscriptionPrice, bogoRulesForItem)
-                                      const activeDiscount = volumeDiscount || bogoDiscount
+                                      const line = cartLineDisplay(item as CartProductItem, pricingLookup)
                                       return (
                                         <>
                                           <div className="font-semibold text-sm" style={{ color: '#C9840A' }}>
-                                            {formatMoney(unitPrice * item.quantity)}
+                                            {formatMoney(line.lineTotal)}
                                           </div>
-                                          {activeDiscount && (
+                                          {line.originalLineTotal !== null && (
                                             <>
                                               <div className="text-xs line-through" style={{ color: '#6B7280' }}>
-                                                {formatMoney(activeDiscount.originalPrice * item.quantity)}
+                                                {formatMoney(line.originalLineTotal)}
                                               </div>
-                                              <span className="text-[10px] font-medium" style={{ color: '#C9840A' }}>{activeDiscount.savingsLabel}</span>
+                                              <span className="text-[10px] font-medium" style={{ color: '#C9840A' }}>{line.savingsLabel}</span>
                                             </>
                                           )}
                                         </>
@@ -333,6 +330,18 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                     </div>
                   )}
 
+                  {cartPricing.bogoDiscount > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm" style={{ color: '#C7CDD3' }}>
+                        <span>Subtotal</span>
+                        <span>{formatMoney(cartPricing.subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-medium" style={{ color: '#C9840A' }}>
+                        <span>{cartPricing.bogoLabel ?? 'Promoción'}</span>
+                        <span>−{formatMoney(cartPricing.bogoDiscount)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between font-semibold text-lg" style={{ color: '#F5F7F8' }}>
                     <span>Total</span>
                     <span style={{ color: '#C9840A' }}>{formatMoney(finalTotal)}</span>

@@ -6,6 +6,28 @@ import { useExperiment } from "@/hooks/useExperiment"
 
 /** UI experiment: presentation of the SHARED 2nd-unit BOGO rule. */
 const OFFER_EXP_KEY = 'exp-cdddcb57-pdp-second-belt-offer'
+/** Only this product (manifest target.product_id) may assign / expose the flag. */
+const OFFER_PRODUCT_ID = '400026a2-c277-407c-abbb-d1683f415120'
+
+type OfferExpState = {
+  variant: 'control' | 'test' | null
+  assignedVariant: 'control' | 'test' | null
+  track: (event: string, props?: Record<string, any>) => void
+}
+const OFFER_EXP_IDLE: OfferExpState = { variant: null, assignedVariant: null, track: () => {} }
+
+/**
+ * Mounted ONLY when the target product loaded successfully (never on loading,
+ * 404 or another product). Reading the flag is what assigns + exposes, so the
+ * mount point is the isolation boundary. Both variants mount it identically.
+ */
+const OfferExperimentGate = ({ onChange }: { onChange: (s: OfferExpState) => void }) => {
+  const exp = useExperiment(OFFER_EXP_KEY)
+  useEffect(() => {
+    onChange({ variant: exp.variant, assignedVariant: exp.assignedVariant, track: exp.track })
+  }, [exp.variant, exp.assignedVariant, exp.track, onChange])
+  return null
+}
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
 import {
@@ -170,13 +192,18 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   // ── Offer-presentation experiment ──
-  // Called unconditionally for BOTH variants: exposure = assignment on the PDP,
-  // never "interacted with the pack". Paused flag → no assignment → no exposure
-  // and variant falls back to control (= today's PDP).
-  const offerExp = useExperiment(OFFER_EXP_KEY)
+  // Exposure = assignment on the loaded target PDP for BOTH variants, never
+  // "interacted with the pack". Paused flag → no assignment → no exposure and
+  // the visitor sees control (= today's PDP).
+  const isOfferTarget = !logic.loading && !logic.notFound && logic.product?.id === OFFER_PRODUCT_ID
+  const [offerExp, setOfferExp] = useState<OfferExpState>(OFFER_EXP_IDLE)
+  useEffect(() => { if (!isOfferTarget) setOfferExp(OFFER_EXP_IDLE) }, [isOfferTarget])
   // Fail-safe: without a real quotable BOGO rule the test group sees control.
-  const showPack = offerExp.variant === 'test' && !!logic.packOffer
+  const showPack = isOfferTarget && offerExp.variant === 'test' && !!logic.packOffer
   const secondSizeRef = useRef<HTMLDivElement>(null)
+
+  // Tell the purchase logic whether card "1" / pack UI is what the visitor sees
+  useEffect(() => { logic.setPackUiActive?.(showPack) }, [showPack])
 
   useEffect(() => {
     if (!showPack && logic.packQuantity === 2) logic.setPackQuantity?.(1)
@@ -233,6 +260,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
 
   if (!logic.product) return null
   const handlePrimary = logic.handleBuyNow ?? logic.handleAddToCart
+  const ctaDisabled = !!(logic.isPriceResolving || logic.purchaseLocked || logic.isBuyingNow)
 
   return (
     <EcommerceTemplate
@@ -245,6 +273,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         { label: 'FAQ', href: '#faq' },
       ]}
     >
+
+      {isOfferTarget && <OfferExperimentGate onChange={setOfferExp} />}
 
       {/* ── 1. MAIN PRODUCT ── */}
       <section style={{ backgroundColor: '#111315' }}>
@@ -387,7 +417,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                           const isAvailable = logic.isOptionValueAvailable(option.name, value)
                           const sg = SIZE_GUIDE.find(s => s.size === sizeKey)
                           return (
-                            <button key={value} disabled={!isAvailable} onClick={() => logic.handleOptionSelect(option.name, value)}
+                            <button key={value} disabled={!isAvailable || logic.purchaseLocked} onClick={() => logic.handleOptionSelect(option.name, value)}
                               className={cn("flex flex-col items-center min-w-[68px] px-3 py-2.5 rounded-xl border text-sm transition-all font-sora",
                                 isSelected ? "bg-brand-amber text-brand-carbon border-brand-amber font-bold shadow-[0_0_16px_rgba(201,139,46,0.3)]"
                                 : isAvailable ? "bg-brand-graphite border-white/[0.12] text-brand-smoke hover:border-brand-amber/50"
@@ -427,9 +457,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               <div className="flex items-center gap-4">
                 <span className="text-brand-smoke text-sm font-inter">Cantidad:</span>
                 <div className="flex items-center rounded-xl overflow-hidden border border-white/[0.12]">
-                  <button onClick={() => logic.handleQuantityChange(Math.max(1, logic.quantity - 1))} disabled={logic.quantity <= 1} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors disabled:opacity-40"><Minus size={14}/></button>
+                  <button onClick={() => logic.handleQuantityChange(Math.max(1, logic.quantity - 1))} disabled={logic.quantity <= 1 || logic.purchaseLocked} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors disabled:opacity-40"><Minus size={14}/></button>
                   <span className="px-4 py-2.5 text-brand-offwhite font-sora font-bold text-sm border-x border-white/[0.12] min-w-[44px] text-center">{logic.quantity}</span>
-                  <button onClick={() => logic.handleQuantityChange(logic.quantity + 1)} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors"><Plus size={14}/></button>
+                  <button onClick={() => logic.handleQuantityChange(logic.quantity + 1)} disabled={logic.purchaseLocked} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors"><Plus size={14}/></button>
                 </div>
               </div>
               )}
@@ -454,12 +484,12 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       unitPrice={logic.currentPrice}
                       resolvedUnitPrice={logic.currentPrice}
                       priceExperiment={logic.priceExperiment}
-                      disabled={logic.isPriceResolving || (showPack && logic.packQuantity === 2 && !logic.selectedPurchaseItems?.length)}
+                      disabled={logic.isPriceResolving}
                       onAvailabilityChange={setExpressAvailable}
-                      {...(showPack && logic.packQuantity === 2 ? {
-                        purchaseItems: logic.selectedPurchaseItems,
-                        quotedSubtotal: logic.purchaseQuote,
-                      } : {})}
+                      // Same effective selection + central quote for control AND test
+                      purchaseItems={logic.selectedPurchaseItems}
+                      quotedSubtotal={logic.purchaseQuote}
+                      validateSelection={logic.ensurePurchaseValid}
                       onProcessingChange={logic.setPurchaseLocked}
                     />
                     {expressAvailable && (
@@ -469,10 +499,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                         <div className="flex-1 h-px bg-white/[0.1]" />
                       </div>
                     )}
-                    <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber-lg amber-glow font-sora w-full text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                    <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora w-full text-base disabled:opacity-60 disabled:cursor-not-allowed">
                       <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(ctaPrice)}`}
                     </button>
-                    <button onClick={logic.handleAddToCart} disabled={logic.isPriceResolving} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
+                    <button onClick={logic.handleAddToCart} disabled={ctaDisabled} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
                     <p className="text-brand-steel text-[11px] font-inter text-center">
                       🔒 Pago seguro · Envío gratis · 30 días de prueba
                     </p>
@@ -718,7 +748,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             )}
             {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
           </div>
-          <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora<ChevronRight size={18}/></button>
+          <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora<ChevronRight size={18}/></button>
         </div>
       </section>
 
@@ -739,8 +769,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber amber-glow font-sora px-8 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
-                <button onClick={logic.handleAddToCart} disabled={logic.isPriceResolving} className="btn-outline-light font-sora disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
+                <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber amber-glow font-sora px-8 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
+                <button onClick={logic.handleAddToCart} disabled={ctaDisabled} className="btn-outline-light font-sora disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
               </div>
             </div>
             <div className="md:hidden flex items-center gap-3">
@@ -752,7 +782,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 )}
                 <p className="text-brand-steel text-xs font-inter truncate">{logic.product.title}</p>
               </div>
-              <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber amber-glow font-sora flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
+              <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber amber-glow font-sora flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
             </div>
           </div>
         </div>

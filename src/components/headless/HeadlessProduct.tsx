@@ -15,10 +15,10 @@ import { useCheckout } from '@/hooks/useCheckout'
 import { usePriceExperiment } from '@/hooks/usePriceExperiment'
 import { usePriceRules } from '@/hooks/usePriceRules'
 import { calcLinesPricing, isSameProductBogo } from '@/lib/cart-pricing'
+import { resolvePdpPurchase, PURCHASE_NO_VARIANT_KEY, type PurchaseError } from '@/lib/pdp-purchase'
 import { useRef } from 'react'
 
-/** Why the current PDP selection can't be bought yet. */
-export type PurchaseError = 'select_first' | 'select_second' | 'out_of_stock' | null
+export type { PurchaseError } from '@/lib/pdp-purchase'
 
 /**
  * FORBIDDEN HEADLESS COMPONENT - HeadlessProduct
@@ -44,7 +44,7 @@ export const useProductLogic = (slugOverride?: string) => {
   const [quantity, setQuantity] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState<SellingPlan | null>(null)
   
-  const { addItem, getTotalItems } = useCart()
+  const { addItem, getTotalItems, state: cartState } = useCart()
   const { openCart } = useCartUI()
   const { toast } = useToast()
   const { formatMoney, currencyCode } = useSettings()
@@ -56,6 +56,9 @@ export const useProductLogic = (slugOverride?: string) => {
   // packQuantity only becomes 2 when the test UI renders the selector AND a
   // real shared BOGO rule quotes a discount. Control never touches it.
   const [packQuantity, setPackQuantityState] = useState<1 | 2>(1)
+  // True while the PDP renders the pack selector (test variant). Then the
+  // normal quantity selector is hidden and card "1" means EXACTLY one unit.
+  const [packUiActive, setPackUiActive] = useState(false)
   // Second size starts EMPTY on purpose — never copied from the first one.
   const [secondSelected, setSecondSelected] = useState<Record<string, string>>({})
   const [purchaseError, setPurchaseError] = useState<PurchaseError>(null)
@@ -324,25 +327,22 @@ export const useProductLogic = (slugOverride?: string) => {
       total: q.total,
     }
   })()
-  const isPack = packQuantity === 2 && !!packOffer
+  const isPack = packUiActive && packQuantity === 2 && !!packOffer
 
   /**
-   * SINGLE source of truth for what gets bought. Every path (add to cart, buy
-   * now, sticky, bottom CTA, express checkout) consumes this.
-   *   1 × M       → [M ×1]
-   *   2 × M + L   → [M ×1, L ×1]
-   *   2 × M + M   → [M ×2]
-   * Incomplete selection → no items (never half a pack).
+   * SINGLE source of truth for what gets bought (see `resolvePdpPurchase`).
+   * Every path (add to cart, buy now, sticky, bottom CTA, wallet) consumes it.
+   *   control / fail-safe  → [M ×quantity]
+   *   pack UI, card "1"    → [M ×1]   (ignores the hidden quantity state)
+   *   pack UI, M + L       → [M ×1, L ×1]
+   *   pack UI, M + M       → [M ×2]
+   * The quote uses the SAME central pricing for control and test.
    */
-  const buildPurchase = (): { items: CartProductItem[]; error: PurchaseError; quotedTotal: number; units: number } => {
-    const empty = (error: PurchaseError) => ({ items: [], error, quotedTotal: 0, units: 0 })
-    if (!product) return empty('select_first')
+  const experimentMeta = selectedPlan ? null : priceExperiment
+  const resolveSelection = (cartQtyByVariant?: Record<string, number>) => {
+    if (!product) return { items: [] as CartProductItem[], error: 'select_first' as PurchaseError, quotedTotal: 0, units: 0, pricing: null }
     const vars = (product as any).variants
     const hasVars = Array.isArray(vars) && vars.length > 0
-    const first = hasVars ? getMatchingVariant() : undefined
-    if (hasVars && !first) return empty('select_first')
-
-    const experimentMeta = selectedPlan ? null : priceExperiment
     const makeItem = (variant: any, qty: number): CartProductItem => ({
       // El sufijo del experimento evita fusionar assignments distintos
       key: `${product.id}${variant ? `:${variant.id}` : ''}${selectedPlan ? `:${selectedPlan.id}` : ''}${experimentMeta ? `:exp-${experimentMeta.key}-${experimentMeta.variant}` : ''}`,
@@ -357,29 +357,47 @@ export const useProductLogic = (slugOverride?: string) => {
       } : {}),
     })
 
-    let items: CartProductItem[]
-    if (!isPack) {
-      items = [makeItem(first, quantity)]
-    } else {
-      const second = hasVars ? secondVariant : undefined
-      if (hasVars && !second) return empty('select_second')
-      if (!hasVars || first!.id === second!.id) {
-        if (hasVars && !hasStockFor(first, 2)) return empty('out_of_stock')
-        items = [makeItem(first, 2)]
-      } else {
-        if (!hasStockFor(first, 1) || !hasStockFor(second, 1)) return empty('out_of_stock')
-        items = [makeItem(first, 1), makeItem(second, 1)]
-      }
-    }
-
-    const quote = calcLinesPricing(items.map(i => ({
+    const r = resolvePdpPurchase({
       productId: product.id,
-      unitPrice: i.resolvedUnitPrice ?? i.variant?.price ?? product.price,
-      quantity: i.quantity,
-    })), pricingLookup)
-    return { items, error: null, quotedTotal: quote.total, units: items.reduce((s, i) => s + i.quantity, 0) }
+      productPrice: product.price,
+      hasVariants: hasVars,
+      trackInventory: (product as any).track_inventory !== false,
+      productInventory: (product as any).inventory_quantity,
+      first: hasVars ? getMatchingVariant() : undefined,
+      second: hasVars ? secondVariant : undefined,
+      mode: isPack ? 'pack' : packUiActive ? 'one' : 'quantity',
+      quantity,
+      // Same unit price the cart will use (price experiment / subscription aware)
+      unitPriceFor: (v) => {
+        const base = experimentMeta ? currentPrice : ((v?.price ?? product.price) || 0)
+        return selectedPlan ? calcSubscriptionPrice(base, selectedPlan) : base
+      },
+      isAvailable: (v) => isVariantAvailable(v),
+      cartQtyByVariant,
+      lookup: pricingLookup,
+    })
+    return {
+      items: r.lines.map(l => makeItem(l.variant, l.quantity)),
+      error: r.error,
+      quotedTotal: r.pricing?.total ?? 0,
+      units: r.units,
+      pricing: r.pricing,
+    }
   }
-  const purchase = buildPurchase()
+  const purchase = resolveSelection()
+
+  /** Units of this product already in the cart, per variant. */
+  const getCartQtyByVariant = () => {
+    const m: Record<string, number> = {}
+    for (const it of cartState.items) {
+      if (it.type !== 'product') continue
+      const p = it as CartProductItem
+      if (p.isBogoGift || p.product?.id !== product?.id) continue
+      const k = p.variant?.id ?? PURCHASE_NO_VARIANT_KEY
+      m[k] = (m[k] ?? 0) + p.quantity
+    }
+    return m
+  }
 
   const reportPurchaseError = (error: PurchaseError) => {
     setPurchaseError(error)
@@ -397,26 +415,32 @@ export const useProductLogic = (slugOverride?: string) => {
     if (isPriceResolving || purchaseLocked || isBuyingNow) return
     if (actionLockRef.current) return
     
-    if (purchase.error) {
-      reportPurchaseError(purchase.error)
+    // Stock check includes units already in the cart
+    const sel = resolveSelection(getCartQtyByVariant())
+    if (sel.error) {
+      reportPurchaseError(sel.error)
+      return
+    }
+    // addItem's only failure mode is a selling-plan conflict: check it BEFORE
+    // writing anything, so a pack is never added by halves.
+    const planConflict = !!selectedPlan && cartState.items.some(i =>
+      i.type === 'product' && !!(i as CartProductItem).sellingPlan?.id && (i as CartProductItem).sellingPlan!.id !== selectedPlan.id)
+    if (planConflict) {
+      toast({
+        title: "Solo un plan de suscripción por carrito",
+        description: "Elimina la suscripción actual para agregar una diferente.",
+        variant: "destructive"
+      })
       return
     }
     setPurchaseError(null)
     actionLockRef.current = true
     setTimeout(() => { actionLockRef.current = false }, 800)
-    const variantToAdd = purchase.items[0]?.variant
+    const variantToAdd = sel.items[0]?.variant
     
-    for (const item of purchase.items) {
+    for (const item of sel.items) {
       for (let i = 0; i < item.quantity; i++) {
-        const added = addItem(product, item.variant, selectedPlan || undefined, undefined, experimentCartOptions)
-        if (!added) {
-          toast({
-            title: "Solo un plan de suscripción por carrito",
-            description: "Elimina la suscripción actual para agregar una diferente.",
-            variant: "destructive"
-          })
-          return
-        }
+        addItem(product, item.variant, selectedPlan || undefined, undefined, experimentCartOptions)
       }
     }
     
@@ -429,9 +453,9 @@ export const useProductLogic = (slugOverride?: string) => {
         category: 'product',
         variant: variantToAdd
       })],
-      value: isPack ? purchase.quotedTotal : currentPrice * quantity,
+      value: sel.quotedTotal,
       currency: tracking.getCurrencyFromSettings(currencyCode),
-      num_items: isPack ? purchase.units : quantity
+      num_items: sel.units
     })
     
     setTimeout(() => openCart(), 300)
@@ -460,9 +484,9 @@ export const useProductLogic = (slugOverride?: string) => {
         category: 'product',
         variant: variantToAdd
       })],
-      value: isPack ? purchase.quotedTotal : currentP * quantity,
+      value: purchase.quotedTotal,
       currency: tracking.getCurrencyFromSettings(currencyCode),
-      num_items: isPack ? purchase.units : quantity
+      num_items: purchase.units
     })
 
     setIsBuyingNow(true)
@@ -482,6 +506,17 @@ export const useProductLogic = (slugOverride?: string) => {
       setIsBuyingNow(false)
       actionLockRef.current = false
     }
+  }
+
+  /** Wallet pre-check: same validation as the CTAs, without side effects on success. */
+  const ensurePurchaseValid = (): boolean => {
+    if (!product || isPriceResolving || purchaseLocked || isBuyingNow || actionLockRef.current) return false
+    if (purchase.error) {
+      reportPurchaseError(purchase.error)
+      return false
+    }
+    setPurchaseError(null)
+    return true
   }
 
   const setPackQuantity = (q: 1 | 2) => {
@@ -513,6 +548,7 @@ export const useProductLogic = (slugOverride?: string) => {
   }
 
   const handleQuantityChange = (newQuantity: number) => {
+    if (purchaseLocked) return
     setQuantity(Math.max(1, newQuantity))
   }
 
@@ -580,9 +616,14 @@ export const useProductLogic = (slugOverride?: string) => {
     isSecondOptionValueAvailable,
     selectedPurchaseItems: purchase.items,
     purchaseQuote: purchase.quotedTotal,
+    purchasePricing: purchase.pricing,
+    purchaseUnits: purchase.units,
     purchaseError,
     purchaseLocked,
     setPurchaseLocked,
+    ensurePurchaseValid,
+    packUiActive,
+    setPackUiActive,
 
     // Actions
     handleAddToCart,

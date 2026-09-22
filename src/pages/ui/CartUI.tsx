@@ -12,7 +12,7 @@ import type { Discount } from "@/lib/discount-utils"
 import type { CartProductItem } from "@/contexts/CartContext"
 import type { Product, PriceRule } from "@/lib/supabase"
 import { intervalLabel, calcSubscriptionPrice } from "@/lib/subscription-utils"
-import type { VolumeDiscountResult, BogoDiscountResult } from "@/lib/price-rule-utils"
+import type { CartLineDisplay, LinesPricingResult } from "@/lib/cart-pricing"
 
 interface CartUIProps {
   logic: {
@@ -30,7 +30,8 @@ interface CartUIProps {
     onCheckoutStart: () => void
     onCheckoutComplete: () => void
     adjustedTotal: number
-    getItemVolumeDiscount: (item: any) => { unitPrice: number; volumeDiscount: VolumeDiscountResult | null; bogoDiscount: BogoDiscountResult | null }
+    cartPricing: LinesPricingResult
+    getLineDisplay: (item: any) => CartLineDisplay
     addItem: (product: Product, variant?: any, sellingPlan?: any, isBogoGift?: boolean) => boolean
     bogoRules: PriceRule[]
     // Discount
@@ -185,19 +186,18 @@ export const CartUI = ({ logic }: CartUIProps) => {
                                 </div>
                                 <div className="text-right">
                                   {(() => {
-                                    const { unitPrice, volumeDiscount, bogoDiscount } = logic.getItemVolumeDiscount(item)
-                                    const activeDiscount = volumeDiscount || bogoDiscount
+                                    const line = logic.getLineDisplay(item)
                                     return (
                                       <>
                                         <div className="font-bold text-lg">
-                                          {formatMoney(unitPrice * item.quantity, logic.currencyCode)}
+                                          {formatMoney(line.lineTotal, logic.currencyCode)}
                                         </div>
-                                        {activeDiscount && (
+                                        {line.originalLineTotal !== null && (
                                           <>
                                             <div className="text-muted-foreground text-sm line-through">
-                                              {formatMoney(activeDiscount.originalPrice * item.quantity, logic.currencyCode)}
+                                              {formatMoney(line.originalLineTotal, logic.currencyCode)}
                                             </div>
-                                            <span className="text-xs text-accent-foreground font-medium">{activeDiscount.savingsLabel}</span>
+                                            <span className="text-xs text-accent-foreground font-medium">{line.savingsLabel}</span>
                                           </>
                                         )}
                                       </>
@@ -226,8 +226,14 @@ export const CartUI = ({ logic }: CartUIProps) => {
                     <CardContent className="space-y-4">
                       <div className="flex justify-between">
                         <span>Subtotal ({logic.itemCount} artículos)</span>
-                        <span>{formatMoney(logic.adjustedTotal, logic.currencyCode)}</span>
+                        <span>{formatMoney(logic.cartPricing.subtotal, logic.currencyCode)}</span>
                       </div>
+                      {logic.cartPricing.bogoDiscount > 0 && (
+                        <div className="flex justify-between text-accent-foreground font-medium">
+                          <span>{logic.cartPricing.bogoLabel ?? 'Promoción'}</span>
+                          <span>−{formatMoney(logic.cartPricing.bogoDiscount, logic.currencyCode)}</span>
+                        </div>
+                      )}
 
                       {/* Discount code input */}
                       {!logic.discount ? (

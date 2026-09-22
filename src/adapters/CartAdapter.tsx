@@ -9,10 +9,7 @@ import { callEdgeFetch } from "@/lib/edge"
 import { STORE_ID } from "@/lib/config"
 import { validateDiscount, type Discount } from "@/lib/discount-utils"
 import { usePriceRules } from "@/hooks/usePriceRules"
-import { calcItemUnitPrice } from "@/lib/price-rule-utils"
-import type { BogoDiscountResult } from "@/lib/price-rule-utils"
-import { calcSubscriptionPrice } from "@/lib/subscription-utils"
-import { calcCartPricing } from "@/lib/cart-pricing"
+import { calcCartPricing, cartLineDisplay, round2, type CartLineDisplay } from "@/lib/cart-pricing"
 import type { BogoConditions } from "@/lib/supabase"
 
 export const useCartLogic = () => {
@@ -23,22 +20,22 @@ export const useCartLogic = () => {
   const { toast } = useToast()
   const { getVolumeRulesForProduct, getBogoRulesForProduct, priceRules } = usePriceRules()
 
-  const getItemVolumeDiscount = useCallback((item: any) => {
-    if (item.type === 'bundle') {
-      return { unitPrice: item.bundle.bundle_price, volumeDiscount: null, bogoDiscount: null }
-    }
-    const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
-    const volumeRules = getVolumeRulesForProduct(item.product.id)
-    const bogoRules = getBogoRulesForProduct(item.product.id)
-    const sp = (item as CartProductItem).sellingPlan || null
-    return calcItemUnitPrice(basePrice, item.quantity, volumeRules, sp, calcSubscriptionPrice, bogoRules)
-  }, [getVolumeRulesForProduct, getBogoRulesForProduct])
+  const pricingLookup = useMemo(() => ({
+    getVolumeRules: (pid: string) => getVolumeRulesForProduct(pid),
+    getBogoRules: (pid: string) => getBogoRulesForProduct(pid),
+  }), [getVolumeRulesForProduct, getBogoRulesForProduct])
 
-  // Central pricing: BOGO same_products pools units across variants (M + L)
-  const adjustedTotal = useMemo(() => calcCartPricing(state.items, {
-    getVolumeRules: (pid) => getVolumeRulesForProduct(pid),
-    getBogoRules: (pid) => getBogoRulesForProduct(pid),
-  }).total, [state.items, getVolumeRulesForProduct, getBogoRulesForProduct])
+  /** Line row: base (+ per-line volume). BOGO is NOT here — it's one global row. */
+  const getLineDisplay = useCallback((item: any): CartLineDisplay => {
+    if (item.type === 'bundle') {
+      return { lineTotal: round2(item.bundle.bundle_price * item.quantity), originalLineTotal: null, savingsLabel: null }
+    }
+    return cartLineDisplay(item as CartProductItem, pricingLookup)
+  }, [pricingLookup])
+
+  // ONE quote for lines, promo row and total: sum(lines) − bogoDiscount = total
+  const cartPricing = useMemo(() => calcCartPricing(state.items, pricingLookup), [state.items, pricingLookup])
+  const adjustedTotal = cartPricing.total
 
   // Discount state
   const [couponCode, setCouponCode] = useState("")
@@ -165,7 +162,8 @@ export const useCartLogic = () => {
     removeCoupon,
     // Volume & BOGO
     adjustedTotal,
-    getItemVolumeDiscount,
+    cartPricing,
+    getLineDisplay,
     bogoRules,
   }
 }
