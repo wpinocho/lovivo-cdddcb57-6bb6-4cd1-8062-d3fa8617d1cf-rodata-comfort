@@ -3,7 +3,7 @@
   "name": "Rodata One — $799 vs $849",
   "flag_key": "exp-cdddcb57-rodata-one-price-849",
   "type": "product_price",
-  "status": "active",
+  "status": "completed",
   "hypothesis": "Subir el Rodata One a $849 aumenta el ingreso por visitante porque la caída de conversión será menor al 5.9% necesario para compensar los $50 extra de margen por unidad. Es un salto menos abrupto que $899, con menos riesgo de frenar la conversión, aunque también con menos colchón.",
   "target": {
     "product_id": "400026a2-c277-407c-abbb-d1683f415120",

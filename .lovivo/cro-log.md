@@ -35,46 +35,50 @@
 
 ## Active Experiments
 <!-- A/B tests currently running. Include flag_key, start date, variants, and target metric. -->
-
-### Rodata One — $799 vs $849
-- **flag_key**: `exp-cdddcb57-rodata-one-price-849`
-- **Manifiesto**: `src/experiments/rodata-one-price-849.json`
-- **Tipo**: `product_price` a nivel PRODUCTO (`variant_id: null`) — las 4 tallas cuestan lo mismo
-- **Creado**: 2026-09-04 (relanzado). Se activa al publicar (sync a PostHog post-commit).
-- **Variantes**: `control` $799 (50%) · `test` $849 (50%)
-- **Hipótesis**: subir a $849 aumenta el ingreso por visitante porque la caída de conversión
-  será menor al 5.9% necesario para compensar los $50 extra de margen.
-- **Métrica que decide**: `revenue_per_exposed_visitor`. **NO** mirar CVR sola.
-- **Break-even**: CVR de 2.07% a $849 iguala el RPV actual ($17.6). Traducción: la conversión
-  puede caer hasta ~5.9% y se gana lo mismo.
-- **⚠️ ADVERTENCIA DE MEDICIÓN (lo más importante de esta entrada)**: el colchón de 5.9% está
-  **por debajo del umbral que este volumen puede detectar** (~15 órdenes/variante/semana, ~90 en
-  3 semanas). El resultado más probable es **INCONCLUSO**, no un ganador claro. Interpretación
-  correcta si eso pasa: "$849 no destruyó la conversión" → decisión de negocio, no estadística.
-  Un salto a $899 era más medible (colchón 11%) aunque más riesgoso comercialmente.
-  **NO declarar ganador con una diferencia de RPV menor al 10%.**
-- **Duración mínima acordada**: **3 semanas completas**, idealmente 4-6 dado el colchón estrecho.
-- **Confound conocido y ACEPTADO**: `compare_at_price` se queda en $999 para ambas variantes,
-  así que el grupo test ve "15% OFF" en vez de "20% OFF". Se prueba "la oferta a $849",
-  no el precio en abstracto.
-- **Historial**: la primera versión de este test ($899) se escribió el 2026-09-04 pero **nunca
-  sincronizó** — `experiment-list` confirmó cero experimentos en la tienda. El manifiesto de $899
-  se eliminó al relanzar para no dejar dos price tests sobre el mismo producto (se rechazan).
-- **Cambio de soporte (commit anterior, ya en repo)**: `src/pages/ui/IndexUI.tsx` leía $799
-  hardcodeado en 4 lugares + "20% OFF" literal. Ahora usa `usePriceExperiment` y calcula el % OFF
-  contra `compare_at_price`. También se quitó "$799 MXN" del meta description de
-  `DeliveryLandingUI.tsx`. **Verificado con grep el 2026-09-04: cero precios hardcodeados en src/**
-  (el único match restante es un comentario en `PaypalExpressButton.tsx`, inofensivo).
-- **Riesgo abierto**: creativos de Meta Ads (80% del tráfico). Si algún anuncio dice "$799",
-  el grupo test aterriza con una promesa rota. Revisar desde el Dashboard → Meta Ads.
-- **Cómo leerlo**: `experiment-results --flag_key exp-cdddcb57-rodata-one-price-849`.
-  `sync_status` debe decir `synced`. `analytics_available: false` = DESCONOCIDO, nunca cero.
-  `paid_revenue` es el total de la orden (incluye cross-sell), no del producto probado.
+Ninguno activo.
 
 ## Ruled Out
 <!-- Changes that were tried and didn't work, or hypotheses that were disproven.
      This prevents repeating failed approaches. -->
-None
+
+### 2026-09-22 — Rodata One $849 NO adoptado · resultado INCONCLUSO (direccional a favor del control)
+- **flag_key**: `exp-cdddcb57-rodata-one-price-849` · manifiesto `src/experiments/rodata-one-price-849.json`
+  (conservado como historia, `status: "completed"`)
+- **PostHog**: Feature Flag 866817 · Experiment 461160
+- **Corrió**: 2026-09-04 → 2026-09-22 (~18 días). `product_price` a nivel producto, 50/50,
+  control $799 · test $849. `sync_status: synced` durante toda su vida.
+- **Hipótesis**: subir a $849 aumenta el ingreso por visitante porque la caída de conversión
+  sería menor al 5.9% necesario para compensar los $50 extra de margen.
+- **Veredicto**: ➡️ **INCONCLUSO / direccional a favor del control.** Se mantiene $799.
+  **$799 NO está probado estadísticamente como ganador.** El test no demostró que $849 fuera peor;
+  simplemente no produjo evidencia suficiente para justificar mover el precio.
+- **⚠️ NO HAY CIFRAS FINALES. Esto es lo más importante de esta entrada.**
+  Al cerrar, `experiment-results` devolvió **`Unauthorized`** — el cálculo central de Lovivo no
+  respondió. **No se leyó ni una sola métrica**: ni exposiciones por variante, ni revenue por
+  visitante, ni `decision`, ni `data_quality`. El cierre fue una **decisión de negocio tomada a
+  ciegas**, no una lectura de datos. Reportado al equipo de Lovivo (feedback
+  `68861868-3d39-49cb-a020-125fe9dd73db`).
+  **Si alguien en el futuro cita este test como "prueba de que $799 convierte mejor", está
+  inventando. No existe tal dato.**
+- **Por qué era esperable un inconcluso de todos modos**: el colchón de 5.9% estaba por debajo
+  del umbral detectable con este volumen (~15 órdenes/variante/semana). Incluso con la
+  herramienta funcionando, lo más probable era no distinguir las variantes.
+- **Confound conocido y aceptado**: `compare_at_price` se quedó en $999 en ambas variantes, así
+  que el grupo test vio "15% OFF" en vez de "20% OFF". Se probó "la oferta a $849", no el precio
+  en abstracto. Un test futuro debería alinear el ancla.
+- **Estado del catálogo al cerrar**: verificado con `ecommerce--list-data` — producto y las 4
+  tallas en $799 / compare_at $999. **No se tocó ningún precio.** Al pasar a `completed` el
+  runtime deja de resolver variantes y todos pagan el precio de catálogo, que ya era el control.
+- **Historial**: una primera versión a $899 (2026-09-04) nunca sincronizó y su manifiesto se
+  eliminó. El 2026-09-04 se hizo un re-sync de formato neutro para migrar el targeting de la
+  flag de `group.store_id` a `person.store_id`.
+- **Aprendizajes para el próximo price test**:
+  1. Confirmar que `experiment-results` responde **antes** de dejar correr semanas de tráfico
+     pagado. Hacer una lectura de control en la primera semana.
+  2. Con ~30 órdenes/semana totales, un delta de precio de $50 (6%) es indetectable. Si se
+     vuelve a probar precio, usar un salto más grande ($899-$949, colchón >11%) o aceptar de
+     entrada que la decisión será comercial.
+  3. Mover `compare_at_price` junto con el precio de test para no mezclar precio y % de descuento.
 
 ## Micro-Events Status
 <!-- Track which micro-events have been instrumented for the main drop-off step.
