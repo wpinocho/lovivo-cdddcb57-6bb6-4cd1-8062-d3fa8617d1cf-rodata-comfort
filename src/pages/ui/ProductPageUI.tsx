@@ -1,6 +1,11 @@
 // ProductPageUI v4 — rodata.mx premium PDP
 import React, { useEffect, useRef, useState } from "react"
 import ProductExpressCheckout from "@/components/ProductExpressCheckout"
+import { PackOfferSelector } from "@/components/PackOfferSelector"
+import { useExperiment } from "@/hooks/useExperiment"
+
+/** UI experiment: presentation of the SHARED 2nd-unit BOGO rule. */
+const OFFER_EXP_KEY = 'exp-cdddcb57-pdp-second-belt-offer'
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
 import {
@@ -163,6 +168,49 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
 
   useEffect(() => { setSelectedImage(null) }, [logic.matchingVariant])
   useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  // ── Offer-presentation experiment ──
+  // Called unconditionally for BOTH variants: exposure = assignment on the PDP,
+  // never "interacted with the pack". Paused flag → no assignment → no exposure
+  // and variant falls back to control (= today's PDP).
+  const offerExp = useExperiment(OFFER_EXP_KEY)
+  // Fail-safe: without a real quotable BOGO rule the test group sees control.
+  const showPack = offerExp.variant === 'test' && !!logic.packOffer
+  const secondSizeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showPack && logic.packQuantity === 2) logic.setPackQuantity?.(1)
+  }, [showPack, logic.packQuantity])
+
+  useEffect(() => {
+    if (logic.purchaseError === 'select_second') {
+      secondSizeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [logic.purchaseError])
+
+  const ctaPrice: number = showPack && logic.packQuantity === 2
+    ? (logic.purchaseQuote > 0 ? logic.purchaseQuote : logic.packOffer.total)
+    : logic.currentPrice
+
+  const offerTrackBase = () => ({
+    experiment_key: OFFER_EXP_KEY,
+    experiment_variant: offerExp.assignedVariant,
+    first_variant_id: logic.matchingVariant?.id,
+  })
+  const handlePackChange = (q: 1 | 2) => {
+    logic.setPackQuantity(q)
+    offerExp.track('offer_option_selected', {
+      ...offerTrackBase(), selected_quantity: q,
+      ...(q === 2 && logic.secondVariant ? { second_variant_id: logic.secondVariant.id } : {}),
+    })
+  }
+  const handleSecondSelect = (optName: string, value: string) => {
+    logic.handleSecondOptionSelect(optName, value)
+    const v = logic.variants?.find((x: any) => x.options?.[optName] === value)
+    offerExp.track('second_size_selected', {
+      ...offerTrackBase(), selected_quantity: 2, second_variant_id: v?.id,
+    })
+  }
 
   if (logic.loading) return (
     <EcommerceTemplate>
@@ -355,7 +403,27 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 </div>
               )}
 
-              {/* Quantity */}
+              {/* Pack offer (experiment test variant only) */}
+              {showPack && (
+                <PackOfferSelector
+                  ref={secondSizeRef}
+                  offer={logic.packOffer}
+                  packQuantity={logic.packQuantity}
+                  onPackChange={handlePackChange}
+                  option={logic.product.options?.[0]}
+                  secondValue={logic.product.options?.[0] ? logic.secondSelected[logic.product.options[0].name] : undefined}
+                  onSecondSelect={handleSecondSelect}
+                  isSecondAvailable={logic.isSecondOptionValueAvailable}
+                  getSizeKey={getSizeKey}
+                  getSizeHint={(v) => SIZE_GUIDE.find(s => s.size === getSizeKey(v))?.waist}
+                  showSecondError={logic.purchaseError === 'select_second'}
+                  disabled={logic.purchaseLocked}
+                  formatMoney={logic.formatMoney}
+                />
+              )}
+
+              {/* Quantity (control + fail-safe) */}
+              {!showPack && (
               <div className="flex items-center gap-4">
                 <span className="text-brand-smoke text-sm font-inter">Cantidad:</span>
                 <div className="flex items-center rounded-xl overflow-hidden border border-white/[0.12]">
@@ -364,6 +432,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   <button onClick={() => logic.handleQuantityChange(logic.quantity + 1)} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors"><Plus size={14}/></button>
                 </div>
               </div>
+              )}
 
               {/* Urgency / Stock signal */}
               {logic.inStock && (
@@ -385,8 +454,13 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       unitPrice={logic.currentPrice}
                       resolvedUnitPrice={logic.currentPrice}
                       priceExperiment={logic.priceExperiment}
-                      disabled={logic.isPriceResolving}
+                      disabled={logic.isPriceResolving || (showPack && logic.packQuantity === 2 && !logic.selectedPurchaseItems?.length)}
                       onAvailabilityChange={setExpressAvailable}
+                      {...(showPack && logic.packQuantity === 2 ? {
+                        purchaseItems: logic.selectedPurchaseItems,
+                        quotedSubtotal: logic.purchaseQuote,
+                      } : {})}
+                      onProcessingChange={logic.setPurchaseLocked}
                     />
                     {expressAvailable && (
                       <div className="flex items-center gap-3">
@@ -396,7 +470,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       </div>
                     )}
                     <button onClick={handlePrimary} disabled={logic.isPriceResolving} className="btn-amber-lg amber-glow font-sora w-full text-base disabled:opacity-60 disabled:cursor-not-allowed">
-                      <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(logic.currentPrice)}`}
+                      <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(ctaPrice)}`}
                     </button>
                     <button onClick={logic.handleAddToCart} disabled={logic.isPriceResolving} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
                     <p className="text-brand-steel text-[11px] font-inter text-center">
@@ -659,7 +733,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   {logic.isPriceResolving ? (
                     <Skeleton className="h-5 w-20" />
                   ) : (
-                    <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(logic.currentPrice)}</span>
+                    <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(ctaPrice)}</span>
                   )}
                   {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-sm line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
                 </div>
@@ -674,7 +748,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 {logic.isPriceResolving ? (
                   <Skeleton className="h-4 w-20" />
                 ) : (
-                  <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(logic.currentPrice)}</p>
+                  <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(ctaPrice)}</p>
                 )}
                 <p className="text-brand-steel text-xs font-inter truncate">{logic.product.title}</p>
               </div>

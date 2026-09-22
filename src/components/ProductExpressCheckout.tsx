@@ -55,6 +55,15 @@ interface ProductExpressCheckoutProps {
    * to hide separators / labels when nothing is available.
    */
   onAvailabilityChange?: (available: boolean) => void
+  /**
+   * Explicit PDP selection (pack offer). When present it REPLACES the
+   * product/variant/quantity single line: M + L travels as two real lines.
+   */
+  purchaseItems?: CartItem[]
+  /** Subtotal already quoted by central pricing for `purchaseItems`. */
+  quotedSubtotal?: number
+  /** Lets the PDP lock size/quantity while the wallet is authorizing. */
+  onProcessingChange?: (processing: boolean) => void
 }
 
 function PaymentRequestInner({
@@ -67,6 +76,9 @@ function PaymentRequestInner({
   resolvedUnitPrice,
   priceExperiment,
   onAvailabilityChange,
+  purchaseItems,
+  quotedSubtotal,
+  onProcessingChange,
 }: ProductExpressCheckoutProps) {
   const stripe = useStripe()
   const navigate = useNavigate()
@@ -75,6 +87,11 @@ function PaymentRequestInner({
   const { clearCart } = useCart()
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null)
   const [processing, setProcessing] = useState(false)
+  const processingRef = useRef(false)
+  useEffect(() => { onProcessingChange?.(processing) }, [processing, onProcessingChange])
+
+  // Pack mode: explicit lines + centrally quoted subtotal
+  const lineItems = purchaseItems && purchaseItems.length > 0 && typeof quotedSubtotal === 'number' ? purchaseItems : null
 
   // Allowed countries (ISO codes) from store shipping coverage
   const allowedCountryCodes = useMemo<string[]>(() => {
@@ -107,7 +124,7 @@ function PaymentRequestInner({
   // The experiment-resolved price is authoritative for every wallet amount.
   const authorizedUnitPrice = resolvedUnitPrice ?? unitPrice
 
-  const subtotalCents = Math.max(50, Math.round(authorizedUnitPrice * quantity * 100))
+  const subtotalCents = Math.max(50, Math.round((lineItems ? (quotedSubtotal as number) : authorizedUnitPrice * quantity) * 100))
   const defaultShipCents = walletShippingOptions[0]?.amount ?? 0
   const totalCents = subtotalCents + defaultShipCents
 
@@ -235,13 +252,16 @@ function PaymentRequestInner({
     if (!paymentRequest || !stripe) return
 
     const handlePaymentMethod = async (ev: any) => {
+      // Double-fire guard: never create two orders / intents for one sheet
+      if (processingRef.current) { try { ev.complete('fail') } catch {} ; return }
+      processingRef.current = true
       try {
         setProcessing(true)
 
         // 1. Build a one-item cart from current PDP selection
         // Selling plans never carry product_price experiment metadata
         const experimentMeta = sellingPlan ? null : priceExperiment
-        const buyNowItems: CartItem[] = [{
+        const buyNowItems: CartItem[] = lineItems ?? [{
           // Experiment suffix keeps different assignments from merging
           key: `${product.id}:${variant?.id || ''}:${sellingPlan?.id || ''}${experimentMeta ? `:exp-${experimentMeta.key}-${experimentMeta.variant}` : ''}`,
           type: 'product' as const,
@@ -303,6 +323,23 @@ function PaymentRequestInner({
         const totalAmount = (order.order?.total_amount ?? authorizedUnitPrice * quantity)
         const orderTotalCents = Math.max(50, Math.round(totalAmount * 100))
 
+        // Pack mode: the amount the wallet showed MUST equal what the backend
+        // priced. If not, abort before creating any PaymentIntent (no charge).
+        if (lineItems) {
+          const shipShown = Number(ev?.shippingOption?.amount ?? defaultShipCents) || 0
+          const shownCents = subtotalCents + shipShown
+          if (Math.abs(orderTotalCents - shownCents) > 1) {
+            console.warn('[PDP ExpressCheckout] total mismatch', { shownCents, orderTotalCents })
+            ev.complete('fail')
+            toast({
+              title: 'El total se actualizó',
+              description: 'No se te cobró nada. Revisa tu pedido y continúa con Comprar ahora.',
+              variant: 'destructive',
+            })
+            return
+          }
+        }
+
         // 4. Create PaymentIntent
         const intentPayload = {
           store_id: STORE_ID,
@@ -342,7 +379,14 @@ function PaymentRequestInner({
               country: shippingAddress.country,
               name: `${shippingAddress.first_name} ${shippingAddress.last_name}`.trim(),
             } : null,
-            items: [{
+            items: lineItems
+              ? lineItems.map((li: any) => ({
+                  product_id: li.product.id,
+                  quantity: li.quantity,
+                  ...(li.variant?.id ? { variant_id: li.variant.id } : {}),
+                  price: Math.round(((li.resolvedUnitPrice ?? li.variant?.price ?? li.product.price) || 0) * 100),
+                }))
+              : [{
               product_id: product.id,
               quantity,
               ...(variant?.id ? { variant_id: variant.id } : {}),
@@ -401,7 +445,15 @@ function PaymentRequestInner({
           if (!alreadyTracked) {
             try { sessionStorage.setItem(ptKey, '1'); } catch {}
             trackPurchase({
-              products: [tracking.createTrackingProduct({
+              products: lineItems
+                ? lineItems.map((li: any) => tracking.createTrackingProduct({
+                    id: li.product.id,
+                    title: li.product.title,
+                    price: (li.resolvedUnitPrice ?? li.variant?.price ?? li.product.price) || 0,
+                    category: 'product',
+                    variant: li.variant,
+                  }))
+                : [tracking.createTrackingProduct({
                 id: product.id,
                 title: product.title,
                 price: authorizedUnitPrice,
@@ -451,6 +503,7 @@ function PaymentRequestInner({
           })
         }
       } finally {
+        processingRef.current = false
         setProcessing(false)
       }
     }
@@ -459,7 +512,7 @@ function PaymentRequestInner({
     return () => {
       paymentRequest.off('paymentmethod', handlePaymentMethod)
     }
-  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, authorizedUnitPrice, priceExperiment, currencyCode, clearCart, navigate, toast])
+  }, [paymentRequest, stripe, product, variant, sellingPlan, quantity, authorizedUnitPrice, priceExperiment, currencyCode, clearCart, navigate, toast, lineItems, subtotalCents, defaultShipCents])
 
   if (disabled || !paymentRequest) return null
 

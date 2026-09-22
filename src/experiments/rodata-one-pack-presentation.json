@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "Rodata One — presentación de segunda unidad al 50%",
+  "flag_key": "exp-cdddcb57-pdp-second-belt-offer",
+  "type": "ui",
+  "status": "paused",
+  "hypothesis": "Mostrar de forma prominente una opción de dos Rodata One con la segunda unidad al 50% aumentará el margen por visitante expuesto al incrementar la proporción de pedidos de dos unidades sin deteriorar suficientemente la conversión.",
+  "target": {
+    "route": "/productos/soporte-lumbar-rodata-one",
+    "component": "ProductPageUI",
+    "product_id": "400026a2-c277-407c-abbb-d1683f415120",
+    "purpose": "offer_presentation",
+    "shared_price_rule_ids": ["7653e73d-ce1b-446f-a37d-3eb5cffb9602"]
+  },
+  "variants": [
+    { "key": "control", "name": "PDP actual", "weight": 50 },
+    { "key": "test", "name": "Selector segunda unidad al 50%", "weight": 50 }
+  ],
+  "primary_metric": { "kind": "margin_per_exposed_visitor", "event": "purchase" }
+}

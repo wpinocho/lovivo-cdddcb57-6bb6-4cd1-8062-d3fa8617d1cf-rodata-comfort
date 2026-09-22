@@ -37,6 +37,36 @@
 <!-- A/B tests currently running. Include flag_key, start date, variants, and target metric. -->
 Ninguno activo.
 
+### ⏸️ PREPARADO — NO LANZADO (2026-09-22): Presentación 2.ª unidad al 50%
+- **Estado**: `status: "paused"`. **No recolecta tráfico.** No tiene `started_at`. No hay datos.
+- **flag_key**: `exp-cdddcb57-pdp-second-belt-offer` · manifiesto `src/experiments/rodata-one-pack-presentation.json`
+- **Tipo**: `ui` + `purpose: "offer_presentation"` · control/test 50/50 en la MISMA PDP
+  `/productos/soporte-lumbar-rodata-one` (`ProductPageUI`) · product_id `400026a2-c277-407c-abbb-d1683f415120`
+- **Regla compartida**: BOGO `7653e73d-ce1b-446f-a37d-3eb5cffb9602` — `same_products`, buy 1 get 1 al 50%,
+  `max_uses_per_order: 1`. **`active: false`.**
+- **Métrica que decide**: `margin_per_exposed_visitor` (cálculo central de Lovivo). NO decidir por clicks
+  en el pack, add to cart, CVR sola ni AOV sola. Microeventos diagnósticos: `offer_option_selected`,
+  `second_size_selected`.
+- **Pregunta**: ¿Presentar claramente la segunda unidad al 50% aumenta el margen por visitante?
+- **Limitación aceptada**: la promoción comercial es compartida; el control puede obtenerla si
+  manualmente compra dos. Por lo tanto el experimento mide PRESENTACIÓN de la oferta, no descuento vs
+  ausencia de descuento.
+- **Sanidad esperada a $799** (no hardcodeado, se deriva de catálogo + regla): 1 = $799 · 2 sin promo =
+  $1,598 · segunda = $399.50 · pack = $1,198.50. Margen bruto pack ≈ $1,198.50 − 2×$209 = $780.50
+  vs $590 de una unidad.
+- **Gates antes de activar** (en orden): (1) confirmar que `experiment-results` responde (falló con
+  Unauthorized el 2026-09-22); (2) activar BOGO y cotizar en `/pagar` sin pagar: M+L, M+M, 3 y 4 unidades
+  — el total del backend debe coincidir con PDP/carrito; (3) revisar que ningún código de descuento
+  activo se acumule (hay `VUELVE10` 10% y `DEDE` **98% activo**); (4) recién entonces `status: "active"`.
+
+## Changes
+<!-- (see format above) -->
+### 2026-09-22 — Infraestructura de oferta de 2 unidades (inactiva, sin efecto visible)
+- **Change**: pricing central `src/lib/cart-pricing.ts` (BOGO `same_products` agrupado por producto
+  entre tallas, respeta `max_uses_per_order`); carrito y PDP usan la misma función. Fix: el storefront
+  solo reconocía `bogo_mode: 'same_product'` y el backend escribe `same_products`.
+- **Efecto hoy**: ninguno (0 reglas activas; experimento pausado → todos ven control).
+
 ## Ruled Out
 <!-- Changes that were tried and didn't work, or hypotheses that were disproven.
      This prevents repeating failed approaches. -->

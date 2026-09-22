@@ -16,6 +16,7 @@ import { STORE_ID } from "@/lib/config"
 import { validateDiscount, type Discount } from "@/lib/discount-utils"
 import { intervalLabel, calcSubscriptionPrice } from "@/lib/subscription-utils"
 import { usePriceRules } from "@/hooks/usePriceRules"
+import { calcCartPricing } from "@/lib/cart-pricing"
 import { calcItemUnitPrice } from "@/lib/price-rule-utils"
 import { BOGOGiftBanner } from "@/components/ui/BOGOGiftBanner"
 
@@ -100,23 +101,11 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
   }
 
   // Calculate adjusted total with volume + bogo discounts
-  const adjustedTotal = useMemo(() => {
-    let total = 0
-    for (const item of state.items) {
-      if (item.type === 'bundle') {
-        total += item.bundle.bundle_price * item.quantity
-      } else {
-        if ((item as CartProductItem).isBogoGift) continue
-        const basePrice = ((item as CartProductItem).resolvedUnitPrice ?? item.variant?.price ?? item.product.price) || 0
-        const volumeRules = getVolumeRulesForProduct(item.product.id)
-        const bogoRules = getBogoRulesForProduct(item.product.id)
-        const sp = (item as CartProductItem).sellingPlan || null
-        const { unitPrice } = calcItemUnitPrice(basePrice, item.quantity, volumeRules, sp, calcSubscriptionPrice, bogoRules)
-        total += unitPrice * item.quantity
-      }
-    }
-    return total
-  }, [state.items, getVolumeRulesForProduct, getBogoRulesForProduct])
+  // Central pricing (same function as the PDP pack quote)
+  const adjustedTotal = useMemo(() => calcCartPricing(state.items, {
+    getVolumeRules: (pid) => getVolumeRulesForProduct(pid),
+    getBogoRules: (pid) => getBogoRulesForProduct(pid),
+  }).total, [state.items, getVolumeRulesForProduct, getBogoRulesForProduct])
 
   const bogoRules = useMemo(() => priceRules.filter(r => r.rule_type === 'bogo'), [priceRules])
 

@@ -4,204 +4,130 @@
 - Marca premium de soporte lumbar para motociclistas mexicanos
 - Producto único: Rodata One — soporte lumbar (MX$799, compare_at MX$999, 20% OFF)
 - Slug real del producto: `soporte-lumbar-rodata-one` (id `400026a2-c277-407c-abbb-d1683f415120`)
-- 4 tallas (S/M/L/XL), **todas a $799** con `compare_at_price` 999. Sin planes de suscripción.
+- 4 tallas (opción `Talla`: `S (60-75 cm)`, `M (75-90 cm)`, `L (90-100 cm)`, `XL (100-115 cm)`), **todas a $799**
+  con `compare_at_price` 999. `track_inventory: false`. Sin planes de suscripción.
 - Costo unitario en catálogo: `cost: 209` → margen bruto ≈ $590 a $799.
 - Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
 - **Avatar 1**: rider de carretera/fin de semana → PDP `/productos/soporte-lumbar-rodata-one`
 - **Avatar 2**: **repartidor de plataformas** (Rappi/DiDi/Uber Eats) → `/repartidores`
 - Store en producción: rodata.store
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
-- **Tráfico (30d, medido 2026-09-04)**: 6,362 visitantes únicos / 9,915 pageviews.
-  PDP concentra **5,793 únicos (91%)**. Home solo 344, `/repartidores` 395, `/pagar` 336.
-  **94% mobile.** Fuente dominante: Facebook + Instagram (~8,200 visitas) = tráfico pagado.
-- **Ventas (30d)**: ~130 purchases ≈ 4.3/día ≈ 30/semana. CVR PDP ≈ 2.2%.
+- **Tráfico (30d, medido 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads.
+- **Ventas (30d)**: ~130 purchases ≈ 30/semana. CVR PDP ≈ 2.2%.
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
 - Amber: `brand-amber` #C98B2E / `brand-amber-light` #E5A842 — único acento
 - Typography: Sora (headings/bold), Inter (body/UI)
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
-- Avatares 36px → `?width=72&height=72&resize=cover&quality=80`
-- **Cards de reseña con foto**: `aspect-square`. Fuente a `width=700`.
-- **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx`. Cambiar solo copy,
-  imágenes, reviews y FAQ. Nunca reinventar el esqueleto.
+- **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx`.
 - **Regla del cliente (2026-08-20)**: en `/repartidores` SOLO fotos reales del cliente.
-- **Errores de pago (2026-09-03)**: nunca culpar al cliente, nunca mostrar el string crudo de
-  Stripe/PayPal. Banner persistente (no toast) + siguiente paso concreto + alternativa de pago.
-- **ETA de entrega (2026-09-03)**: días **NATURALES**, 4 a 7. Fuente única de verdad:
-  `src/lib/delivery-estimate.ts`. NUNCA duplicar la lógica de fecha en un componente.
-- **Precios en UI (2026-09-04)**: NUNCA hardcodear el precio en JSX **ni en meta descriptions**.
-  Siempre desde el producto vía `logic.currentPrice` / `usePriceExperiment`, y el % OFF calculado
-  contra `compare_at_price`. Verificación antes de cerrar: grep de `799|MX\$` → cero.
-  Esta regla sigue vigente aunque no haya test corriendo: es lo que permite lanzar el siguiente.
+- **Errores de pago (2026-09-03)**: nunca culpar al cliente, nunca string crudo de Stripe/PayPal.
+- **ETA de entrega (2026-09-03)**: días naturales 4 a 7. Fuente única: `src/lib/delivery-estimate.ts`.
+- **Precios en UI (2026-09-04)**: NUNCA hardcodear precios ni % en JSX/meta. Siempre desde el producto /
+  `logic.currentPrice` / `logic.packOffer` / `logic.purchaseQuote`. Grep de `799|MX\$` → cero.
+- **Pricing de reglas (2026-09-22)**: fuente única `src/lib/cart-pricing.ts` (`calcLinesPricing`,
+  `calcCartPricing`). PDP y carrito la usan. BOGO `same_products` = pool por producto entre tallas.
 
 ---
 
-## Active Plan — ⚪ Sin experimentos activos
+## Active Plan — ⏸️ Experimento de oferta PREPARADO, PAUSADO
 
-El price test $799 vs $849 se **cerró el 2026-09-22**. La tienda vuelve a precio único $799
-para el 100% del tráfico (que es lo que el catálogo ya cobraba).
+### `exp-cdddcb57-pdp-second-belt-offer` (2026-09-22)
+- Manifiesto `src/experiments/rodata-one-pack-presentation.json` — `type: ui`, `status: paused`,
+  `purpose: offer_presentation`, métrica `margin_per_exposed_visitor`. Validador: OK.
+- Regla BOGO compartida `7653e73d-ce1b-446f-a37d-3eb5cffb9602` — **`active: false`**.
+- Arquitectura:
+  - `useExperiment` en `ProductPageUI` nivel superior (ambas variantes). `showPack = variant==='test' && packOffer`.
+  - `HeadlessProduct`: `packQuantity`, `secondSelected` (arranca vacío), `buildPurchase()` = fuente única
+    de items (1×M → [M×1]; M+L → [M×1, L×1]; M+M → [M×2]); errores `select_first/select_second/out_of_stock`;
+    `packOffer` null si no hay BOGO activa, reglas cargando, selling plan, price experiment o volume+bogo.
+  - `ProductExpressCheckout`: props opcionales `purchaseItems`, `quotedSubtotal`, `onProcessingChange`;
+    aborta sin crear PaymentIntent si total backend ≠ total mostrado; guard de doble disparo.
+  - `PackOfferSelector.tsx`: UI del test (radios, badge % derivado, talla de 2.ª faja).
+- **Gates antes de activar (en orden)**:
+  1. `experiment-results` debe responder (falló Unauthorized el 2026-09-22).
+  2. Activar BOGO → crear checkout sin pagar con M+L, M+M, 3 y 4 unidades; total de `/pagar` = PDP = carrito.
+     Confirma que el backend agrupa `same_products` entre variantes (asumido, no verificado).
+  3. Revisar stacking con códigos: `VUELVE10` (10%) y **`DEDE` 98% ACTIVO** (¿código de prueba? desactivar).
+  4. Recién ahí `status: "active"` en el manifiesto.
 
-### Cierre del test $799 vs $849 (2026-09-22, esta sesión)
-- **Decisión del usuario**: mantener el CONTROL de $799. Decisión **de negocio**, no estadística.
-- Único cambio en el repo: `src/experiments/rodata-one-price-849.json` → `status: "completed"`.
-  El manifiesto se conserva como historia (no se borra).
-- **No se tocó el catálogo**: verificado con `ecommerce--list-data` que producto y las 4 tallas
-  seguían en $799 / compare_at $999. Al completarse, el runtime deja de resolver variantes y
-  todos pagan el precio de catálogo, que ya era el control. Cero riesgo de cambio de precio.
-- No se tocó storefront, ni PDP, ni checkout, ni el runtime de experimentos.
-- PostHog: Feature Flag 866817 / Experiment 461160 quedan como registro histórico.
-
-### ⚠️ CÓMO DEBE CITARSE ESTE RESULTADO (leer antes de hablar del test)
-**INCONCLUSO / direccional a favor del control.** $799 **NO** es un ganador probado.
-El test no demostró que $849 fuera peor — no produjo evidencia suficiente en ninguna dirección.
-Cualquier afirmación futura del tipo "ya probamos que $799 convierte mejor" es falsa.
-
-**No hay cifras finales.** `experiment-results` devolvió `Unauthorized` al cerrar: no se pudo
-leer ni exposiciones, ni revenue por visitante, ni `decision`, ni `data_quality`. El experimento
-corrió ~18 días con `sync_status: synced` acumulando datos, pero esos datos **nunca se leyeron**.
-Reportado al equipo de Lovivo (feedback `68861868-3d39-49cb-a020-125fe9dd73db`).
-
-Independientemente del fallo de la herramienta, el inconcluso era el desenlace más probable: el
-colchón de 5.9% estaba por debajo del umbral detectable con ~15 órdenes por variante por semana.
-
-### Si se quiere reintentar el precio más adelante
-1. **Primero** verificar que `experiment-results` responde — lectura de control en la semana 1.
-   No volver a quemar semanas de tráfico pagado sin confirmar que la medición funciona.
-2. Usar un salto **más grande** ($899–$949, colchón >11%) o aceptar de entrada que la decisión
-   será comercial. Un delta de $50 (6%) es indetectable a este volumen.
-3. Mover `compare_at_price` junto con el precio de test para no mezclar precio y % de descuento
-   (el test cerrado tenía ese confound: el grupo test veía "15% OFF" en vez de "20% OFF").
-4. Revisar **antes** los creativos de Meta Ads: 80% del tráfico. Si un anuncio dice el precio,
-   el grupo test aterriza con una promesa rota.
+### Price test $799 vs $849 — ya CERRADO (2026-09-22, sesión anterior)
+`completed`, inconcluso / direccional a favor del control. **No se tocó en esta sesión.** Ver cro-log.
 
 ---
 
 ## Recent Changes
-- **⚪ Test de precio $799 vs $849 CERRADO como inconcluso** (2026-09-22) — `status: "completed"`
-  en el manifiesto. Se mantiene $799. Catálogo intacto. `experiment-results` falló con
-  `Unauthorized`: cierre sin cifras, reportado al equipo.
-- **🔄 Re-sync del test de precio al runtime V2** (2026-09-04) — reformato neutro para migrar
-  targeting de `group.store_id` → `person.store_id`. Flag 866817 / Experiment 461160 preservados.
-- **🟢 Test de precio $799 vs $849 CONFIRMADO synced** (2026-09-04) — flag 866817, exp 461160.
-- **🚀 Test de precio RELANZADO a $799 vs $849** (2026-09-04) — manifiesto de $899 eliminado.
-- **🚀 Test de precio $799 vs $899 IMPLEMENTADO** (2026-09-04) — **falló el sync, reemplazado.**
-  Su cambio de soporte sí quedó: `IndexUI.tsx` con precio dinámico + meta de `DeliveryLandingUI`.
-- **✅ ETA centralizado en `src/lib/delivery-estimate.ts`** (2026-09-03) — 1 archivo nuevo +
-  4 modificados (Checkout, ProductPage, DeliveryPDP, DeliveryLanding).
-- **✅ ETA del checkout a días naturales 4–7** (2026-09-03) — `CheckoutUI.tsx`.
-- **✅ Recuperación de pagos rechazados IMPLEMENTADA** (2026-09-03) — 3 archivos nuevos
-  (`payment-errors.ts`, `payment-recovery.ts`, `PaymentRecoveryBanner.tsx`) + 3 modificados.
-- **✅ Google Ads (gtag.js) implementado** (2026-09-01) — 2 archivos nuevos + 4 modificados.
-- **✅ Instrumentación completa de checkout en PostHog** (2026-08-25) — 14 eventos nuevos.
-- **✅ Ajustes finos `/repartidores`** (2026-08-20, tanda 3).
-- **✅ Reasignación de fotos `/repartidores`** (2026-08-20, tanda 2).
-- **✅ Fotografía real en `/repartidores`** (2026-08-20, tanda 1).
-- **✅ Fix PayPal → `/gracias` implementado** (2026-08-18). **Falta prueba real.**
-- **`/repartidores` refactorizada a PDP clonada** ✅ (2026-08-06).
+- **⏸️ Experimento UI "2.ª unidad al 50%" PREPARADO pausado + BOGO inactiva** (2026-09-22) — nuevos:
+  `src/lib/cart-pricing.ts`, `src/components/PackOfferSelector.tsx`, manifiesto. Modificados:
+  `HeadlessProduct.tsx`, `ProductPageUI.tsx`, `ProductExpressCheckout.tsx`, `CartAdapter.tsx`,
+  `CartSidebar.tsx`, `price-rule-utils.ts`, `supabase.ts` (tipo `same_products`).
+- **⚪ Test de precio $799 vs $849 CERRADO como inconcluso** (2026-09-22).
+- **🔄 Re-sync del test de precio al runtime V2** (2026-09-04).
+- **🚀 Test de precio $799 vs $849 lanzado** (2026-09-04).
+- **✅ ETA centralizado en `src/lib/delivery-estimate.ts`** (2026-09-03).
+- **✅ Recuperación de pagos rechazados** (2026-09-03).
+- **✅ Google Ads (gtag.js)** (2026-09-01).
+- **✅ Instrumentación de checkout en PostHog** (2026-08-25) — 14 eventos.
+- **✅ Fotografía real en `/repartidores`** (2026-08-20, 3 tandas).
+- **✅ Fix PayPal → `/gracias`** (2026-08-18). Falta prueba real.
+- **`/repartidores` refactorizada a PDP clonada** (2026-08-06).
 
 ## Image Inventory
 Base URLs:
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
-
-### Imágenes del producto en catálogo (5, bucket `product-images/products/`)
-`nae4riov9h.webp`, `j8kw94s83hn.webp`, `pjleekrch4l.webp`, `b5mg4lv2qbf.webp`, `0evbcgfgplnh.webp`
-
-### PDP carretera (avatar 1) — vigentes
-- LIFESTYLE_CITY: `/pdp-lifestyle-1.jpg`
-- LIFESTYLE_HIGHWAY: `SB_MSG/1775768374485-uca4dkx21g.webp`
-- PRODUCT_FLAT: `SB_MSG/1775767354281-gqxi2j4hklp.webp`
+### Catálogo: `nae4riov9h.webp`, `j8kw94s83hn.webp`, `pjleekrch4l.webp`, `b5mg4lv2qbf.webp`, `0evbcgfgplnh.webp`
+### PDP carretera
+- LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · PRODUCT_FLAT `SB_MSG/1775767354281-gqxi2j4hklp.webp`
 - FEAT_IMG_1-3: `SB_MSG/1775777133671-80hvv9dmxa.webp`, `1775777133672-xhxki05535d.webp`, `1775777133672-dzkdrl1lt2.webp`
-- REVIEW_IMG_1-5: `SB_PROD/review-1..5.webp`
-- AVATAR_CARLOS/JORGE/ANDRES: `SB_PROD/avatar-carlos-v3.webp`, `avatar-jorge-v3.webp`, `avatar-andres-v3.webp`
-
-### Home (`IndexUI.tsx`)
-- HERO_IMG: `SB_MSG/1775772513540-16g7elmcuii.webp`
-- LIFESTYLE_WORN/BELT/DETAIL: `SB_MSG/1775771349198-676o65sijn4.webp`, `-tl8qt6nmo8.webp`, `-z730si7cdto.webp`
-- PROBLEMA_REAL_IMG: `SB_MSG/1775770729257-1nufsuab1jt.webp`
-
-### Avatar repartidor — fotografía REAL vigente
-Bucket `SB_MSG`. Galería producto (prefijo `1787249204164-`): `ifubpmh955s`, `h4pa1xnbjw`,
-`5rlwxy193t3`, `r9dtbwqmwaa`, `7ws595nt61i`.
-Resto (prefijo `1787251752010-`): lifestyle `uvy9yh7965f`; Beneficio 01 `mf34bj94nqm`,
-02 `h6de90gdd6`, 03 `dxk60x3zg28`; quote `2b6138nc4z9`; reseñas `jotniqhksrb`, `13eliul1j8io`,
-`jos9p0cz468`, `wdpx2luqeyp`, `muvx1aec14`, + `SB_PROD/review-5.webp`.
-- **DEPRECADAS (IA, rechazadas)**: `SB_PROD/dlv-hero.webp`, `dlv-feat-1/2/3.webp`
-- **SIN USO (tanda 1)**: `SB_MSG/1787249204164-0fhnu1sec2e`, `-v5k7gqoh4rq`, `-w8rmrhw4b6k`, `-sobj1wnq3sg`
-
-### Creativos de ads validados
-- `SB_MSG/1786041572607-zlqbmm6nxp.webp` — "Te subes y bajas 40 veces al día"
-- `SB_MSG/1786041572607-2687rjqwf6x.webp` — "Mochila cargada. Postura inclinada."
-- `SB_MSG/1786041572607-iufym7bnuz9.webp` — "Acortar tu turno te cuesta entregas."
+- REVIEW_IMG_1-5 `SB_PROD/review-1..5.webp` · avatares `SB_PROD/avatar-{carlos,jorge,andres}-v3.webp`
+### Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`; LIFESTYLE `SB_MSG/1775771349198-{676o65sijn4,tl8qt6nmo8,z730si7cdto}.webp`; PROBLEMA `SB_MSG/1775770729257-1nufsuab1jt.webp`
+### Repartidor (real): galería `SB_MSG/1787249204164-{ifubpmh955s,h4pa1xnbjw,5rlwxy193t3,r9dtbwqmwaa,7ws595nt61i}`; resto prefijo `1787251752010-`. DEPRECADAS: `SB_PROD/dlv-*.webp`.
+### Creativos ads: `SB_MSG/1786041572607-{zlqbmm6nxp,2687rjqwf6x,iufym7bnuz9}.webp`
 
 ## Known Issues
-- **`experiment-results` devuelve `Unauthorized` (2026-09-22)**: `experiment-list` lista el
-  experimento correctamente (synced), pero la ruta de detalle/métricas falla con Unauthorized.
-  Consecuencia real: el test de precio se cerró **sin poder leer ni una cifra**. Reportado
-  (`68861868-3d39-49cb-a020-125fe9dd73db`). **Antes de lanzar otro experimento, probar esta
-  herramienta en la semana 1.**
-- **Targeting de flags no legible por el agente (2026-09-04)**: ninguna herramienta devuelve el
-  payload de targeting de un feature flag. Solo verificable a mano en PostHog.
-- **Creativos de Meta Ads con precio (sin verificar)**: revisar que ningún anuncio muestre un
-  precio distinto al de catálogo. Menos crítico ahora que no hay test corriendo, pero sigue
-  siendo requisito antes de lanzar el siguiente.
-- **Caché de navegador post-deploy (2026-09-03)**: el user reportó dos veces un cambio "no
-  aplicado" que sí estaba en el código. Antes de re-editar, verificar con grep y pedir hard refresh.
-- **Banner de recuperación sin probar en vivo (2026-09-03)**: código completo, faltan las 5
-  pruebas de aceptación con tarjetas de test de Stripe.
-- **Banner acoplado a StripePayment (2026-09-03)**: si se apaga el pago con tarjeta, no renderiza.
-- **Google Ads sin validar (2026-09-01)**: falta confirmar el conversion ID y ver el tag en vivo.
-- **Tipo `StoreSettings` (2026-09-01)**: no incluye las columnas de Google Ads (`as any`).
-- **Insights de PostHog sin armar (2026-08-25)**: el funnel de 6 pasos aún no existe.
-- **PayPal MX — falta prueba real (2026-08-18)**.
-- **PayPal — dirección de envío**: solo llega si `paypal-capture-order` devuelve `shipping_address`.
-- **Meta Purchase server duplicados (2026-08-06)**: 75 enviados vs 141 recibidos.
-- **Order Tracking — view orders_customer**: depende de que exponga checkout_token/tracking_number.
-- Chrome autofill puede pintar inputs del checkout en blanco (workaround CSS aplicado)
+- **Cart line display con BOGO (2026-09-22)**: el TOTAL del carrito ya usa pricing central, pero el precio
+  por línea (`calcItemUnitPrice`) es por línea: con M+L cada línea muestra $799 y el total baja sin
+  renglón explicativo. Antes de activar: añadir renglón "Promoción 2.ª al 50% −$X" en CartSidebar/CartUI.
+- **Semántica backend BOGO sin verificar (2026-09-22)**: asumido que `same_products` agrupa variantes y
+  descuenta la más barata. Solo verificable con la regla activa creando un checkout.
+- **Stacking volume+bogo**: si algún día se crea una volume rule para Rodata One, el pack se oculta
+  (fail-safe) y se registra warning en consola.
+- **`?exp=` preview del runtime**: `useExperiment` (protegido) acepta preview por query param y
+  registra exposure. No usar en links compartidos ni anuncios.
+- **Código `DEDE` 98% activo (2026-09-22)**: riesgo comercial real hoy, independiente del test.
+- **`experiment-results` devuelve `Unauthorized` (2026-09-22)**. Reportado (`68861868-...`).
+- **Targeting de flags no legible por el agente (2026-09-04)**.
+- **Caché de navegador post-deploy**: verificar con grep y pedir hard refresh antes de re-editar.
+- **Banner de recuperación sin probar en vivo (2026-09-03)** · acoplado a StripePayment.
+- **Google Ads sin validar (2026-09-01)** · `StoreSettings` sin columnas de Google Ads (`as any`).
+- **PayPal MX — falta prueba real (2026-08-18)** · PayPal dirección depende de `paypal-capture-order`.
+- **Meta Purchase server duplicados (2026-08-06)**.
+- PayPal express no está en la PDP carretera (solo Stripe PRB); si se añade, debe consumir `selectedPurchaseItems`.
 
 ## Key Files
-### Experimentos (runtime write-protected — CONSUMIR, nunca reescribir)
-- `src/experiments/rodata-one-price-849.json` — **completed** (histórico, flag 866817 / exp 461160)
-- `src/experiments/index.ts` — `EXPERIMENT_RUNTIME_VERSION = 1`, `getActivePriceExperiment()`
-- `src/hooks/usePriceExperiment.ts` — resuelve el precio vía edge `experiment-resolve`
-- `src/hooks/useExperiment.ts`, `src/lib/experiments.ts`, `src/types/experiments.ts`
-- `src/components/headless/HeadlessProduct.tsx` L243-258 — patrón de consumo en PDP
-- `src/components/headless/HeadlessProductCard.tsx` L109-143 — patrón de referencia (card)
-- `src/contexts/CartContext.tsx` L60/L92/L117 — propagación de `resolvedUnitPrice`
-
-### Resto
-- `src/lib/delivery-estimate.ts` — **fuente única del ETA**. 4–7 días naturales.
-- `src/pages/ui/CheckoutUI.tsx` — checkout de una sola página. ETA en ~L664 y ~L751
-- `src/lib/payment-errors.ts` / `src/lib/payment-recovery.ts`
-- `src/components/PaymentRecoveryBanner.tsx`
-- `src/lib/google-ads.ts` / `src/contexts/GoogleAdsContext.tsx`
-- `src/contexts/PostHogContext.tsx` / `src/lib/tracking-utils.ts`
-- `src/adapters/CheckoutAdapter.tsx` / `src/components/StripePayment.tsx`
-- `src/components/PaypalExpressButton.tsx` / `src/components/ProductExpressCheckout.tsx`
-- `src/hooks/useCheckoutState.ts` / `src/pages/ThankYou.tsx` / `src/pages/PendingPayment.tsx`
-- `src/pages/ui/ProductPageUI.tsx` — PDP carretera v4.7 (precio L278, badge L283)
-- `src/pages/ui/DeliveryPDPUI.tsx` — PDP repartidores (precio L320, badge L325)
-- `src/pages/ui/DeliveryLandingUI.tsx` — landing repartidores (meta description ~L170)
-- `src/pages/ui/IndexUI.tsx` — home. **Precio 100% dinámico** (hook en L76, helpers L81-89)
-- `src/components/headless/HeadlessIndex.tsx` — FORBIDDEN. `filteredProducts`, `loading`
-- `src/index.css` / `tailwind.config.ts` — design system
+- `src/lib/cart-pricing.ts` — **pricing central de reglas** (PDP + carrito)
+- `src/components/PackOfferSelector.tsx` — UI del test de oferta
+- `src/experiments/rodata-one-pack-presentation.json` — **paused**
+- `src/experiments/rodata-one-price-849.json` — completed (histórico)
+- Runtime protegido: `src/experiments/index.ts`, `src/hooks/useExperiment.ts`, `src/hooks/usePriceExperiment.ts`, `src/lib/experiments.ts`
+- `src/components/headless/HeadlessProduct.tsx` — `buildPurchase()`, `packOffer`, price experiment
+- `src/components/ProductExpressCheckout.tsx` — wallet PDP (acepta `purchaseItems`)
+- `src/adapters/CartAdapter.tsx` / `src/components/CartSidebar.tsx` — `adjustedTotal` vía `calcCartPricing`
+- `src/lib/cart-utils.ts` — `cartToApiItems` (merge por product+variant+plan+experiment)
+- `src/lib/checkout.ts` — envía `analytics_distinct_id` (unión exposure ↔ order)
+- `src/pages/ui/ProductPageUI.tsx` — PDP carretera (hook del experimento al inicio del componente)
+- `src/pages/ui/DeliveryPDPUI.tsx`, `DeliveryLandingUI.tsx`, `IndexUI.tsx`, `CheckoutUI.tsx`
+- `src/lib/delivery-estimate.ts`, `payment-errors.ts`, `payment-recovery.ts`, `google-ads.ts`
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Confirmar tras el deploy que `experiment-list` muestra el test como completado
-  y que la PDP sirve $799 al 100% del tráfico (hard refresh, sin caché).
-- **[CRÍTICA]** Probar el banner de recuperación con tarjetas de test de Stripe y cancelación
-  real de PayPal.
-- **[CRÍTICA]** Validar Google Ads con Tag Assistant + compra de prueba.
-- **[CRÍTICA]** Verificar en PostHog Activity que los 14 eventos de checkout lleguen.
-- **[CRÍTICA]** Probar compra real con PayPal en producción de punta a punta.
-- **[ALTA]** Antes de cualquier experimento nuevo: verificar que `experiment-results` responde.
-- **[ALTA]** Insight PostHog: tasa de recuperación (failed → succeeded en la misma sesión).
-- **[ALTA]** Automatización de email de checkout abandonado / pago fallido (Dashboard).
-- **[ALTA]** Armar en PostHog el funnel de 6 pasos y el insight de `error_code`.
+- **[CRÍTICA]** Revisar/desactivar el código `DEDE` (98% activo).
+- **[CRÍTICA — antes de activar oferta]** Gates 1–4 del Active Plan + renglón de promoción en el carrito.
+- **[CRÍTICA]** Tras deploy: `experiment-list` debe mostrar el nuevo experimento `paused` + `synced`, y
+  la PDP debe verse idéntica a hoy (hard refresh).
+- **[CRÍTICA]** Probar banner de recuperación, Google Ads, eventos PostHog, PayPal real.
+- **[ALTA]** Insight de recuperación de pagos · email de checkout abandonado · funnel 6 pasos.
 - **[ALTA]** Apuntar el ad set de repartidores a `/repartidores` con UTMs.
-- **[MEDIA]** Guardar `estimated_delivery_at` en la orden usando el mismo rango 4–7.
-- **[MEDIA]** Enhanced conversions con teléfono/dirección además del email.
-- **[MEDIA]** Hidratar `/gracias/:id` desde el backend por `checkout_token`.
-- **[MEDIA]** Revisar CAPI Gateway en Business Manager (duplicados Meta).
-- **[BAJA]** Test posterior: versión sin nav vs con nav en `/repartidores`.
+- **[MEDIA]** `estimated_delivery_at` en la orden · enhanced conversions · hidratar `/gracias/:id`.
+- **[BAJA]** Test sin nav vs con nav en `/repartidores`.

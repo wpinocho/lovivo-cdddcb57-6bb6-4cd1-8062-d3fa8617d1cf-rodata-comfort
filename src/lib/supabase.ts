@@ -236,7 +236,8 @@ export type BogoConditions = {
   buy_quantity: number
   get_quantity: number
   get_discount_percentage: number
-  bogo_mode: 'same_product' | 'different_products'
+  /** Backend writes 'same_products'; 'same_product' kept for legacy rules. */
+  bogo_mode: 'same_products' | 'same_product' | 'different_products'
   get_applies_to?: 'same_product' | 'specific_products' | 'specific_collections'
   get_product_ids?: string[]
   get_collection_ids?: string[]

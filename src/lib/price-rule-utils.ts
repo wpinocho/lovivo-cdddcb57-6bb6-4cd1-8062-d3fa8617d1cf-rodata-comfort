@@ -124,15 +124,19 @@ export function calcBogoDiscount(
 
   for (const rule of bogoRules) {
     const cond = rule.conditions as BogoConditions | undefined
-    if (!cond || cond.bogo_mode !== 'same_product') continue
+    // Backend writes 'same_products'; legacy rules used 'same_product'
+    if (!cond || (cond.bogo_mode !== 'same_product' && cond.bogo_mode !== 'same_products')) continue
 
     const { buy_quantity, get_quantity, get_discount_percentage } = cond
     const groupSize = buy_quantity + get_quantity
     if (quantity < groupSize) continue
 
-    // How many full groups + remainder
-    const fullGroups = Math.floor(quantity / groupSize)
-    const remainder = quantity % groupSize
+    // How many full groups (capped by max_uses_per_order) + remainder
+    let fullGroups = Math.floor(quantity / groupSize)
+    if (cond.max_uses_per_order && cond.max_uses_per_order > 0) {
+      fullGroups = Math.min(fullGroups, cond.max_uses_per_order)
+    }
+    const remainder = quantity - fullGroups * groupSize
 
     // Cost per group: buy_quantity at full price + get_quantity at discounted price
     const discountFraction = get_discount_percentage / 100

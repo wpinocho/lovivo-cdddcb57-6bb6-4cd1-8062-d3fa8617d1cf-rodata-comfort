@@ -12,6 +12,7 @@ import { usePriceRules } from "@/hooks/usePriceRules"
 import { calcItemUnitPrice } from "@/lib/price-rule-utils"
 import type { BogoDiscountResult } from "@/lib/price-rule-utils"
 import { calcSubscriptionPrice } from "@/lib/subscription-utils"
+import { calcCartPricing } from "@/lib/cart-pricing"
 import type { BogoConditions } from "@/lib/supabase"
 
 export const useCartLogic = () => {
@@ -33,15 +34,11 @@ export const useCartLogic = () => {
     return calcItemUnitPrice(basePrice, item.quantity, volumeRules, sp, calcSubscriptionPrice, bogoRules)
   }, [getVolumeRulesForProduct, getBogoRulesForProduct])
 
-  const adjustedTotal = useMemo(() => {
-    let total = 0
-    for (const item of state.items) {
-      if (item.type === 'product' && (item as CartProductItem).isBogoGift) continue
-      const { unitPrice } = getItemVolumeDiscount(item)
-      total += unitPrice * item.quantity
-    }
-    return total
-  }, [state.items, getItemVolumeDiscount])
+  // Central pricing: BOGO same_products pools units across variants (M + L)
+  const adjustedTotal = useMemo(() => calcCartPricing(state.items, {
+    getVolumeRules: (pid) => getVolumeRulesForProduct(pid),
+    getBogoRules: (pid) => getBogoRulesForProduct(pid),
+  }).total, [state.items, getVolumeRulesForProduct, getBogoRulesForProduct])
 
   // Discount state
   const [couponCode, setCouponCode] = useState("")
