@@ -58,6 +58,8 @@
 ---
 
 ## Recent Changes
+- **✅ Meta `google-site-verification` añadida en `index.html`** (2026-09-22) — para Google Merchant Center.
+  Token `_RBrWri4uvRAMj82sXqIHvhn8WmbjBN7S8KgDy4-20w`. NO QUITAR.
 - **⏸️ Experimento UI "2.ª unidad al 50%" PREPARADO pausado + BOGO inactiva** (2026-09-22) — nuevos:
   `src/lib/cart-pricing.ts`, `src/components/PackOfferSelector.tsx`, manifiesto. Modificados:
   `HeadlessProduct.tsx`, `ProductPageUI.tsx`, `ProductExpressCheckout.tsx`, `CartAdapter.tsx`,
@@ -87,6 +89,8 @@ Base URLs:
 ### Creativos ads: `SB_MSG/1786041572607-{zlqbmm6nxp,2687rjqwf6x,iufym7bnuz9}.webp`
 
 ## Known Issues
+- **Canonical en `index.html` apunta a `https://rodata.mx`** pero producción es `rodata.store` (2026-09-22).
+  Posible conflicto para Search Console / Merchant Center. Pendiente confirmar con el cliente antes de cambiar.
 - **Cart line display con BOGO (2026-09-22)**: el TOTAL del carrito ya usa pricing central, pero el precio
   por línea (`calcItemUnitPrice`) es por línea: con M+L cada línea muestra $799 y el total baja sin
   renglón explicativo. Antes de activar: añadir renglón "Promoción 2.ª al 50% −$X" en CartSidebar/CartUI.
@@ -107,6 +111,7 @@ Base URLs:
 - PayPal express no está en la PDP carretera (solo Stripe PRB); si se añade, debe consumir `selectedPurchaseItems`.
 
 ## Key Files
+- `index.html` — meta `google-site-verification` (Merchant Center), canonical, OG
 - `src/lib/cart-pricing.ts` — **pricing central de reglas** (PDP + carrito)
 - `src/components/PackOfferSelector.tsx` — UI del test de oferta
 - `src/experiments/rodata-one-pack-presentation.json` — **paused**
@@ -122,6 +127,8 @@ Base URLs:
 - `src/lib/delivery-estimate.ts`, `payment-errors.ts`, `payment-recovery.ts`, `google-ads.ts`
 
 ## PENDING / Future Sessions
+- **[ALTA]** Tras deploy: usuario pulsa "Verificar" en Merchant Center; si falla, revisar que rodata.store sirva el index.html nuevo.
+- **[ALTA]** Decidir canonical `rodata.mx` vs `rodata.store`.
 - **[CRÍTICA]** Revisar/desactivar el código `DEDE` (98% activo).
 - **[CRÍTICA — antes de activar oferta]** Gates 1–4 del Active Plan + renglón de promoción en el carrito.
 - **[CRÍTICA]** Tras deploy: `experiment-list` debe mostrar el nuevo experimento `paused` + `synced`, y
