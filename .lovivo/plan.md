@@ -30,35 +30,32 @@
   Carrito = líneas a precio base (+volumen por línea) + UN renglón global BOGO (`bogoLabel`) = total.
 - **Selección PDP (2026-09-22)**: fuente única `src/lib/pdp-purchase.ts` (`resolvePdpPurchase`, pura).
 - **Link de política de devoluciones**: SOLO en el footer, columna "Navegación".
-- **CUIDADO con `text-foreground`/`text-muted-foreground` (2026-09-22)**: en componentes compartidos (cart/checkout)
-  NUNCA usar estos tokens shadcn genéricos — `--foreground` es casi negro en `:root` (light). Usar SIEMPRE
-  `text-brand-smoke`/`text-brand-offwhite`/`text-brand-amber-light`/`text-brand-steel` en UI del carrito/checkout (dark).
+- **CUIDADO con `text-foreground`/`text-muted-foreground` (2026-09-22)**: en cart/checkout usar SIEMPRE tokens `brand-*`.
+- **Tracking event_id (2026-09-26)** — regla: event_id ÚNICO POR OCURRENCIA, generado UNA vez en `trackHybrid`
+  (o en `trackSearch`) y compartido por Pixel + CAPI + PostHog. `stableId` SOLO con clave idempotente real
+  (`order_id` en Purchase / InitiateCheckout). NUNCA product_id ni search query. NO filtrar eventos Meta por fuente de tráfico.
 
 ---
 
-## Active Plan — 🚀 Experimento de oferta ACTIVADO, QA de cliente en curso (2026-09-22)
+## Active Plan — Fix de dedupe Meta Pixel + CAPI (2026-09-26)
+- Hecho: ViewContent/AddToCart → UUID por llamada; InitiateCheckout → `order_id` o UUID (sin fallback a product id);
+  Search → UUID por llamada; Purchase y CustomEvent sin cambios.
+- Test nuevo `src/lib/__tests__/tracking-event-id.test.ts` (casos A–H). **NO ejecutado** (el agente no tiene terminal;
+  `vitest` además NO está en devDependencies). Cliente debe correr `npx vitest run src/lib/__tests__` y `npx tsc --noEmit`/`npm run build`.
+- Observación: `CheckoutAdapter` llama `trackInitiateCheckout` SIN `order_id` (guardado por `hasTrackedCheckout` ref)
+  → cada montaje de `/pagar` = nuevo IC con UUID. Correcto para dedupe; no se cambió.
 
-### `exp-cdddcb57-pdp-second-belt-offer`
-- Manifiesto `active`. BOGO `7653e73d-...` `active: true` desde 2026-09-22 20:23 UTC.
-- **Cliente confirmó QA manual**: carrito S+L (2 unidades, tallas distintas) en `/pagar` mostró
-  Subtotal $1,598, descuento -$400 ("Rodata One — 2.ª unidad al 50%"), Total $1,199. ✅ Coincide con lo esperado.
-  Aún falta que el cliente confirme el caso de 3 unidades ($1,997.50).
-- **Bug de contraste reportado y arreglado (2026-09-22)**: en `/pagar` la línea de descuento aplicado
-  (`CartAppliedRules.tsx`) se veía negro sobre negro. Causa: usaba `text-foreground`/`text-muted-foreground`
-  (tokens shadcn del tema claro) en vez de tokens de marca. Corregido a `text-brand-smoke` / `text-brand-amber-light`
-  / `text-brand-steel`. Afecta a `/pagar` Y `/carrito` (mismo componente compartido).
-- vitest `src/lib/__tests__/pack-pricing.test.ts` sigue SIN ejecutar.
-- Próximo paso: confirmar `experiment-list` → `started_at` ≠ null y `sync_status: synced`.
+### Experimento `exp-cdddcb57-pdp-second-belt-offer` (sigue activo)
+- Manifiesto `active`, BOGO `7653e73d-...` activa. Cliente validó 2 unidades (S+L = $1,199). Falta caso 3 unidades.
 
 ---
 
 ## Recent Changes
-- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22, sesión 4)** — texto negro sobre negro en línea de
-  descuento BOGO en `/pagar` y `/carrito`. Cambiado a tokens `brand-*`. Cliente confirmó matemática del carrito OK (S+L=$1,199).
-- **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22, sesión 3)** — manifiesto `active`, BOGO `active: true`,
-  entrada en cro-log. Catálogo y experimento de precio intactos. DEDE sin tocar.
-- **🔧 Experimento de pack corregido (2026-09-22, sesión 2)** — `pdp-purchase.ts`, tests vitest, `cart-pricing.ts`,
-  `HeadlessProduct.tsx`, `ProductExpressCheckout.tsx`, `ProductPageUI.tsx`, carrito.
+- **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)** — `tracking-utils.ts`: quitados stableIds falsos (product_id en
+  VC/ATC/IC-fallback, search_string en Search). Nuevo test `tracking-event-id.test.ts`. Sin ejecutar.
+- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22, sesión 4)** — tokens `brand-*` en línea de descuento.
+- **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22, sesión 3)**.
+- **🔧 Experimento de pack corregido (2026-09-22, sesión 2)**.
 - **✅ Página `/politica-de-devoluciones` creada** (2026-09-22).
 - **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
 - **⚪ Test de precio $799 vs $849 CERRADO como inconcluso** (2026-09-22).
@@ -85,39 +82,34 @@ Base URLs:
 ### Creativos ads: `SB_MSG/1786041572607-{zlqbmm6nxp,2687rjqwf6x,iufym7bnuz9}.webp`
 
 ## Known Issues
-- **Código `DEDE` (verificado 2026-09-22 sesión 3)**: id `8520904d-...`, percentage 98%, `active: true`, sin mínimo.
-  NO modificado (requiere autorización). Riesgo real: cualquiera con el código paga 2%.
-- **Loader de carrito por URL roto (2026-09-22)**: `useURLCartLoader.ts` usa join `products`↔`product_variants`
-  que PostgREST no reconoce (PGRST200) → `?items=` y `?variant=` NO cargan carrito. Preexistente. Afecta links
-  de email/ads que usen esos params y bloquea QA automatizado.
-- **QA de 3 unidades sin confirmar** — cliente confirmó 2 unidades (S+L) OK, falta el caso de 3 unidades ($1,997.50).
-- **Wallet: cupón en cotización** depende de `verify-discount`; si difiere, entra la re-confirmación.
-- **Wallet: re-cotización crea una orden pendiente extra** por intento fallido (sin cobro).
-- **Fallback `order.total_amount`** en express sigue siendo `unit×qty` si el backend no lo devuelve (preexistente).
-- **Canonical en `index.html` apunta a `https://rodata.mx`** pero producción es `rodata.store` (2026-09-22).
-- **Stacking volume+bogo**: si se crea volume rule para Rodata One, el pack se oculta (fail-safe).
+- **Tests vitest nunca ejecutados (2026-09-26)**: `vitest` no está en devDependencies; `pack-pricing.test.ts` y
+  `tracking-event-id.test.ts` requieren `npm i -D vitest` + `npx vitest run src/lib/__tests__`. El agente no tiene terminal.
+- **Código `DEDE` (verificado 2026-09-22)**: 98%, `active: true`, sin mínimo. NO modificado (requiere autorización).
+- **Loader de carrito por URL roto (2026-09-22)**: `useURLCartLoader.ts` join PGRST200 → `?items=`/`?variant=` no cargan.
+- **QA de 3 unidades sin confirmar**.
+- **Wallet: cupón en cotización** depende de `verify-discount` · **re-cotización crea orden pendiente extra**.
+- **Fallback `order.total_amount`** en express = `unit×qty` si backend no lo devuelve.
+- **Canonical en `index.html` apunta a `https://rodata.mx`** pero producción es `rodata.store`.
+- **Stacking volume+bogo**: si se crea volume rule, el pack se oculta (fail-safe).
 - **CTA de control muestra precio unitario** aunque cantidad > 1.
-- **`?exp=` preview del runtime**: no usar en links compartidos ni anuncios.
-- **Caché de navegador post-deploy**: pedir hard refresh antes de re-editar.
-- **Google Ads sin validar (2026-09-01)** · **PayPal MX sin prueba real (2026-08-18)** · **Meta Purchase duplicados (2026-08-06)**.
-- PayPal express no está en la PDP carretera; si se añade, debe consumir `selectedPurchaseItems` + `validateSelection`.
+- **`?exp=` preview del runtime**: no usar en links compartidos.
+- **Google Ads sin validar (2026-09-01)** · **PayPal MX sin prueba real (2026-08-18)** · **Meta Purchase duplicados (2026-08-06)**
+  (Purchase no se tocó en el fix de 2026-09-26; sigue usando `purchase_<order_id>`).
 
 ## Key Files
+- `src/lib/tracking-utils.ts` (event_id lifecycle), `src/lib/facebook-pixel.ts`, `src/lib/__tests__/tracking-event-id.test.ts`
 - `src/lib/pdp-purchase.ts`, `src/lib/cart-pricing.ts`, `src/lib/__tests__/pack-pricing.test.ts`
-- `src/components/PackOfferSelector.tsx` — UI del test
-- `src/components/ui/CartAppliedRules.tsx` — línea de reglas aplicadas (BOGO/volume) en cart+checkout. Usa tokens `brand-*`.
+- `src/components/PackOfferSelector.tsx`, `src/components/ui/CartAppliedRules.tsx`
 - `src/experiments/rodata-one-pack-presentation.json` — **active**
 - Runtime protegido: `src/experiments/index.ts`, `src/hooks/useExperiment.ts`, `src/hooks/usePriceExperiment.ts`, `src/lib/experiments.ts`
-- `src/components/headless/HeadlessProduct.tsx`, `src/components/ProductExpressCheckout.tsx`
-- `src/adapters/CartAdapter.tsx`, `src/pages/ui/CartUI.tsx`, `src/components/CartSidebar.tsx`
-- `src/pages/ui/ProductPageUI.tsx` (gate `OfferExperimentGate`), `src/hooks/useURLCartLoader.ts` (roto)
+- `src/components/headless/HeadlessProduct.tsx`, `src/components/ProductExpressCheckout.tsx`, `src/adapters/CheckoutAdapter.tsx`
 
 ## PENDING / Future Sessions
-- **[CRÍTICA]** Próxima sesión: `experiment-list` → confirmar `started_at` + `synced`.
-- **[MEDIA]** Confirmar con cliente el caso de 3 unidades ($1,997.50) — el de 2 unidades ya quedó validado.
+- **[ALTA]** Cliente: correr `npx vitest run src/lib/__tests__` + `npm run build` y confirmar verde.
+- **[ALTA]** Validar en Meta Events Manager (Test Events) que VC/ATC llegan con "Deduplicado" Browser+Server.
+- **[CRÍTICA]** `experiment-list` → confirmar `started_at` + `synced` del experimento de pack.
+- **[MEDIA]** Confirmar caso de 3 unidades ($1,997.50).
 - **[CRÍTICA]** Decisión del cliente sobre `DEDE`.
-- **[ALTA]** Arreglar `useURLCartLoader` (join de variantes) — con permiso del cliente; habilita QA automatizado.
-- **[ALTA]** Ejecutar `npx vitest run src/lib/__tests__`.
-- **[ALTA]** Merchant Center devoluciones + verificación del sitio · decidir canonical.
-- **[ALTA]** Insight de recuperación de pagos · email checkout abandonado · ad set repartidores con UTMs.
+- **[ALTA]** Arreglar `useURLCartLoader` (con permiso).
+- **[ALTA]** Merchant Center devoluciones + decidir canonical.
 - **[MEDIA]** `estimated_delivery_at` · enhanced conversions · hidratar `/gracias/:id`.

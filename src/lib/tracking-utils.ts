@@ -105,10 +105,14 @@ class TrackingUtility {
     };
   }
 
-  // Generate deterministic event ID for deduplication.
-  // If stableId is provided (e.g. order_id, product_id), the ID is stable across
-  // multiple calls for the same resource → Meta deduplicates correctly.
-  // Falls back to UUID (random) when no stableId is given.
+  // Generate the event_id shared by Browser Pixel + CAPI (+ PostHog) for ONE
+  // occurrence of an event.
+  // - stableId: ONLY pass a real idempotent business key that identifies a single
+  //   occurrence (e.g. order_id for Purchase / InitiateCheckout of that order).
+  //   NEVER pass product_id, search query, etc. — those are shared across many
+  //   real occurrences/users and would make Meta drop legitimate events.
+  // - No stableId → random UUID, unique per call.
+  // Callers must generate it ONCE per occurrence and reuse it for every channel.
   private generateEventId(eventName: string = 'evt', stableId?: string): string {
     const ev = eventName.toLowerCase();
     if (stableId && String(stableId).length > 0) {
@@ -214,8 +218,8 @@ class TrackingUtility {
         content_category
       };
 
-      const vcStableId = products?.[0]?.id;
-      this.trackHybrid('ViewContent', browserParams, customData, vcStableId);
+      // No stableId: each real view is its own occurrence → fresh UUID.
+      this.trackHybrid('ViewContent', browserParams, customData);
 
       googleAds.event('view_item', {
         value: browserParams.value,
@@ -252,8 +256,8 @@ class TrackingUtility {
         num_items: params.num_items || products.length
       };
 
-      const atcStableId = products?.[0]?.id;
-      this.trackHybrid('AddToCart', browserParams, customData, atcStableId);
+      // No stableId: each real add-to-cart is its own occurrence → fresh UUID.
+      this.trackHybrid('AddToCart', browserParams, customData);
 
       googleAds.event('add_to_cart', {
         value: browserParams.value,
@@ -294,8 +298,9 @@ class TrackingUtility {
         num_items: browserParams.num_items
       };
 
-      const icStableId = params.order_id || products?.[0]?.id;
-      this.trackHybrid('InitiateCheckout', browserParams, customData, icStableId);
+      // order_id (if present) identifies the real checkout → idempotent.
+      // No fallback to product id: undefined → fresh UUID.
+      this.trackHybrid('InitiateCheckout', browserParams, customData, params.order_id);
 
       googleAds.event('begin_checkout', {
         value: browserParams.value,
@@ -358,7 +363,8 @@ class TrackingUtility {
         return;
       }
 
-      const eventId = this.generateEventId('Search', search_string?.trim().toLowerCase());
+      // Each search is its own occurrence → fresh UUID (shared by Pixel + CAPI + PostHog below).
+      const eventId = this.generateEventId('Search');
       const browserParams = {
         search_string: search_string.trim(),
         ...(products && products.length > 0 && {
