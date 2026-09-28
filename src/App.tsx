@@ -33,6 +33,7 @@ const AboutRodata = lazy(() => import('./pages/AboutRodata'));
 const PendingPayment = lazy(() => import('./pages/PendingPayment'));
 const OrderTrack = lazy(() => import('./pages/OrderTrack'));
 const DeliveryLanding = lazy(() => import('./pages/DeliveryLanding'));
+const WristWrapLanding = lazy(() => import('./pages/WristWrapLanding'));
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                     <Suspense fallback={<div className="min-h-screen" />}>
                       <Routes>
                         <Route path="/" element={<Index />} />
+                        <Route path="/productos/munequeras-rodata" element={<WristWrapLanding />} />
                         <Route path="/productos/:slug" element={<Product />} />
                         <Route path="/repartidores" element={<DeliveryLanding />} />
                         <Route path="/paquete/:slug" element={<Bundle />} />
