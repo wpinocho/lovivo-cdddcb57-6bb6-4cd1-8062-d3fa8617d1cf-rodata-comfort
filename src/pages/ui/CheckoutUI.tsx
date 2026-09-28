@@ -15,6 +15,7 @@ import StripePayment from "@/components/StripePayment";
 import { PaypalExpressButton } from "@/components/PaypalExpressButton";
 import { HeadlessCheckout } from "@/components/headless/HeadlessCheckout";
 import { BrandLogoLeft } from "@/components/BrandLogoLeft";
+import { CheckoutPolicyLinks } from "@/components/CheckoutPolicyLinks";
 import { useURLCheckoutParams } from "@/hooks/useURLCheckoutParams";
 import { useTokenCheckout } from "@/hooks/useTokenCheckout";
 import { formatMoney } from "@/lib/money";
@@ -668,6 +669,7 @@ export default function CheckoutUI() {
 
               </div>
             </main>
+            <CheckoutPolicyLinks />
           </div>
         );
       }}

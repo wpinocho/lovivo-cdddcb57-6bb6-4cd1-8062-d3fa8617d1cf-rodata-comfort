@@ -1,19 +1,22 @@
 import { EcommerceTemplate } from '@/templates/EcommerceTemplate'
-import { useSettings } from '@/contexts/SettingsContext'
+import { usePolicyPageMeta } from '@/components/PolicyLayout'
+import { BRAND_NAME, SITE_URL, WHATSAPP_DISPLAY, whatsappUrl } from '@/lib/brand'
+
+const storeName = BRAND_NAME
 
 const TermsAndConditions = () => {
-  const { storeName } = useSettings()
+  usePolicyPageMeta('Términos y condiciones')
 
   return (
     <EcommerceTemplate>
       <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Términos y Condiciones</h1>
-        <p className="text-muted-foreground text-sm">Última actualización: abril 2025</p>
+        <p className="text-muted-foreground text-sm">Última actualización: septiembre 2026</p>
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">1. Aceptación de los Términos</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Al acceder y utilizar el sitio web de {storeName}, aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, te pedimos que no utilices nuestro sitio.
+            Al acceder y utilizar el sitio web de {storeName} ({SITE_URL.replace('https://', '')}), aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, te pedimos que no utilices nuestro sitio.
           </p>
         </section>
 
@@ -48,14 +51,16 @@ const TermsAndConditions = () => {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">6. Envíos y Entregas</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Los tiempos y costos de envío varían según la ubicación y el método de envío seleccionado. {storeName} no se hace responsable por retrasos causados por el servicio de paquetería, aduanas o eventos fuera de nuestro control. Los plazos de entrega son estimados y no constituyen una garantía.
+            El envío estándar es gratis en México donde exista cobertura de paquetería. El tiempo de entrega depende del destino y de la paquetería; los plazos mostrados son estimados. Pueden existir retrasos por causas externas a {storeName}, como clima, alta demanda o incidencias de la paquetería. Consulta los detalles en nuestra{' '}
+            <a href="/politica-de-envios" className="text-primary underline underline-offset-2">política de envíos</a>.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">7. Devoluciones y Reembolsos</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Si no estás satisfecho con tu compra, puedes solicitar una devolución dentro del plazo establecido en nuestra política de devoluciones. Los productos deben estar en su estado original, sin usar y con su empaque completo. Los reembolsos se procesarán al mismo método de pago utilizado en la compra original.
+            Tienes 30 días desde que recibes tu pedido para solicitar una devolución o un cambio de talla. Puedes probar el producto normalmente; no se aceptan productos rotos, alterados, muy manchados o dañados por mal uso. En una devolución normal, el envío de regreso corre por tu cuenta; si el producto llegó defectuoso o equivocado, {storeName} cubre los costos. Tu primer cambio de talla dentro de los 30 días es sin costo para ti. El reembolso se hace al mismo método de pago original después de recibir y revisar el producto, con un procesamiento máximo de 10 días hábiles. Consulta todos los detalles en nuestra{' '}
+            <a href="/politica-de-devoluciones" className="text-primary underline underline-offset-2">política de devoluciones</a>.
           </p>
         </section>
 
@@ -83,7 +88,8 @@ const TermsAndConditions = () => {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">11. Contacto</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de los canales de atención disponibles en nuestro sitio web.
+            Si tienes preguntas sobre estos Términos y Condiciones, escríbenos por{' '}
+            <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">WhatsApp al {WHATSAPP_DISPLAY}</a>.
           </p>
         </section>
       </div>

@@ -248,7 +248,7 @@ export const DeliveryPDPUI = ({ logic }: DeliveryPDPUIProps) => {
               <div className="hidden md:block relative">
                 <div className="rounded-2xl overflow-hidden bg-brand-graphite aspect-square relative">
                   <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
-                  <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">rodata.mx</div>
+                  <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">RODATA</div>
                 </div>
                 {discountPct && (
                   <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg">

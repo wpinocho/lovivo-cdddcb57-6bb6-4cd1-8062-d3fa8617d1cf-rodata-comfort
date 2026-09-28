@@ -28,6 +28,8 @@ const MySubscriptions = lazy(() => import('./pages/MySubscriptions'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const ReturnPolicy = lazy(() => import('./pages/ReturnPolicy'));
+const ShippingPolicy = lazy(() => import('./pages/ShippingPolicy'));
+const AboutRodata = lazy(() => import('./pages/AboutRodata'));
 const PendingPayment = lazy(() => import('./pages/PendingPayment'));
 const OrderTrack = lazy(() => import('./pages/OrderTrack'));
 const DeliveryLanding = lazy(() => import('./pages/DeliveryLanding'));
@@ -84,6 +86,8 @@ const App = () => (
                         <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
                         <Route path="/aviso-de-privacidad" element={<PrivacyPolicy />} />
                         <Route path="/politica-de-devoluciones" element={<ReturnPolicy />} />
+                        <Route path="/politica-de-envios" element={<ShippingPolicy />} />
+                        <Route path="/sobre-rodata" element={<AboutRodata />} />
                         <Route path="/pago-pendiente/:orderId" element={<PendingPayment />} />
                         <Route path="/orders/track" element={<OrderTrack />} />
                         <Route path="/orders/track/:token" element={<OrderTrack />} />

@@ -9,6 +9,7 @@ import { ShoppingCart, Truck, Menu, X } from 'lucide-react'
 import { useCartUISafe } from '@/components/CartProvider'
 import { useCart } from '@/contexts/CartContext'
 import { ScrollLink } from '@/components/ScrollLink'
+import { BRAND_NAME, BRAND_TAGLINE, WHATSAPP_DISPLAY, POLICY_LINKS, whatsappUrl } from '@/lib/brand'
 
 interface NavLink {
   label: string
@@ -168,7 +169,10 @@ export const EcommerceTemplate = ({
           {/* Brand */}
           <div>
             <BrandLogoLeft />
-            <p className="mt-4 text-brand-steel text-sm leading-relaxed max-w-xs">
+            <p className="mt-4 text-brand-smoke text-sm font-medium max-w-xs">
+              {BRAND_NAME} · {BRAND_TAGLINE}.
+            </p>
+            <p className="mt-2 text-brand-steel text-sm leading-relaxed max-w-xs">
               Soporte lumbar premium para motociclistas. Diseñado para riders que quieren rodar más y llegar mejor.
             </p>
             <div className="mt-6">
@@ -186,9 +190,7 @@ export const EcommerceTemplate = ({
                 { label: 'Opiniones', href: '/#opiniones' },
                 { label: 'FAQ', href: '/#faq' },
                 { label: 'Rastrear pedido', href: '/orders/track' },
-                { label: 'Políticas de privacidad', href: '/aviso-de-privacidad' },
-                { label: 'Política de devoluciones', href: '/politica-de-devoluciones' },
-                { label: 'Términos y condiciones', href: '/terminos-y-condiciones' },
+                ...POLICY_LINKS,
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -204,9 +206,10 @@ export const EcommerceTemplate = ({
           {/* Contact */}
           <div>
             <h3 className="font-sora font-semibold text-brand-smoke text-sm uppercase tracking-widest mb-5">Contacto</h3>
-            <p className="text-brand-steel text-sm mb-4">¿Tienes dudas? Escríbenos por WhatsApp.</p>
+            <p className="text-brand-steel text-sm mb-1">¿Tienes dudas? Escríbenos por WhatsApp.</p>
+            <p className="text-brand-smoke text-sm font-medium mb-4">WhatsApp: {WHATSAPP_DISPLAY}</p>
             <a
-              href="https://wa.me/5215531215386?text=Hola,%20tengo%20una%20duda%20sobre%20el%20Soporte%20Lumbar%20Rodata%20One"
+              href={whatsappUrl('Hola, tengo una duda sobre el Soporte Lumbar Rodata One')}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] text-sm font-medium px-4 py-2.5 rounded transition-colors hover:bg-[#25D366]/20"
@@ -221,7 +224,7 @@ export const EcommerceTemplate = ({
 
         <div className="mt-12 pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-brand-steel text-xs">
-            © 2025 rodata.mx — Todos los derechos reservados.
+            © {new Date().getFullYear()} {BRAND_NAME} — Todos los derechos reservados.
           </p>
           <p className="text-brand-steel/60 text-xs">
             Hecho para riders mexicanos.

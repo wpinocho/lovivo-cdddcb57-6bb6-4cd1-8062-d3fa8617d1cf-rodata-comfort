@@ -14,7 +14,7 @@ const OrderTrack = () => {
 
   useEffect(() => {
     const prevTitle = document.title
-    document.title = 'Rastreo de pedido | rodata.mx'
+    document.title = 'Rastreo de pedido | RODATA'
 
     const meta = document.createElement('meta')
     meta.name = 'robots'

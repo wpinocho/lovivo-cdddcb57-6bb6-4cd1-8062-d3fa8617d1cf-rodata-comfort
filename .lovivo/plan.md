@@ -1,7 +1,7 @@
-# Rodata.mx — Plan
+# RODATA (rodata.store) — Plan
 
 ## Brand & Context
-- Marca premium de soporte lumbar para motociclistas mexicanos
+- Marca premium de soporte lumbar para motociclistas mexicanos. **Nombre público: "RODATA"** (NUNCA "rodata.mx"). Dominio oficial: **https://rodata.store**
 - Producto único: Rodata One — soporte lumbar (MX$799, compare_at MX$999, 20% OFF)
 - Slug real del producto: `soporte-lumbar-rodata-one` (id `400026a2-c277-407c-abbb-d1683f415120`)
 - 4 tallas (opción `Talla`): S `37d48c11-...`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
@@ -10,16 +10,22 @@
 - Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
 - **Avatar 1**: rider de carretera/fin de semana → PDP `/productos/soporte-lumbar-rodata-one`
 - **Avatar 2**: **repartidor de plataformas** (Rappi/DiDi/Uber Eats) → `/repartidores`
-- Store en producción: rodata.store
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
 - **Tráfico (30d, medido 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads.
 - **Ventas (30d)**: ~130 purchases ≈ 30/semana. CVR PDP ≈ 2.2%.
-- **Política de devoluciones (2026-09-22)**: 30 días naturales, cambios de talla, cliente genera guía. WhatsApp +52 55 3121 5386.
+- **Política oficial (2026-09-28)**: 30 días desde que recibe · se puede probar normalmente · no se acepta roto/alterado/muy manchado/mal uso ·
+  devolución normal = cliente paga regreso · defectuoso/equivocado = RODATA cubre · 1er cambio de talla en 30 días SIN COSTO ·
+  reembolso al método original, máx 10 días hábiles tras recibir/revisar · envío estándar gratis en MX donde haya cobertura · preparación 24–48 h hábiles.
+- WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
 - Amber: `brand-amber` #C98B2E / `brand-amber-light` #E5A842 — único acento
 - Typography: Sora (headings/bold), Inter (body/UI)
+- **Wordmark (2026-09-28)**: `BrandLogoLeft` = "RODA" offwhite + "TA" amber, Sora extrabold uppercase.
+- **Identidad pública — fuente única `src/lib/brand.ts`** (BRAND_NAME, SITE_URL, WHATSAPP_*, whatsappUrl, POLICY_LINKS).
+  NO usar `storeName` de settings en textos legales/públicos.
+- Páginas legales/informativas: `src/components/PolicyLayout.tsx` (`PolicyLayout`, `PolicySection`, `PolicyLink`, `usePolicyPageMeta` → title + canonical rodata.store).
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
 - **Convención de landings por avatar**: SIEMPRE forkear `ProductPageUI.tsx`.
 - **Regla del cliente (2026-08-20)**: en `/repartidores` SOLO fotos reales del cliente.
@@ -27,39 +33,34 @@
 - **ETA de entrega (2026-09-03)**: días naturales 4 a 7. Fuente única: `src/lib/delivery-estimate.ts`.
 - **Precios en UI (2026-09-04)**: NUNCA hardcodear precios ni % en JSX/meta.
 - **Pricing de reglas (2026-09-22)**: fuente única `src/lib/cart-pricing.ts`. Redondeo POR LÍNEA a centavos.
-  Carrito = líneas a precio base (+volumen por línea) + UN renglón global BOGO (`bogoLabel`) = total.
-- **Selección PDP (2026-09-22)**: fuente única `src/lib/pdp-purchase.ts` (`resolvePdpPurchase`, pura).
-- **Link de política de devoluciones**: SOLO en el footer, columna "Navegación".
-- **CUIDADO con `text-foreground`/`text-muted-foreground` (2026-09-22)**: en cart/checkout usar SIEMPRE tokens `brand-*`.
-- **Tracking event_id (2026-09-26)** — regla: event_id ÚNICO POR OCURRENCIA, generado UNA vez en `trackHybrid`
-  (o en `trackSearch`) y compartido por Pixel + CAPI + PostHog. `stableId` SOLO con clave idempotente real
-  (`order_id` en Purchase / InitiateCheckout). NUNCA product_id ni search query. NO filtrar eventos Meta por fuente de tráfico.
+- **Selección PDP (2026-09-22)**: fuente única `src/lib/pdp-purchase.ts`.
+- **Links de políticas**: footer columna "Navegación" (vía POLICY_LINKS) + pie de checkout (`CheckoutPolicyLinks`).
+- **CUIDADO con `text-foreground`/`text-muted-foreground`**: en cart/checkout usar SIEMPRE tokens `brand-*`.
+- **Tracking event_id (2026-09-26)**: event_id ÚNICO POR OCURRENCIA en `trackHybrid`/`trackSearch`; stableId SOLO con order_id.
 
 ---
 
-## Active Plan — Fix de dedupe Meta Pixel + CAPI (2026-09-26)
-- Hecho: ViewContent/AddToCart → UUID por llamada; InitiateCheckout → `order_id` o UUID (sin fallback a product id);
-  Search → UUID por llamada; Purchase y CustomEvent sin cambios.
-- Test nuevo `src/lib/__tests__/tracking-event-id.test.ts` (casos A–H). **NO ejecutado** (el agente no tiene terminal;
-  `vitest` además NO está en devDependencies). Cliente debe correr `npx vitest run src/lib/__tests__` y `npx tsc --noEmit`/`npm run build`.
-- Observación: `CheckoutAdapter` llama `trackInitiateCheckout` SIN `order_id` (guardado por `hasTrackedCheckout` ref)
-  → cada montaje de `/pagar` = nuevo IC con UUID. Correcto para dedupe; no se cambió.
+## Active Plan — Fix "Información engañosa" Google Merchant Center (2026-09-28)
+- Hecho en código: identidad RODATA, metadata rodata.store, footer de confianza, políticas consistentes, `/sobre-rodata`, `/politica-de-envios`, links en checkout.
+- Siguiente (cliente): cambiar nombre de tienda en Dashboard a "RODATA" si aún dice rodata.mx; en Merchant Center dominio = rodata.store,
+  políticas de devolución (30 días, link `/politica-de-devoluciones`) y envío (gratis) iguales a la web; solicitar revisión.
 
 ### Experimento `exp-cdddcb57-pdp-second-belt-offer` (sigue activo)
-- Manifiesto `active`, BOGO `7653e73d-...` activa. Cliente validó 2 unidades (S+L = $1,199). Falta caso 3 unidades.
+- Manifiesto `active`, BOGO `7653e73d-...` activa. Falta QA de 3 unidades.
 
 ---
 
 ## Recent Changes
-- **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)** — `tracking-utils.ts`: quitados stableIds falsos (product_id en
-  VC/ATC/IC-fallback, search_string en Search). Nuevo test `tracking-event-id.test.ts`. Sin ejecutar.
-- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22, sesión 4)** — tokens `brand-*` en línea de descuento.
-- **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22, sesión 3)**.
-- **🔧 Experimento de pack corregido (2026-09-22, sesión 2)**.
+- **🛡️ Merchant Center trust fix (2026-09-28)** — `index.html` (title/author/canonical/OG/Twitter → RODATA + rodata.store; quitado lovable),
+  `BrandLogoLeft` wordmark, `EcommerceTemplate` footer (tagline, WhatsApp visible, POLICY_LINKS, © año RODATA), `ReturnPolicy` reescrita,
+  `TermsAndConditions` (quitado "sin usar y con empaque completo"), `PrivacyPolicy` (contacto WhatsApp), nuevas `AboutRodata`/`ShippingPolicy` + rutas,
+  `CheckoutPolicyLinks` en `CheckoutUI` (solo presentación), badge "rodata.mx"→"RODATA" en ProductPageUI/DeliveryPDPUI, título OrderTrack.
+- **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)** — sin ejecutar tests.
+- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22)**.
+- **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22)**.
 - **✅ Página `/politica-de-devoluciones` creada** (2026-09-22).
 - **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
 - **⚪ Test de precio $799 vs $849 CERRADO como inconcluso** (2026-09-22).
-- **🚀 Test de precio $799 vs $849 lanzado** (2026-09-04).
 - **✅ ETA centralizado** (2026-09-03).
 - **✅ Recuperación de pagos rechazados** (2026-09-03).
 - **✅ Google Ads (gtag.js)** (2026-09-01).
@@ -77,39 +78,33 @@ Base URLs:
 - LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · PRODUCT_FLAT `SB_MSG/1775767354281-gqxi2j4hklp.webp`
 - FEAT_IMG_1-3: `SB_MSG/1775777133671-80hvv9dmxa.webp`, `1775777133672-xhxki05535d.webp`, `1775777133672-dzkdrl1lt2.webp`
 - REVIEW_IMG_1-5 `SB_PROD/review-1..5.webp` · avatares `SB_PROD/avatar-{carlos,jorge,andres}-v3.webp`
-### Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`; LIFESTYLE `SB_MSG/1775771349198-{676o65sijn4,tl8qt6nmo8,z730si7cdto}.webp`; PROBLEMA `SB_MSG/1775770729257-1nufsuab1jt.webp`
+### Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp` (también og:image/twitter:image); LIFESTYLE `SB_MSG/1775771349198-{676o65sijn4,tl8qt6nmo8,z730si7cdto}.webp`; PROBLEMA `SB_MSG/1775770729257-1nufsuab1jt.webp`
 ### Repartidor (real): galería `SB_MSG/1787249204164-{ifubpmh955s,h4pa1xnbjw,5rlwxy193t3,r9dtbwqmwaa,7ws595nt61i}`; resto prefijo `1787251752010-`. DEPRECADAS: `SB_PROD/dlv-*.webp`.
 ### Creativos ads: `SB_MSG/1786041572607-{zlqbmm6nxp,2687rjqwf6x,iufym7bnuz9}.webp`
 
 ## Known Issues
-- **Tests vitest nunca ejecutados (2026-09-26)**: `vitest` no está en devDependencies; `pack-pricing.test.ts` y
-  `tracking-event-id.test.ts` requieren `npm i -D vitest` + `npx vitest run src/lib/__tests__`. El agente no tiene terminal.
-- **Código `DEDE` (verificado 2026-09-22)**: 98%, `active: true`, sin mínimo. NO modificado (requiere autorización).
-- **Loader de carrito por URL roto (2026-09-22)**: `useURLCartLoader.ts` join PGRST200 → `?items=`/`?variant=` no cargan.
-- **QA de 3 unidades sin confirmar**.
+- **Copy "garantía 30 días" (2026-09-28)**: `StripePayment.tsx` ("Garantía 30 Días") y `DeliveryLandingUI.tsx` ("30 días de garantía") — puede
+  leerse distinto a la política (es devolución, no garantía). NO se tocó (Stripe prohibido). Recomendado cambiar a "30 días para devolver".
+- **Comentarios de código con "rodata.mx"** (no públicos): index.css, tailwind.config.ts, stripe-appearance.ts, ProductPageUI/DeliveryLandingUI línea 1.
+- **Canonical estático** en `index.html` = home para rutas que no lo sobrescriben (PDP carretera no setea canonical propio).
+- **Tests vitest nunca ejecutados**: `vitest` no está en devDependencies.
+- **Código `DEDE`**: 98%, `active: true`, sin mínimo. NO modificado (requiere autorización).
+- **Loader de carrito por URL roto**: `useURLCartLoader.ts` join PGRST200.
 - **Wallet: cupón en cotización** depende de `verify-discount` · **re-cotización crea orden pendiente extra**.
-- **Fallback `order.total_amount`** en express = `unit×qty` si backend no lo devuelve.
-- **Canonical en `index.html` apunta a `https://rodata.mx`** pero producción es `rodata.store`.
 - **Stacking volume+bogo**: si se crea volume rule, el pack se oculta (fail-safe).
-- **CTA de control muestra precio unitario** aunque cantidad > 1.
-- **`?exp=` preview del runtime**: no usar en links compartidos.
-- **Google Ads sin validar (2026-09-01)** · **PayPal MX sin prueba real (2026-08-18)** · **Meta Purchase duplicados (2026-08-06)**
-  (Purchase no se tocó en el fix de 2026-09-26; sigue usando `purchase_<order_id>`).
+- **Google Ads sin validar** · **PayPal MX sin prueba real** · **Meta Purchase duplicados (2026-08-06)**.
 
 ## Key Files
-- `src/lib/tracking-utils.ts` (event_id lifecycle), `src/lib/facebook-pixel.ts`, `src/lib/__tests__/tracking-event-id.test.ts`
-- `src/lib/pdp-purchase.ts`, `src/lib/cart-pricing.ts`, `src/lib/__tests__/pack-pricing.test.ts`
-- `src/components/PackOfferSelector.tsx`, `src/components/ui/CartAppliedRules.tsx`
+- `src/lib/brand.ts`, `src/components/PolicyLayout.tsx`, `src/components/CheckoutPolicyLinks.tsx`
+- `src/pages/{ReturnPolicy,ShippingPolicy,AboutRodata,TermsAndConditions,PrivacyPolicy}.tsx`
+- `src/lib/tracking-utils.ts`, `src/lib/facebook-pixel.ts`, `src/lib/__tests__/*`
+- `src/lib/pdp-purchase.ts`, `src/lib/cart-pricing.ts`, `src/components/PackOfferSelector.tsx`
 - `src/experiments/rodata-one-pack-presentation.json` — **active**
-- Runtime protegido: `src/experiments/index.ts`, `src/hooks/useExperiment.ts`, `src/hooks/usePriceExperiment.ts`, `src/lib/experiments.ts`
-- `src/components/headless/HeadlessProduct.tsx`, `src/components/ProductExpressCheckout.tsx`, `src/adapters/CheckoutAdapter.tsx`
 
 ## PENDING / Future Sessions
-- **[ALTA]** Cliente: correr `npx vitest run src/lib/__tests__` + `npm run build` y confirmar verde.
-- **[ALTA]** Validar en Meta Events Manager (Test Events) que VC/ATC llegan con "Deduplicado" Browser+Server.
-- **[CRÍTICA]** `experiment-list` → confirmar `started_at` + `synced` del experimento de pack.
-- **[MEDIA]** Confirmar caso de 3 unidades ($1,997.50).
-- **[CRÍTICA]** Decisión del cliente sobre `DEDE`.
-- **[ALTA]** Arreglar `useURLCartLoader` (con permiso).
-- **[ALTA]** Merchant Center devoluciones + decidir canonical.
-- **[MEDIA]** `estimated_delivery_at` · enhanced conversions · hidratar `/gracias/:id`.
+- **[ALTA]** Cliente: Dashboard → nombre de tienda "RODATA"; Merchant Center → dominio rodata.store + políticas iguales + pedir revisión.
+- **[MEDIA]** Cambiar "Garantía 30 Días" (StripePayment) y "30 días de garantía" (DeliveryLandingUI) a lenguaje de devolución — requiere permiso.
+- **[MEDIA]** Canonical propio en PDP carretera (`https://rodata.store/productos/soporte-lumbar-rodata-one`).
+- **[ALTA]** Correr `npx vitest run src/lib/__tests__` + `npm run build`.
+- **[ALTA]** Validar dedupe VC/ATC en Meta Events Manager.
+- **[MEDIA]** QA 3 unidades · **[CRÍTICA]** decisión `DEDE` · **[ALTA]** `useURLCartLoader`.

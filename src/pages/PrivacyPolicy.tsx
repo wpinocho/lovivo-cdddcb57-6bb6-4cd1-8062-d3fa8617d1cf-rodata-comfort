@@ -1,14 +1,23 @@
 import { EcommerceTemplate } from '@/templates/EcommerceTemplate'
-import { useSettings } from '@/contexts/SettingsContext'
+import { usePolicyPageMeta } from '@/components/PolicyLayout'
+import { BRAND_NAME, WHATSAPP_DISPLAY, whatsappUrl } from '@/lib/brand'
+
+const storeName = BRAND_NAME
+
+const ContactWhatsApp = () => (
+  <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">
+    WhatsApp al {WHATSAPP_DISPLAY}
+  </a>
+)
 
 const PrivacyPolicy = () => {
-  const { storeName } = useSettings()
+  usePolicyPageMeta('Aviso de privacidad')
 
   return (
     <EcommerceTemplate>
       <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Aviso de Privacidad</h1>
-        <p className="text-muted-foreground text-sm">Última actualización: abril 2025</p>
+        <p className="text-muted-foreground text-sm">Última actualización: septiembre 2026</p>
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">1. Responsable del Tratamiento</h2>
@@ -83,7 +92,7 @@ const PrivacyPolicy = () => {
             <li><strong>Portabilidad:</strong> recibir tus datos en un formato estructurado y de uso común.</li>
           </ul>
           <p className="text-foreground/80 leading-relaxed">
-            Para ejercer cualquiera de estos derechos, contáctanos a través de los canales disponibles en nuestro sitio web.
+            Para ejercer cualquiera de estos derechos, escríbenos por <ContactWhatsApp />.
           </p>
         </section>
 
@@ -104,7 +113,7 @@ const PrivacyPolicy = () => {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">10. Contacto</h2>
           <p className="text-foreground/80 leading-relaxed">
-            Si tienes preguntas o inquietudes sobre este Aviso de Privacidad o el tratamiento de tus datos personales, puedes contactarnos a través de los canales de atención disponibles en nuestro sitio web.
+            Si tienes preguntas o inquietudes sobre este Aviso de Privacidad o el tratamiento de tus datos personales, escríbenos por <ContactWhatsApp />.
           </p>
         </section>
       </div>
