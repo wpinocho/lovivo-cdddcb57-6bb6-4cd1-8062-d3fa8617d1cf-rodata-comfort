@@ -40,6 +40,11 @@ import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
+import { GIFT_NAME, GIFT_NAME_SHORT, formatGiftEndDate } from "@/lib/gift-offer"
+import { GiftCountdown } from "@/components/GiftCountdown"
+import { GiftDetailsDrawer } from "@/components/GiftDetailsDrawer"
+
+const GIFT_END_SHORT = formatGiftEndDate()
 
 // ── Image constants (with Supabase image transform for performance) ──
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
@@ -64,9 +69,9 @@ const WRIST_IMG = `${SUPABASE_MSG}/1790638502334-pkwpdneq4dd.webp?width=800&qual
 const WRIST_THUMB = `${SUPABASE_MSG}/1790638502334-pkwpdneq4dd.webp?width=160&height=160&resize=cover&quality=75`
 
 const GIFT_LINES = [
-  { title: 'Menos cansancio en la mano del acelerador', desc: 'Compresión firme alrededor de la muñeca para los kilómetros largos.' },
-  { title: 'Debajo del guante, sin que estorbe', desc: 'Perfil delgado con abertura para el pulgar. No pierdes agarre ni control.' },
-  { title: 'Talla única, se ajusta en segundos', desc: 'Te las pones antes de arrancar y te olvidas de ellas.' },
+  { title: 'Menos fatiga por vibración', desc: 'Compresión firme que sostiene la muñeca en su posición natural, para que el zumbido del manubrio te canse menos en carretera y tráfico.' },
+  { title: 'Debajo del guante, sin estorbar', desc: 'Perfil delgado con abertura para el pulgar. No estorba el acelerador ni el clutch.' },
+  { title: 'Incluye 2, talla única', desc: 'Izquierda y derecha. Se ajustan en segundos y te olvidas de ellas.' },
 ]
 
 const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
@@ -134,8 +139,11 @@ const REVIEWS = [
 ]
 
 const FAQS = [
-  { q: '¿El regalo tiene costo?', a: 'No. El par de Muñequeras RODATA va incluido en tu pedido, sin costo extra.' },
-  { q: '¿Hasta cuándo?', a: 'Mientras dure el inventario de lanzamiento.' },
+  { q: '¿El regalo tiene costo?', a: 'No. El soporte de muñeca (par) va incluido en tu pedido y se agrega solo; no tienes que hacer nada.' },
+  { q: '¿Hasta cuándo?', a: GIFT_END_SHORT
+      ? `Hasta el ${formatGiftEndDate(true)} o hasta agotar el inventario de lanzamiento, lo que pase primero.`
+      : 'Mientras dure el inventario de lanzamiento.' },
+  { q: '¿El soporte de muñeca sirve para la vibración?', a: 'Ayuda a que la vibración del manubrio te canse menos: la compresión mantiene la muñeca firme en su posición natural. Si la molestia o el hormigueo siguen después de bajarte, conviene consultarlo con un médico.' },
   { q: '¿Se puede usar debajo de la chamarra?', a: 'Sí, está diseñado para eso. Su perfil bajo lo hace prácticamente invisible bajo tu equipo habitual.' },
   { q: '¿Cómo elijo mi talla?', a: 'Mide tu cintura a la altura del ombligo y compara con la guía en esta página. Entre dos tallas, elige la mayor.' },
   { q: '¿Sirve para trayectos largos y uso diario?', a: 'Sí para ambos. Construido para uso frecuente en ciudad y carretera. Varios clientes lo usan todos los días.' },
@@ -179,6 +187,7 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [expressAvailable, setExpressAvailable] = useState(false)
   const [showStickyBar, setShowStickyBar] = useState(false)
+  const [giftOpen, setGiftOpen] = useState(false)
 
   // Sticky bar: only shows AFTER the CTA has been visible at least once
   const ctaRef = useRef<HTMLDivElement>(null)
@@ -308,7 +317,10 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                   <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                   <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">RODATA</div>
                   {displayImage === KIT_IMG && (
-                    <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 bg-brand-amber text-brand-carbon text-xs font-sora font-bold px-3 py-1.5 rounded-lg shadow-lg"><Gift size={13}/>Incluido gratis</div>
+                    <button type="button" onClick={() => setGiftOpen(true)} className="absolute bottom-3 left-3 text-left bg-brand-amber text-brand-carbon px-3 py-1.5 rounded-lg shadow-lg">
+                      <span className="flex items-center gap-1.5 text-xs font-sora font-bold"><Gift size={13}/>INCLUIDO GRATIS</span>
+                      <span className="block text-[11px] font-inter font-medium">{GIFT_NAME} (par) ›</span>
+                    </button>
                   )}
                 </div>
                 {discountPct && (
@@ -328,7 +340,10 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                     <div key={i} className="flex-shrink-0 w-[calc(100%-32px)] snap-center">
                       <div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite relative">
                         {img === KIT_IMG && (
-                          <div className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 bg-brand-amber text-brand-carbon text-xs font-sora font-bold px-3 py-1.5 rounded-lg shadow-lg"><Gift size={13}/>Incluido gratis</div>
+                          <button type="button" onClick={() => setGiftOpen(true)} className="absolute bottom-3 left-3 z-10 text-left bg-brand-amber text-brand-carbon px-3 py-1.5 rounded-lg shadow-lg">
+                            <span className="flex items-center gap-1.5 text-xs font-sora font-bold"><Gift size={13}/>INCLUIDO GRATIS</span>
+                            <span className="block text-[11px] font-inter font-medium">{GIFT_NAME} (par) ›</span>
+                          </button>
                         )}
                         <img
                           src={img}
@@ -391,12 +406,8 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                 <div className="flex">
                   <div className="inline-flex items-center gap-2 bg-brand-amber text-brand-carbon rounded-lg px-3.5 py-2 shadow-[0_0_16px_rgba(201,139,46,0.3)]">
                     <Gift size={15} className="flex-shrink-0" />
-                    <span className="text-xs sm:text-sm font-sora font-bold">+ REGALO: par de Muñequeras Rodata{giftValue ? ` (valor ${logic.formatMoney(giftValue)})` : ''}</span>
+                    <span className="text-xs sm:text-sm font-sora font-bold">+ REGALO: {GIFT_NAME_SHORT} para moto{giftValue ? ` (valor ${logic.formatMoney(giftValue)})` : ''}</span>
                   </div>
-                </div>
-                {/* Launch offer badge */}
-                <div className="inline-flex items-center gap-1.5 bg-brand-amber/10 border border-brand-amber/20 rounded-full px-3.5 py-1.5">
-                  <span className="text-brand-amber text-xs font-sora font-semibold">🏷 Oferta de Lanzamiento · Envío gratis incluido</span>
                 </div>
               </div>
 
@@ -505,20 +516,36 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
               )}
 
               {/* Gift card */}
-              <div className="flex items-center gap-3 rounded-xl border border-brand-amber/40 bg-brand-amber/10 p-3">
-                <div className="h-16 w-16 rounded-lg overflow-hidden bg-brand-graphite flex-shrink-0">
-                  <img src={WRIST_THUMB} alt="Par de Muñequeras RODATA de regalo" className="w-full h-full object-cover" loading="lazy" />
+              <button
+                type="button"
+                onClick={() => setGiftOpen(true)}
+                aria-label={`Ver detalles del regalo: ${GIFT_NAME}`}
+                className="w-full text-left rounded-xl border border-brand-amber/40 bg-brand-amber/10 p-3 hover:border-brand-amber/70 active:scale-[0.99] transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-16 rounded-lg overflow-hidden bg-brand-graphite flex-shrink-0">
+                    <img src={WRIST_THUMB} alt={`${GIFT_NAME} de regalo`} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.12em] flex items-center gap-1"><Gift size={11}/>Tu regalo · Nuevo en RODATA</p>
+                    <p className="text-brand-offwhite text-sm font-sora font-semibold leading-tight mt-0.5">{GIFT_NAME}</p>
+                    <p className="text-brand-steel text-[11px] font-inter mt-0.5">Incluye 2 · contra la fatiga por vibración</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {giftValue && <p className="text-brand-steel text-xs line-through font-inter">{logic.formatMoney(giftValue)}</p>}
+                    <p className="text-brand-amber font-sora font-bold text-base">GRATIS</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.14em] flex items-center gap-1"><Gift size={11}/>Tu regalo</p>
-                  <p className="text-brand-offwhite text-sm font-sora font-semibold leading-tight">Par de Muñequeras RODATA</p>
-                  <p className="text-brand-steel text-[11px] font-inter mt-0.5">Se agrega automáticamente a tu pedido</p>
+                <div className="flex items-center justify-between gap-2 border-t border-brand-amber/20 mt-3 pt-2.5">
+                  <p className="flex items-center gap-1.5 text-brand-amber-light text-[11px] font-inter min-w-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-amber-light animate-pulse flex-shrink-0" />
+                    {GIFT_END_SHORT
+                      ? <span>Gratis solo por <GiftCountdown /></span>
+                      : <span>Gratis mientras dure el inventario de lanzamiento</span>}
+                  </p>
+                  <span className="flex items-center text-brand-amber text-[11px] font-sora font-semibold flex-shrink-0">Ver qué incluye<ChevronRight size={13}/></span>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  {giftValue && <p className="text-brand-steel text-xs line-through font-inter">{logic.formatMoney(giftValue)}</p>}
-                  <p className="text-brand-amber font-sora font-bold text-base">GRATIS</p>
-                </div>
-              </div>
+              </button>
 
               {/* CTAs */}
               <div ref={ctaRef} className="flex flex-col gap-3">
@@ -673,12 +700,15 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
       <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-16 lg:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="relative rounded-2xl overflow-hidden">
-            <img src={WRIST_IMG} alt="Muñequeras RODATA incluidas de regalo" className="w-full aspect-square object-cover" loading="lazy"/>
+            <img src={WRIST_IMG} alt={`${GIFT_NAME} incluido de regalo`} className="w-full aspect-square object-cover" loading="lazy"/>
             <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-brand-amber text-brand-carbon text-xs font-sora font-bold px-3 py-1.5 rounded-lg shadow-lg"><Gift size={13}/>Incluido gratis</div>
           </div>
           <div>
-            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Tu regalo</span>
-            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-6">Porque la espalda no es lo único que se cansa</h2>
+            <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Tu regalo · Nuevo en RODATA</span>
+            <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">Porque la espalda no es lo único que se cansa</h2>
+            <p className="text-brand-smoke text-sm font-inter leading-relaxed mb-6">
+              La moto vibra todo el camino y esa vibración pega en dos lugares: tu espalda baja y tus muñecas. El Rodata One cuida la primera. Este {GIFT_NAME_SHORT}, la segunda.
+            </p>
             <div className="space-y-4">
               {GIFT_LINES.map(({title, desc}) => (
                 <div key={title} className="flex items-start gap-3">
@@ -687,6 +717,9 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                 </div>
               ))}
             </div>
+            <button type="button" onClick={() => setGiftOpen(true)} className="inline-flex items-center gap-1 text-brand-amber text-sm font-sora font-semibold mt-6 hover:text-brand-amber-light transition-colors">
+              Ver detalles del regalo<ChevronRight size={15}/>
+            </button>
           </div>
         </div>
       </section>
@@ -818,6 +851,9 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
             )}
             {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
           </div>
+          <p className="text-brand-amber-light text-sm font-sora font-semibold -mt-4 mb-7 flex items-center justify-center gap-1.5">
+            <Gift size={14}/>+ {GIFT_NAME_SHORT} de regalo{GIFT_END_SHORT ? ` · hasta el ${GIFT_END_SHORT}` : ''}
+          </p>
           <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora + regalo<ChevronRight size={18}/></button>
         </div>
       </section>
@@ -850,13 +886,23 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                 ) : (
                   <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(ctaPrice)} <span className="text-brand-amber">+ regalo</span></p>
                 )}
-                <p className="text-brand-steel text-xs font-inter truncate">Incluye Muñequeras gratis</p>
+                <p className="text-brand-steel text-xs font-inter truncate">Incluye {GIFT_NAME_SHORT} gratis</p>
               </div>
               <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber amber-glow font-sora flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
             </div>
           </div>
         </div>
       )}
+
+      <GiftDetailsDrawer
+        open={giftOpen}
+        onOpenChange={setGiftOpen}
+        giftValue={giftValue}
+        formatMoney={logic.formatMoney}
+        onBuy={handlePrimary}
+        ctaDisabled={ctaDisabled || !logic.inStock}
+        ctaLabel={logic.isPriceResolving ? 'Comprar ahora' : `Comprar ahora · ${logic.formatMoney(ctaPrice)} + regalo`}
+      />
 
     </EcommerceTemplate>
   )

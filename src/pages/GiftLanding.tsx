@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { HeadlessProduct, useProductLogic } from "@/components/headless/HeadlessProduct"
 import { GiftPDPUI } from "@/pages/ui/GiftPDPUI"
 import { useGiftProduct } from "@/hooks/useGiftProduct"
@@ -7,7 +7,7 @@ import { useCheckout } from "@/hooks/useCheckout"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackAddToCart, tracking } from "@/lib/tracking-utils"
 import { SITE_URL } from "@/lib/brand"
-import { GIFT_MAIN_PRODUCT_SLUG, buildGiftCartItem, markGiftEligible } from "@/lib/gift-offer"
+import { GIFT_MAIN_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftEligible } from "@/lib/gift-offer"
 
 /**
  * ROUTE — /productos/soporte-lumbar-rodata-one-regalo
@@ -25,7 +25,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   useEffect(() => { markGiftEligible() }, [])
 
   useEffect(() => {
-    document.title = 'Rodata One + Muñequeras de regalo | RODATA'
+    document.title = 'Rodata One + Soporte de muñeca de regalo | RODATA'
     const robots = document.createElement('meta')
     robots.name = 'robots'
     robots.content = 'noindex, follow'
@@ -86,10 +86,14 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   )
 }
 
-const GiftLanding = () => (
-  <HeadlessProduct slug={GIFT_MAIN_PRODUCT_SLUG}>
-    {(logic) => <GiftPDPWithGift logic={logic} />}
-  </HeadlessProduct>
-)
+/** After the real end date the promo URL sends visitors (and ads) to the normal PDP. */
+const GiftLanding = () => {
+  if (!isGiftOfferActive()) return <Navigate to={`/productos/${GIFT_MAIN_PRODUCT_SLUG}`} replace />
+  return (
+    <HeadlessProduct slug={GIFT_MAIN_PRODUCT_SLUG}>
+      {(logic) => <GiftPDPWithGift logic={logic} />}
+    </HeadlessProduct>
+  )
+}
 
 export default GiftLanding
