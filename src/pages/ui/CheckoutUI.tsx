@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tag, X, ShoppingBag, Loader2, RefreshCw, ChevronDown, ChevronUp, Lock, Truck } from "lucide-react";
+import { Tag, X, ShoppingBag, Loader2, RefreshCw, ChevronDown, ChevronUp, Lock, Truck, Gift } from "lucide-react";
+import { isGiftProductId } from "@/lib/gift-offer";
 import { Badge } from "@/components/ui/badge";
 import { CartAppliedRules } from "@/components/ui/CartAppliedRules";
 import { useNavigate } from "react-router-dom";
@@ -547,6 +548,12 @@ export default function CheckoutUI() {
                                 </Badge>
                               </div>
                             )}
+                            {isGiftProductId(item.product?.id ?? item.product_id) ? (
+                              <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 bg-brand-amber/10 text-brand-amber border-brand-amber/20">
+                                <Gift className="h-2.5 w-2.5 mr-0.5" />
+                                Regalo incluido
+                              </Badge>
+                            ) : (
                             <div className="flex items-center justify-between mt-1">
                               <span className="text-sm text-brand-steel">Cantidad</span>
                               <div className="flex items-center space-x-2">
@@ -573,9 +580,12 @@ export default function CheckoutUI() {
                                 </Button>
                               </div>
                             </div>
+                            )}
                           </div>
                           <div className="font-semibold text-brand-offwhite">
-                            {formatMoney(item.total || (item.price * item.quantity), logic.currencyCode)}
+                            {isGiftProductId(item.product?.id ?? item.product_id) && !(item.total || item.price)
+                              ? <span className="text-brand-amber">GRATIS</span>
+                              : formatMoney(item.total || (item.price * item.quantity), logic.currencyCode)}
                           </div>
                         </div>
                       ))

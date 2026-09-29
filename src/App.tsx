@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { GiftCartSync } from "@/components/GiftCartSync";
+import { GIFT_PDP_PATH } from "@/lib/gift-offer";
 import { useEffect, lazy, Suspense } from "react";
 import { trackPageView } from "@/lib/tracking-utils";
 import { useURLCartLoader } from "@/hooks/useURLCartLoader";
@@ -34,6 +36,7 @@ const PendingPayment = lazy(() => import('./pages/PendingPayment'));
 const OrderTrack = lazy(() => import('./pages/OrderTrack'));
 const DeliveryLanding = lazy(() => import('./pages/DeliveryLanding'));
 const WristWrapLanding = lazy(() => import('./pages/WristWrapLanding'));
+const GiftLanding = lazy(() => import('./pages/GiftLanding'));
 
 const queryClient = new QueryClient();
 
@@ -70,10 +73,14 @@ const App = () => (
                   <CartUIProvider>
                     <PageViewTracker />
                     <URLCartLoader />
+                    <GiftCartSync />
                     <Suspense fallback={<div className="min-h-screen" />}>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/productos/munequeras-rodata" element={<WristWrapLanding />} />
+                        <Route path={GIFT_PDP_PATH} element={<GiftLanding />} />
+                        {/* The $0 gift product is never sold on its own */}
+                        <Route path="/productos/regalo-munequeras-rodata" element={<Navigate to={GIFT_PDP_PATH} replace />} />
                         <Route path="/productos/:slug" element={<Product />} />
                         <Route path="/repartidores" element={<DeliveryLanding />} />
                         <Route path="/paquete/:slug" element={<Bundle />} />

@@ -13,6 +13,7 @@ import type { CartProductItem } from "@/contexts/CartContext"
 import type { Product, PriceRule } from "@/lib/supabase"
 import { intervalLabel, calcSubscriptionPrice } from "@/lib/subscription-utils"
 import type { CartLineDisplay, LinesPricingResult } from "@/lib/cart-pricing"
+import { isGiftProductId } from "@/lib/gift-offer"
 
 interface CartUIProps {
   logic: {
@@ -154,7 +155,7 @@ export const CartUI = ({ logic }: CartUIProps) => {
                             </div>
                           )}
                           <div className="flex items-center justify-between">
-                            {item.type === 'product' && (item as CartProductItem).isBogoGift ? (
+                            {item.type === 'product' && ((item as CartProductItem).isBogoGift || isGiftProductId(item.product?.id)) ? (
                               /* Gift item */
                               <>
                                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
@@ -164,12 +165,14 @@ export const CartUI = ({ logic }: CartUIProps) => {
                                 <div className="text-right">
                                   <div className="font-bold text-lg text-accent-foreground">GRATIS</div>
                                   <div className="text-muted-foreground text-sm line-through">
-                                    {formatMoney((item.variant?.price ?? item.product.price) || 0, logic.currencyCode)}
+                                    {formatMoney((item.variant?.price ?? item.product.price) || (item.product as any).compare_at_price || 0, logic.currencyCode)}
                                   </div>
-                                  <Button variant="ghost" size="sm" onClick={() => logic.removeItem(item.key)} className="text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar
-                                  </Button>
+                                  {!isGiftProductId(item.product?.id) && (
+                                    <Button variant="ghost" size="sm" onClick={() => logic.removeItem(item.key)} className="text-destructive hover:text-destructive">
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Eliminar
+                                    </Button>
+                                  )}
                                 </div>
                               </>
                             ) : (

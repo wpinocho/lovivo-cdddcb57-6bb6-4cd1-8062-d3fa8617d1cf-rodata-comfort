@@ -18,6 +18,7 @@ import { intervalLabel, calcSubscriptionPrice } from "@/lib/subscription-utils"
 import { usePriceRules } from "@/hooks/usePriceRules"
 import { calcCartPricing, cartLineDisplay } from "@/lib/cart-pricing"
 import { BOGOGiftBanner } from "@/components/ui/BOGOGiftBanner"
+import { isGiftProductId } from "@/lib/gift-offer"
 
 interface CartSidebarProps {
   isOpen: boolean
@@ -227,7 +228,7 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                               </div>
                             )}
                             <div className="flex items-center justify-between mt-3">
-                              {(item as CartProductItem).isBogoGift ? (
+                              {((item as CartProductItem).isBogoGift || isGiftProductId(item.product?.id)) ? (
                                 /* Gift item: no qty controls, show GRATIS */
                                 <>
                                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0" style={{ backgroundColor: '#2A2F35', color: '#C9840A' }}>
@@ -237,11 +238,13 @@ export const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                                   <div className="text-right">
                                     <div className="font-semibold text-sm" style={{ color: '#C9840A' }}>GRATIS</div>
                                     <div className="text-xs line-through" style={{ color: '#6B7280' }}>
-                                      {formatMoney((item.variant?.price ?? item.product.price) || 0)}
+                                      {formatMoney((item.variant?.price ?? item.product.price) || (item.product as any).compare_at_price || 0)}
                                     </div>
-                                    <Button variant="ghost" size="sm" onClick={() => removeItem(item.key)} className="p-0 h-auto mt-1" style={{ color: '#EF4444' }}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    {!isGiftProductId(item.product?.id) && (
+                                      <Button variant="ghost" size="sm" onClick={() => removeItem(item.key)} className="p-0 h-auto mt-1" style={{ color: '#EF4444' }}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </>
                               ) : (
