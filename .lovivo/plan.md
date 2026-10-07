@@ -29,42 +29,43 @@
 - **Urgencia: SOLO real** — contador a fecha FIJA igual para todos (nunca por visitante).
 - **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina la vibración / quita hormigueo / túnel carpiano".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
+- **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07): ninguna otra página debe agregar el regalo.
 
 ## Active Plan
 
 ### ✅ A) Experimento pack 2ª unidad 50% — CERRADO 2026-10-07 (gana control)
 - Manifiesto `rodata-one-pack-presentation.json` → `completed`. Selector/gate quitado de `ProductPageUI.tsx` y `GiftPDPUI.tsx` (`ctaPrice = logic.currentPrice`).
-- `HeadlessProduct` conserva lógica `packOffer` inerte (packUiActive siempre false). `PackOfferSelector.tsx` sin imports (se puede borrar).
-- **Regla BOGO `7653e73d` SIGUE ACTIVA** — el cliente pidió no tocar nada más. Quien meta 2 unidades recibe 50% en la 2ª (también en PDP regalo).
-- Resultados guardados en `cro-log.md` → Ruled Out.
+- `HeadlessProduct` conserva lógica `packOffer` inerte. `PackOfferSelector.tsx` sin imports (se puede borrar).
+- **Regla BOGO `7653e73d` SIGUE ACTIVA** — el cliente pidió no tocar nada más.
 
 ### 🎁 B) Test "PDP normal vs PDP regalo" — EN PAUSA (cliente: "por ahora nada más")
-- Recomendación dada: A/B en Meta Ads (mismo ad set duplicado, solo cambia URL con UTM `utm_content=control|regalo`), NO redirect en tienda (Lovivo A/B no soporta condición exclusiva por grupo + redirect lento en mobile).
-- Break-even: margen/pedido control ≈ $423. Regalo costo X → necesita +X/(423−X) conversión. Pedir costo real del par de muñequeras.
-- Pendientes si se retoma: cargar `cost` del producto regalo; QA compra real celular en URL regalo; verificar eventos Pixel/CAPI en PDP regalo; decisión BOGO.
-- **Fecha regalo actualizada 2026-10-07**: `GIFT_OFFER_ENDS_AT = '2026-10-31T23:59:59-06:00'` (copy del contador es dinámico vía `formatGiftEndDate`).
+- Recomendación: A/B en Meta Ads (ad set duplicado, solo cambia URL con `utm_content=control|regalo`), NO redirect en tienda.
+- Break-even: margen/pedido control ≈ $423. Regalo costo X → necesita +X/(423−X) conversión. Pedir costo real del par.
+- `GIFT_OFFER_ENDS_AT = '2026-10-31T23:59:59-06:00'`.
 
-### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK del cliente para Craft)
-**Problema**: etiquetas Stripe AddressElement confusas ("Nombre de pila", "Primera/Segunda línea de la dirección"); Stripe NO permite cambiar labels. **No existe campo Colonia**.
-**Solución**: reemplazar AddressElement (solo modo envío) por `src/components/MxAddressForm.tsx`:
-1. Nombre(s) | Apellidos · 2. Calle y número exterior (req, `line1`) · 3. Número interior / depto (opcional) · 4. Colonia (req)
-5. Código postal (5 dígitos) | Ciudad o alcaldía · 6. Estado (select 32, mismo formato que hoy recibe `logic.address.state`) · 7. Teléfono (WhatsApp) con `CountryPhoneSelect.tsx`
-- `line2` = `[Int. X, ]Col. Y`. País fijo MX. `autoComplete` attrs. Mantener contrato `onAddressChange(addressValue, complete)` en CheckoutUI.tsx (L385-434).
-- Revisar en `StripePayment.tsx` todo lo que dependa del AddressElement (getValue, shipping en confirmPayment / payments-create-intent).
-- Rollback: constante `USE_CUSTOM_ADDRESS_FORM = true`. Inputs ≥48px, font ≥16px.
-- **Fix**: `clients-upsert 400 "email requerido"` → solo llamar `saveClientData(true)` con email válido.
-- **QA**: tarjeta con Int. vacío/lleno; colonia en line2 en pedido y Stripe; validación CP; Apple/Google Pay; PDP regalo; pickup.
+### 🎁 Lógica de elegibilidad del regalo (FIX 2026-10-07)
+- ANTES: visitar la URL regalo ponía flag 7 días (`rodata-gift-eligible`) → el regalo se agregaba desde CUALQUIER PDP (bug reportado).
+- AHORA (`gift-offer.ts` + `GiftCartSync.tsx`): el regalo se agrega SOLO si hay Rodata One en carrito mientras `pathname === GIFT_PDP_PATH`.
+  Eso marca `rodata-gift-claimed` (TTL 7d). Línea regalo sin claim → se quita. Sin Rodata One → se quita y se borra el claim.
+  "Comprar ahora" en PDP regalo llama `markGiftClaimed()` antes de `checkoutWithItems`. Flag legacy se borra.
+- Nota: si alguien tiene Rodata One en carrito y entra a la URL regalo, el regalo se agrega al entrar (intencional).
+
+### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK del cliente)
+- Reemplazar Stripe AddressElement (solo envío) por `src/components/MxAddressForm.tsx`: Nombre(s)|Apellidos · Calle y número exterior (`line1`) · Núm. interior (opc) · Colonia (req) · CP | Ciudad · Estado (select 32) · Teléfono (`CountryPhoneSelect`).
+- `line2` = `[Int. X, ]Col. Y`. País fijo MX. Mantener contrato `onAddressChange(addressValue, complete)` en CheckoutUI.tsx. Revisar `StripePayment.tsx`.
+- Rollback `USE_CUSTOM_ADDRESS_FORM`. Fix `clients-upsert 400 "email requerido"`.
 
 ### 🎁 PDP Regalo v2 — CONSTRUIDA 2026-09-29 (QA real pendiente)
-URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer.ts` (`GIFT_OFFER_ENDS_AT`, `isGiftOfferActive()`, `isGiftEligible()` flag localStorage 7 días), `GiftCountdown.tsx`, `GiftDetailsDrawer.tsx`, `GiftLanding.tsx` (al vencer → Navigate a PDP normal), `GiftPDPUI.tsx`, `GiftCartSync.tsx` (montado en App).
+URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer.ts`, `GiftCountdown.tsx`, `GiftDetailsDrawer.tsx`, `GiftLanding.tsx` (al vencer → Navigate a PDP normal), `GiftPDPUI.tsx`, `GiftCartSync.tsx` (montado en App dentro de BrowserRouter).
 
 ### PDP Muñequeras — pendiente validación cliente (precio final, cierre/material, reseña "Ricardo G., Guadalajara").
 ### Merchant Center — cliente: dominio rodata.store + políticas + revisión.
 
 ## Recent Changes
+- **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)** — ahora solo desde la URL regalo.
 - **✅ Exp pack 2ª unidad 50% cerrado + regalo extendido al 31 oct (2026-10-07)**.
 - **📋 Plan cerrar exp pack + test regalo vía Meta A/B (2026-10-07)**.
-- **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)** — pendiente Craft.
+- **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)** — pendiente.
 - **🎁 PDP Regalo v2 construida (2026-09-29)**.
 - **📋 Plan PDP Regalo v2 (2026-09-29)**.
 - **🎁 PDP Rodata One + Muñequeras de regalo (2026-09-28)**.
@@ -76,7 +77,6 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - **✅ `/politica-de-devoluciones` creada** (2026-09-22).
 - **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
 - **⚪ Test de precio $799 vs $849 CERRADO inconcluso** (2026-09-22).
-- **✅ ETA centralizado** (2026-09-03).
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -91,6 +91,7 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - **Regalo vence 2026-10-31 23:59 CDMX** (2026-10-07): después la URL regalo redirige a PDP normal.
 - **Regla BOGO 2ª unidad 50% sigue activa** (2026-10-07) sin selector visible; se acumula con el regalo si alguien compra 2.
 - **Producto regalo sin `cost`** (2026-10-07): margen sobrestimado hasta cargarlo.
+- **Fix regalo 2026-10-07**: carritos viejos con regalo agregado antes del fix (desde la URL regalo) pierden el regalo si salen de esa página antes de pagar (no hay forma de distinguirlos del bug). Ventana pequeña.
 - **Checkout (2026-09-29)**: etiquetas de Stripe confusas + sin campo Colonia. `clients-upsert` 400 "email requerido".
 - **Regalo (2026-09-29)**: sin QA de compra real con línea $0.
 - **Muñequeras**: precio provisional; reseña sin validar.
@@ -98,6 +99,7 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto (PGRST200).
 
 ## Pending / Future Sessions
+- **[ALTA]** QA del fix regalo: PDP normal → agregar → sin regalo; URL regalo → agregar → con regalo → ir a /pagar → regalo sigue.
 - **[ALTA]** Decidir regla BOGO `7653e73d` (¿desactivar?) — solo con OK explícito.
 - **[MEDIA]** Test regalo en Meta Ads (plan B) cuando el cliente lo retome.
 - **[BAJA]** Borrar `PackOfferSelector.tsx` y lógica pack inerte en `HeadlessProduct`.

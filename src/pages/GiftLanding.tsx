@@ -7,7 +7,7 @@ import { useCheckout } from "@/hooks/useCheckout"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackAddToCart, tracking } from "@/lib/tracking-utils"
 import { SITE_URL } from "@/lib/brand"
-import { GIFT_MAIN_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftEligible } from "@/lib/gift-offer"
+import { GIFT_MAIN_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftClaimed } from "@/lib/gift-offer"
 
 /**
  * ROUTE — /productos/soporte-lumbar-rodata-one-regalo
@@ -20,9 +20,6 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   const { currencyCode } = useSettings()
   const navigate = useNavigate()
   const [buying, setBuying] = useState(false)
-
-  // Visiting this page = eligible for the gift (GiftCartSync adds it to the cart)
-  useEffect(() => { markGiftEligible() }, [])
 
   useEffect(() => {
     document.title = 'Rodata One + Soporte de muñeca de regalo | RODATA'
@@ -50,6 +47,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
     if (buying || !logic.ensurePurchaseValid() || !logic.product) return
     setBuying(true)
     logic.setPurchaseLocked(true)
+    markGiftClaimed()
     trackAddToCart({
       products: [tracking.createTrackingProduct({
         id: logic.product.id,

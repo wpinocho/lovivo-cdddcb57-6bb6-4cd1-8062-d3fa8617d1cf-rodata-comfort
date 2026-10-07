@@ -8,9 +8,11 @@ import type { CartProductItem } from '@/contexts/CartContext'
  * crossed-out). The backend recomputes prices from the DB, so the charge is
  * really $0 — no client-side price trust involved.
  *
- * Eligibility: visiting the gift PDP sets a 7-day flag. While the flag is on,
- * <GiftCartSync/> keeps exactly ONE gift line whenever a Rodata One is in the
- * cart, and removes it when the Rodata One leaves.
+ * Eligibility (fixed 2026-10-07): the gift is ONLY added when the Rodata One is
+ * in the cart WHILE the visitor is on the gift PDP. That "claims" the gift for
+ * this cart. Gift lines without a claim (e.g. added from the normal PDP) are
+ * removed by <GiftCartSync/>. The claim is cleared when the Rodata One leaves
+ * the cart (incl. after purchase).
  */
 export const GIFT_MAIN_PRODUCT_ID = '400026a2-c277-407c-abbb-d1683f415120'
 export const GIFT_MAIN_PRODUCT_SLUG = 'soporte-lumbar-rodata-one'
@@ -46,20 +48,34 @@ export function formatGiftEndDate(long = false): string | null {
   }).format(new Date(GIFT_OFFER_ENDS_AT)).replace('.', '')
 }
 
-const FLAG_KEY = 'rodata-gift-eligible'
-const FLAG_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const CLAIM_KEY = 'rodata-gift-claimed'
+const LEGACY_FLAG_KEY = 'rodata-gift-eligible'
+const CLAIM_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 export const isGiftProductId = (id?: string | null) => !!id && id === GIFT_PRODUCT_ID
 
-export function markGiftEligible() {
-  try { localStorage.setItem(FLAG_KEY, String(Date.now())) } catch {}
+export const isGiftPdpPath = (pathname: string) => pathname.replace(/\/+$/, '') === GIFT_PDP_PATH
+
+/** Called only from the gift PDP when the gift goes into the cart/checkout. */
+export function markGiftClaimed() {
+  try {
+    localStorage.setItem(CLAIM_KEY, String(Date.now()))
+    localStorage.removeItem(LEGACY_FLAG_KEY)
+  } catch {}
 }
 
-export function isGiftEligible(): boolean {
+export function clearGiftClaim() {
+  try {
+    localStorage.removeItem(CLAIM_KEY)
+    localStorage.removeItem(LEGACY_FLAG_KEY)
+  } catch {}
+}
+
+export function isGiftClaimed(): boolean {
   try {
     if (!isGiftOfferActive()) return false
-    const ts = Number(localStorage.getItem(FLAG_KEY))
-    return !!ts && Date.now() - ts < FLAG_TTL_MS
+    const ts = Number(localStorage.getItem(CLAIM_KEY))
+    return !!ts && Date.now() - ts < CLAIM_TTL_MS
   } catch {
     return false
   }
