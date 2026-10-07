@@ -9,11 +9,11 @@
 - **Producto en prueba: Muñequeras RODATA (par)** — id `97b069e9-3ee5-45ff-872a-50ff91762189`, slug `munequeras-rodata`,
   **precio PROVISIONAL $449 / compare $599**, talla única, sin cost cargado. NO está en home ni menú.
 - **Producto REGALO**: título **"Regalo: Soporte de muñeca RODATA (par)"** id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
-  **price 0**, compare_at 449. Tags `regalo,no-listar`. Nombre visible en PDP: "Soporte de muñeca para moto" (constante `GIFT_NAME`).
+  **price 0**, compare_at 449. Tags `regalo,no-listar`. **SIN cost cargado** (necesario para medir margen real). Nombre visible: "Soporte de muñeca para moto".
 - Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
 - **Avatar 1**: rider carretera → PDP `/productos/soporte-lumbar-rodata-one` · **Avatar 2**: repartidor → `/repartidores`
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
-- **Tráfico (30d, 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads. ~130 ventas/30d, CVR PDP ≈ 2.2%.
+- **Tráfico (30d, 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads. ~130 ventas/30d, CVR PDP ≈ 2.2–2.7%.
 - **Política oficial (2026-09-28)**: 30 días desde que recibe · devolución normal = cliente paga regreso · defectuoso = RODATA cubre ·
   1er cambio de talla SIN COSTO · reembolso máx 10 días hábiles · envío estándar gratis en MX · preparación 24–48 h.
 - WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
@@ -31,51 +31,72 @@
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
 
 ## Active Plan
+
+### 🧪 A) Cerrar experimento pack 2ª unidad 50% (PLANEADO 2026-10-07 — listo para Craft)
+**Resultados (as_of 2026-10-07, 14.8 días, `experiment-results`)**:
+- Control: 826 visitantes · 22 compras · CVR 2.66% · AOV $799 · margen/visitante $11.27
+- Test (selector pack): 791 · 17 compras · CVR 2.15% · AOV $869.5 · margen/visitante $9.76 (**−13.4%**)
+- Prob. control mejor 67% (no concluyente estadísticamente, decisión backend "keep_collecting", <30 compradores/variante). Solo ~3 de 17 compradores test llevaron 2 unidades.
+- **Decisión del cliente: terminarlo. Gana control (PDP actual sin selector).**
+
+**Pasos Craft**:
+1. `src/experiments/rodata-one-pack-presentation.json` → `"status": "completed"` (NO borrar el archivo).
+2. `src/pages/ui/ProductPageUI.tsx`: quitar `OFFER_EXP_KEY`, `OFFER_PRODUCT_ID`, `OfferExpState`, `OFFER_EXP_IDLE`, `OfferExperimentGate`, el state `offerExp` (~L199-L277) y el render de `<PackOfferSelector>` (~L438-440) + import de `useExperiment`/`PackOfferSelector`. Dejar exactamente lo que veía `control`.
+3. `src/pages/ui/GiftPDPUI.tsx`: **mismo cleanup** (L5-L30, ~L227-L305, ~L481-483). OJO: hoy la PDP regalo TAMBIÉN asigna/expone el flag del pack → contaminaba el experimento. Quitar.
+4. `HeadlessProduct.tsx` (L55, ~L307-330, L610): la lógica `packOffer`/`packUiActive` puede quedarse inerte si nadie activa `packUiActive`; si es simple, eliminarla. No romper `selectedPurchaseItems`/`purchaseQuote`.
+5. `PackOfferSelector.tsx`: puede quedarse sin uso (o borrarse si no hay más imports).
+6. **Regla BOGO `7653e73d-ce1b-446f-a37d-3eb5cffb9602`** (2ª unidad 50%, compartida): PREGUNTAR al cliente antes de tocarla. Si queda activa, quien meta 2 unidades sigue recibiendo el 50% (y en la PDP regalo se acumularía con el regalo). Recomendación: desactivarla durante el test del regalo para medir limpio. Es cambio comercial global → solo con OK explícito.
+7. `.lovivo/cro-log.md`: mover a `## Ruled Out` con los números de arriba.
+
+### 🎁 B) Test "PDP normal vs PDP regalo" (PLANEADO 2026-10-07 — esperando respuestas del cliente)
+**Lo que quiere el cliente**: 50% del tráfico de anuncios a `/productos/soporte-lumbar-rodata-one` y 50% a `/productos/soporte-lumbar-rodata-one-regalo`.
+
+**Por qué NO como experimento Lovivo (redirect dentro de la tienda)**:
+- El sistema A/B de Lovivo V1 solo soporta presentación de una oferta COMPARTIDA o precio. Aquí el grupo test recibe un producto extra ($0) que el control no recibe = condición exclusiva por grupo → **no soportado** por la skill `workflow.ab-experiments` (no crear manifest para esto).
+- Además, un redirect por flag espera a PostHog (hasta 3 s de timeout) → en 94% mobile + Meta Ads, castigaría la variante regalo con pantalla en blanco / doble carga y ensucia la atribución del pixel.
+
+**Método recomendado: A/B test en Meta Ads (Dashboard AI)**:
+- Duplicar el ad set ganador → mismo creativo, presupuesto, audiencia; solo cambia la URL destino. Ideal usar "Prueba A/B" nativa de Meta para que no se solapen audiencias.
+- URLs con UTM:
+  - Control: `https://rodata.store/productos/soporte-lumbar-rodata-one?utm_source=meta&utm_campaign=test-regalo&utm_content=control`
+  - Regalo: `https://rodata.store/productos/soporte-lumbar-rodata-one-regalo?utm_source=meta&utm_campaign=test-regalo&utm_content=regalo`
+- Métrica de decisión: **margen por visita / costo por compra**, no solo CVR. Comparar en Dashboard (pedidos con línea regalo = variante regalo) + Meta (CPA).
+- Duración sugerida: 2–3 semanas o ~30+ compras por lado. Con ~130 ventas/mes total, decir claro que el resultado puede quedar ruidoso.
+
+**Break-even (decirlo al cliente)**: margen por pedido control ≈ $423 (backend: costo 209 + envío 135 + fees). Si el regalo cuesta X, la PDP regalo necesita subir la conversión ≥ X / (423 − X). Ej: X=$60 → +17%; X=$100 → +31%; X=$150 → +55%. **Pedir costo unitario real del par de muñequeras** (+ si sube costo de envío por peso).
+
+**Pasos Craft (preparación en tienda)**:
+1. **Fecha del regalo**: `GIFT_OFFER_ENDS_AT` en `src/lib/gift-offer.ts` vence **2026-10-09 23:59 CDMX** (en 2 días) → después la URL regalo redirige a la PDP normal y el test se rompe. Cambiar a la nueva fecha REAL que elija el cliente (sugerido: fin del test, p.ej. `2026-10-31T23:59:59-06:00`). Debe ser fecha fija igual para todos.
+2. Cargar `cost` del producto regalo `f29e9557-...` (update-product) con el costo real que dé el cliente → el margen en Dashboard/Lovivo sale correcto.
+3. Verificar que la PDP regalo dispara `viewcontent`/`addtocart`/`initiatecheckout`/`purchase` igual que la normal (Pixel + CAPI con event_id único) para que Meta optimice/compare bien.
+4. Verificar UTM se conserva hasta el pedido (si el pedido guarda utm/landing). Si no, la línea regalo en el pedido sirve como identificador de variante.
+5. Ya está `noindex` + canonical a PDP principal (no tocar).
+6. QA compra real en celular desde la URL regalo (pendiente desde 2026-09-29) ANTES de mandar tráfico.
+7. `cro-log.md`: registrar hipótesis bajo `## Active Experiments` como "test en Meta Ads (fuera de Lovivo A/B)".
+
+**Preguntas abiertas al cliente (2026-10-07)**: (1) costo unitario del par de muñequeras regalo; (2) nueva fecha fin real de la promo; (3) ¿desactivar regla BOGO 2ª unidad 50%?
+
 ### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK del cliente para Craft)
-**Problema**: el cliente ve en /pagar las etiquetas de Stripe AddressElement: "Nombre de pila", "Primera línea de la dirección",
-"Segunda línea de la dirección" (placeholder "Número de apartamento, suite…"). Confunden. **Stripe NO permite cambiar el texto de
-las etiquetas** del AddressElement (solo appearance/locale; ya usamos `locale: 'es-419'` en `StripePayment.tsx` L1033).
-Además **no existe campo Colonia** → en México las paqueterías la necesitan (riesgo de entregas fallidas / llamadas).
-
-**Solución**: reemplazar el AddressElement (solo modo envío, no pickup) por un formulario propio con etiquetas estilo Shopify MX:
-1. Nombre(s) | Apellidos (2 columnas)
-2. **Calle y número exterior** (placeholder "Ej. Av. Insurgentes Sur 1234") — requerido → `line1`
-3. **Número interior / depto (opcional)** (placeholder "Ej. Depto 4B, Int. 2") 
-4. **Colonia** — requerido
-5. **Código postal** (inputMode numeric, 5 dígitos, validar /^\d{5}$/) | **Ciudad o alcaldía** (2 columnas)
-6. **Estado** — select con los 32 estados (mismos valores/códigos que hoy manda Stripe al backend; revisar qué formato recibe `logic.address.state` hoy, ej. "Ciudad de México" vs "CDMX" vs "DF", y mantenerlo idéntico)
-7. **Teléfono (WhatsApp)** — reusar `CountryPhoneSelect.tsx` (+52 default), requerido, 10 dígitos
-8. (Opcional, colapsado) "Referencias para el repartidor" → si hay campo notas en orden, usarlo; si no, omitir.
-- Mapeo: `line1` = calle y número; `line2` = `[Int. X, ]Col. Y` (colonia SIEMPRE en line2 para que llegue a Stripe, pedido y guía). País fijo MX (`countryCode 'MX'`, nombre via `countryCodeToName`).
-- Autocompletar: `autoComplete` attrs (given-name, family-name, address-line1, address-line2, postal-code, address-level2, address-level1, tel) para que el celular rellene solo.
-- Mantener exacto el contrato actual de `onAddressChange(addressValue, complete)` en CheckoutUI.tsx (L385-434): construir el mismo objeto `{ address:{line1,line2,city,state,postal_code,country:'MX'}, name, phone }` y calcular `complete` con la validación propia → así no se toca saveClientData, PostHog `checkout_address_completed`, ExpressCheckout (`addressElementComplete`), ni la validación `onValidationRequired`.
-- Revisar dentro de `StripePayment.tsx` todo lo que dependa del AddressElement (getValue, elements.getElement(AddressElement), shipping en confirmPayment / payments-create-intent `shipping_address`) y alimentarlo desde el estado del formulario propio (prop `shippingAddress` ya llega desde CheckoutUI).
-- `defaultValues` (defaultAddress / cliente que regresa) → prellenar inputs.
-- Errores inline por campo (texto ámbar/rojo suave, nunca culpar), solo tras blur o intento de pago.
-- Estilo: igual al actual (inputs graphite, borde ámbar en focus, labels smoke 14px, alto ≥48px, font-size ≥16px para que iOS no haga zoom).
-- **Rollback**: dejar el AddressElement detrás de una constante `USE_CUSTOM_ADDRESS_FORM = true` en `StripePayment.tsx` para poder volver en 1 línea.
-- Nuevo archivo sugerido: `src/components/MxAddressForm.tsx`.
-- Wallets (Apple/Google Pay) y Link para tarjeta NO cambian. Se pierde autollenado de dirección de Link (aceptado).
-
-**Fix de paso**: consola muestra `clients-upsert 400 {"error":"email requerido"}` → `logic.saveClientData(true)` se dispara al completar dirección antes de tener email. Solo llamarlo si el email es válido (regex ya existe en L330); re-disparar cuando llegue el email.
-
-**QA obligatorio (checkout = dinero)**: en móvil — pedido tarjeta con Int. vacío y lleno; ver que el pedido en Dashboard y el PaymentIntent en Stripe tengan colonia en line2; validación bloquea CP de 4 dígitos / sin colonia; Apple/Google Pay siguen funcionando; PDP regalo (línea $0) sigue OK; pickup sin cambios.
+**Problema**: etiquetas Stripe AddressElement confusas ("Nombre de pila", "Primera/Segunda línea de la dirección"); Stripe NO permite cambiar labels. **No existe campo Colonia**.
+**Solución**: reemplazar AddressElement (solo modo envío) por `src/components/MxAddressForm.tsx`:
+1. Nombre(s) | Apellidos · 2. Calle y número exterior (req, `line1`) · 3. Número interior / depto (opcional) · 4. Colonia (req)
+5. Código postal (5 dígitos) | Ciudad o alcaldía · 6. Estado (select 32, mismo formato que hoy recibe `logic.address.state`) · 7. Teléfono (WhatsApp) con `CountryPhoneSelect.tsx`
+- `line2` = `[Int. X, ]Col. Y`. País fijo MX. `autoComplete` attrs. Mantener contrato `onAddressChange(addressValue, complete)` en CheckoutUI.tsx (L385-434).
+- Revisar en `StripePayment.tsx` todo lo que dependa del AddressElement (getValue, shipping en confirmPayment / payments-create-intent).
+- Rollback: constante `USE_CUSTOM_ADDRESS_FORM = true`. Inputs ≥48px, font ≥16px.
+- **Fix**: `clients-upsert 400 "email requerido"` → solo llamar `saveClientData(true)` con email válido.
+- **QA**: tarjeta con Int. vacío/lleno; colonia en line2 en pedido y Stripe; validación CP; Apple/Google Pay; PDP regalo; pickup.
 
 ### 🎁 PDP Regalo v2 — CONSTRUIDA 2026-09-29 (QA real pendiente)
-URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos:
-- `src/lib/gift-offer.ts`: `GIFT_NAME`, `GIFT_NAME_SHORT`, **`GIFT_OFFER_ENDS_AT = '2026-10-09T23:59:59-06:00'`**, `isGiftOfferActive()`, `formatGiftEndDate()`. `isGiftEligible()` exige promo activa.
-- `src/components/GiftCountdown.tsx`, `src/components/GiftDetailsDrawer.tsx` (vaul).
-- `GiftLanding.tsx`: al vencer → `<Navigate replace>` a PDP normal.
-- `GiftPDPUI.tsx`: tarjeta regalo con contador + drawer; badge; FAQ vibración; sticky móvil.
-- **Para extender/cambiar la fecha**: editar solo `GIFT_OFFER_ENDS_AT` (o `null`).
+URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer.ts` (`GIFT_OFFER_ENDS_AT`, `isGiftOfferActive()`, `isGiftEligible()` flag localStorage 7 días), `GiftCountdown.tsx`, `GiftDetailsDrawer.tsx`, `GiftLanding.tsx` (al vencer → Navigate a PDP normal), `GiftPDPUI.tsx`, `GiftCartSync.tsx` (montado en App).
 
 ### PDP Muñequeras — pendiente validación cliente (precio final, cierre/material, reseña "Ricardo G., Guadalajara").
 ### Merchant Center — cliente: dominio rodata.store + políticas + revisión.
-### Experimento `exp-cdddcb57-pdp-second-belt-offer` (activo) — BOGO `7653e73d` limitada a Rodata One.
 
 ## Recent Changes
+- **📋 Plan cerrar exp pack + test regalo vía Meta A/B (2026-10-07)** — pendiente respuestas + Craft.
 - **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)** — pendiente Craft.
-- **🎁 PDP Regalo v2 construida (2026-09-29)** — nombre "Soporte de muñeca para moto", contador a fecha fija 9 oct, drawer detalles, vibración, auto-apagado, producto regalo renombrado.
+- **🎁 PDP Regalo v2 construida (2026-09-29)**.
 - **📋 Plan PDP Regalo v2 (2026-09-29)**.
 - **🎁 PDP Rodata One + Muñequeras de regalo (2026-09-28)**.
 - **🧤 PDP Muñequeras RODATA (2026-09-28)**.
@@ -88,7 +109,6 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos:
 - **⚪ Test de precio $799 vs $849 CERRADO inconcluso** (2026-09-22).
 - **✅ ETA centralizado** (2026-09-03).
 - **✅ Recuperación de pagos rechazados** (2026-09-03).
-- **✅ Google Ads (gtag.js)** (2026-09-01).
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -100,17 +120,20 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos:
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- **Checkout (2026-09-29)**: etiquetas de Stripe confusas + sin campo Colonia → plan arriba. `clients-upsert` 400 "email requerido" en consola.
+- **🚨 Regalo vence 2026-10-09 23:59 CDMX** (2026-10-07): si no se cambia la fecha, la URL regalo redirige a PDP normal y cualquier test/anuncio a esa URL se rompe.
+- **PDP regalo asigna el flag del exp pack** (2026-10-07): contaminación; se limpia al cerrar el exp.
+- **Producto regalo sin `cost`** (2026-10-07): margen sobrestimado hasta cargarlo.
+- **Checkout (2026-09-29)**: etiquetas de Stripe confusas + sin campo Colonia. `clients-upsert` 400 "email requerido".
 - **Regalo (2026-09-29)**: sin QA de compra real con línea $0.
-- **Regalo vence 2026-10-09 23:59 CDMX**: después la URL redirige a PDP normal. Avisar al cliente antes.
 - **Muñequeras**: precio provisional; reseña sin validar.
 - "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx` (permiso pendiente). Canonical estático PDP carretera.
 - Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto (PGRST200).
 
 ## Pending / Future Sessions
-- **[ALTA]** Construir formulario de dirección MX (plan arriba) + QA de compra real.
-- **[ALTA]** QA compra real en celular en PDP regalo → confirmar "Regalo: Soporte de muñeca RODATA (par)" $0 en pedido.
-- **[ALTA]** ~2026-10-07: preguntar al cliente si extiende/cambia la fecha del regalo (`GIFT_OFFER_ENDS_AT`).
+- **[CRÍTICA]** Antes del 9 oct: nueva fecha real del regalo (`GIFT_OFFER_ENDS_AT`).
+- **[ALTA]** Cerrar exp pack (plan A) + decisión regla BOGO.
+- **[ALTA]** Test regalo en Meta Ads (plan B): costo muñequeras → cargar cost; QA compra real; luego Dashboard AI arma A/B de Meta.
+- **[ALTA]** Construir formulario de dirección MX + QA de compra real.
 - **[ALTA]** Muñequeras: precio final → actualizar también compare_at del producto regalo.
 - **[MEDIA]** Medir clics en tarjeta/drawer del regalo (evento PostHog).
 - **[ALTA]** Merchant Center. **[MEDIA]** "Garantía" → lenguaje devolución. **[ALTA]** vitest + build. **[CRÍTICA]** decisión `DEDE`.
