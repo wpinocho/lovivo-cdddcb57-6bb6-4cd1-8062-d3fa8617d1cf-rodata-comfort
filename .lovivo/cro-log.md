@@ -35,8 +35,10 @@
 
 ## Active Experiments
 <!-- A/B tests currently running. Include flag_key, start date, variants, and target metric. -->
-### 🚀 ACTIVADO (2026-09-22, por petición del cliente): Presentación 2.ª unidad al 50%
-- **Estado**: manifiesto `status: "active"` (sync post-commit, confirmar `started_at` con experiment-list).
+_(Ninguno activo desde 2026-10-07.)_
+
+### ❌ CERRADO 2026-10-07 — config histórica: Presentación 2.ª unidad al 50% (ver `## Ruled Out`)
+- **Estado**: manifiesto `status: "completed"` desde 2026-10-07. Código del selector eliminado de PDP y PDP regalo.
   BOGO `7653e73d` **`active: true`** desde 2026-09-22 20:23 UTC (global: aplica a control y test).
 - **Gates al activar**: (1) experiment-results ✅ responde (analysis_version 2). (2) Cotización multi-unidad
   en `/pagar` ❌ NO verificada por el agente (loader `?items=`/`?variant=` roto, browser-test = 1 clic) →
@@ -73,6 +75,19 @@
 ## Ruled Out
 <!-- Changes that were tried and didn't work, or hypotheses that were disproven.
      This prevents repeating failed approaches. -->
+
+### 2026-10-07 — Selector pack "2.ª unidad al 50%" en PDP Rodata One NO adoptado (direccional a favor del control)
+- **flag_key**: `exp-cdddcb57-pdp-second-belt-offer` · manifiesto `rodata-one-pack-presentation.json` → `status: "completed"`
+- **Corrió**: 2026-09-22 → 2026-10-07 (~14.8 días). UI `offer_presentation`, 50/50, métrica `margin_per_exposed_visitor`.
+- **Resultados (experiment-results, as_of 2026-10-07)**: Control 826 visitantes · 22 compras · CVR 2.66% · AOV $799 ·
+  margen/visitante $11.27 — Test 791 · 17 compras · CVR 2.15% · AOV $869.5 · margen/visitante $9.76 (**−13.4%**).
+  Prob. control mejor 67%; backend decía "keep_collecting" (<30 compradores/variante) → NO concluyente estadísticamente.
+  Solo ~3 de 17 compradores test llevaron 2 unidades.
+- **Veredicto**: ❌ decisión de negocio del cliente: cerrar. Gana control (PDP sin selector, cantidad normal).
+- **Cleanup**: quitado `useExperiment`/`OfferExperimentGate`/`PackOfferSelector` de `ProductPageUI.tsx` y `GiftPDPUI.tsx`.
+  `HeadlessProduct` conserva lógica `packOffer` inerte (`packUiActive` siempre false). `PackOfferSelector.tsx` sin uso.
+- **Regla BOGO `7653e73d` sigue ACTIVA** (no se tocó por instrucción del cliente): quien agregue 2 unidades sigue recibiendo 50% en la 2.ª.
+- **Aprendizaje**: la oferta de 2 unidades no tiene suficiente demanda en tráfico frío de Meta (producto de 1 por persona).
 
 ### 2026-09-22 — Rodata One $849 NO adoptado · resultado INCONCLUSO (direccional a favor del control)
 - **flag_key**: `exp-cdddcb57-rodata-one-price-849` · manifiesto `src/experiments/rodata-one-price-849.json`

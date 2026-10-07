@@ -32,49 +32,17 @@
 
 ## Active Plan
 
-### 🧪 A) Cerrar experimento pack 2ª unidad 50% (PLANEADO 2026-10-07 — listo para Craft)
-**Resultados (as_of 2026-10-07, 14.8 días, `experiment-results`)**:
-- Control: 826 visitantes · 22 compras · CVR 2.66% · AOV $799 · margen/visitante $11.27
-- Test (selector pack): 791 · 17 compras · CVR 2.15% · AOV $869.5 · margen/visitante $9.76 (**−13.4%**)
-- Prob. control mejor 67% (no concluyente estadísticamente, decisión backend "keep_collecting", <30 compradores/variante). Solo ~3 de 17 compradores test llevaron 2 unidades.
-- **Decisión del cliente: terminarlo. Gana control (PDP actual sin selector).**
+### ✅ A) Experimento pack 2ª unidad 50% — CERRADO 2026-10-07 (gana control)
+- Manifiesto `rodata-one-pack-presentation.json` → `completed`. Selector/gate quitado de `ProductPageUI.tsx` y `GiftPDPUI.tsx` (`ctaPrice = logic.currentPrice`).
+- `HeadlessProduct` conserva lógica `packOffer` inerte (packUiActive siempre false). `PackOfferSelector.tsx` sin imports (se puede borrar).
+- **Regla BOGO `7653e73d` SIGUE ACTIVA** — el cliente pidió no tocar nada más. Quien meta 2 unidades recibe 50% en la 2ª (también en PDP regalo).
+- Resultados guardados en `cro-log.md` → Ruled Out.
 
-**Pasos Craft**:
-1. `src/experiments/rodata-one-pack-presentation.json` → `"status": "completed"` (NO borrar el archivo).
-2. `src/pages/ui/ProductPageUI.tsx`: quitar `OFFER_EXP_KEY`, `OFFER_PRODUCT_ID`, `OfferExpState`, `OFFER_EXP_IDLE`, `OfferExperimentGate`, el state `offerExp` (~L199-L277) y el render de `<PackOfferSelector>` (~L438-440) + import de `useExperiment`/`PackOfferSelector`. Dejar exactamente lo que veía `control`.
-3. `src/pages/ui/GiftPDPUI.tsx`: **mismo cleanup** (L5-L30, ~L227-L305, ~L481-483). OJO: hoy la PDP regalo TAMBIÉN asigna/expone el flag del pack → contaminaba el experimento. Quitar.
-4. `HeadlessProduct.tsx` (L55, ~L307-330, L610): la lógica `packOffer`/`packUiActive` puede quedarse inerte si nadie activa `packUiActive`; si es simple, eliminarla. No romper `selectedPurchaseItems`/`purchaseQuote`.
-5. `PackOfferSelector.tsx`: puede quedarse sin uso (o borrarse si no hay más imports).
-6. **Regla BOGO `7653e73d-ce1b-446f-a37d-3eb5cffb9602`** (2ª unidad 50%, compartida): PREGUNTAR al cliente antes de tocarla. Si queda activa, quien meta 2 unidades sigue recibiendo el 50% (y en la PDP regalo se acumularía con el regalo). Recomendación: desactivarla durante el test del regalo para medir limpio. Es cambio comercial global → solo con OK explícito.
-7. `.lovivo/cro-log.md`: mover a `## Ruled Out` con los números de arriba.
-
-### 🎁 B) Test "PDP normal vs PDP regalo" (PLANEADO 2026-10-07 — esperando respuestas del cliente)
-**Lo que quiere el cliente**: 50% del tráfico de anuncios a `/productos/soporte-lumbar-rodata-one` y 50% a `/productos/soporte-lumbar-rodata-one-regalo`.
-
-**Por qué NO como experimento Lovivo (redirect dentro de la tienda)**:
-- El sistema A/B de Lovivo V1 solo soporta presentación de una oferta COMPARTIDA o precio. Aquí el grupo test recibe un producto extra ($0) que el control no recibe = condición exclusiva por grupo → **no soportado** por la skill `workflow.ab-experiments` (no crear manifest para esto).
-- Además, un redirect por flag espera a PostHog (hasta 3 s de timeout) → en 94% mobile + Meta Ads, castigaría la variante regalo con pantalla en blanco / doble carga y ensucia la atribución del pixel.
-
-**Método recomendado: A/B test en Meta Ads (Dashboard AI)**:
-- Duplicar el ad set ganador → mismo creativo, presupuesto, audiencia; solo cambia la URL destino. Ideal usar "Prueba A/B" nativa de Meta para que no se solapen audiencias.
-- URLs con UTM:
-  - Control: `https://rodata.store/productos/soporte-lumbar-rodata-one?utm_source=meta&utm_campaign=test-regalo&utm_content=control`
-  - Regalo: `https://rodata.store/productos/soporte-lumbar-rodata-one-regalo?utm_source=meta&utm_campaign=test-regalo&utm_content=regalo`
-- Métrica de decisión: **margen por visita / costo por compra**, no solo CVR. Comparar en Dashboard (pedidos con línea regalo = variante regalo) + Meta (CPA).
-- Duración sugerida: 2–3 semanas o ~30+ compras por lado. Con ~130 ventas/mes total, decir claro que el resultado puede quedar ruidoso.
-
-**Break-even (decirlo al cliente)**: margen por pedido control ≈ $423 (backend: costo 209 + envío 135 + fees). Si el regalo cuesta X, la PDP regalo necesita subir la conversión ≥ X / (423 − X). Ej: X=$60 → +17%; X=$100 → +31%; X=$150 → +55%. **Pedir costo unitario real del par de muñequeras** (+ si sube costo de envío por peso).
-
-**Pasos Craft (preparación en tienda)**:
-1. **Fecha del regalo**: `GIFT_OFFER_ENDS_AT` en `src/lib/gift-offer.ts` vence **2026-10-09 23:59 CDMX** (en 2 días) → después la URL regalo redirige a la PDP normal y el test se rompe. Cambiar a la nueva fecha REAL que elija el cliente (sugerido: fin del test, p.ej. `2026-10-31T23:59:59-06:00`). Debe ser fecha fija igual para todos.
-2. Cargar `cost` del producto regalo `f29e9557-...` (update-product) con el costo real que dé el cliente → el margen en Dashboard/Lovivo sale correcto.
-3. Verificar que la PDP regalo dispara `viewcontent`/`addtocart`/`initiatecheckout`/`purchase` igual que la normal (Pixel + CAPI con event_id único) para que Meta optimice/compare bien.
-4. Verificar UTM se conserva hasta el pedido (si el pedido guarda utm/landing). Si no, la línea regalo en el pedido sirve como identificador de variante.
-5. Ya está `noindex` + canonical a PDP principal (no tocar).
-6. QA compra real en celular desde la URL regalo (pendiente desde 2026-09-29) ANTES de mandar tráfico.
-7. `cro-log.md`: registrar hipótesis bajo `## Active Experiments` como "test en Meta Ads (fuera de Lovivo A/B)".
-
-**Preguntas abiertas al cliente (2026-10-07)**: (1) costo unitario del par de muñequeras regalo; (2) nueva fecha fin real de la promo; (3) ¿desactivar regla BOGO 2ª unidad 50%?
+### 🎁 B) Test "PDP normal vs PDP regalo" — EN PAUSA (cliente: "por ahora nada más")
+- Recomendación dada: A/B en Meta Ads (mismo ad set duplicado, solo cambia URL con UTM `utm_content=control|regalo`), NO redirect en tienda (Lovivo A/B no soporta condición exclusiva por grupo + redirect lento en mobile).
+- Break-even: margen/pedido control ≈ $423. Regalo costo X → necesita +X/(423−X) conversión. Pedir costo real del par de muñequeras.
+- Pendientes si se retoma: cargar `cost` del producto regalo; QA compra real celular en URL regalo; verificar eventos Pixel/CAPI en PDP regalo; decisión BOGO.
+- **Fecha regalo actualizada 2026-10-07**: `GIFT_OFFER_ENDS_AT = '2026-10-31T23:59:59-06:00'` (copy del contador es dinámico vía `formatGiftEndDate`).
 
 ### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK del cliente para Craft)
 **Problema**: etiquetas Stripe AddressElement confusas ("Nombre de pila", "Primera/Segunda línea de la dirección"); Stripe NO permite cambiar labels. **No existe campo Colonia**.
@@ -94,7 +62,8 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 ### Merchant Center — cliente: dominio rodata.store + políticas + revisión.
 
 ## Recent Changes
-- **📋 Plan cerrar exp pack + test regalo vía Meta A/B (2026-10-07)** — pendiente respuestas + Craft.
+- **✅ Exp pack 2ª unidad 50% cerrado + regalo extendido al 31 oct (2026-10-07)**.
+- **📋 Plan cerrar exp pack + test regalo vía Meta A/B (2026-10-07)**.
 - **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)** — pendiente Craft.
 - **🎁 PDP Regalo v2 construida (2026-09-29)**.
 - **📋 Plan PDP Regalo v2 (2026-09-29)**.
@@ -108,7 +77,6 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
 - **⚪ Test de precio $799 vs $849 CERRADO inconcluso** (2026-09-22).
 - **✅ ETA centralizado** (2026-09-03).
-- **✅ Recuperación de pagos rechazados** (2026-09-03).
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -120,8 +88,8 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- **🚨 Regalo vence 2026-10-09 23:59 CDMX** (2026-10-07): si no se cambia la fecha, la URL regalo redirige a PDP normal y cualquier test/anuncio a esa URL se rompe.
-- **PDP regalo asigna el flag del exp pack** (2026-10-07): contaminación; se limpia al cerrar el exp.
+- **Regalo vence 2026-10-31 23:59 CDMX** (2026-10-07): después la URL regalo redirige a PDP normal.
+- **Regla BOGO 2ª unidad 50% sigue activa** (2026-10-07) sin selector visible; se acumula con el regalo si alguien compra 2.
 - **Producto regalo sin `cost`** (2026-10-07): margen sobrestimado hasta cargarlo.
 - **Checkout (2026-09-29)**: etiquetas de Stripe confusas + sin campo Colonia. `clients-upsert` 400 "email requerido".
 - **Regalo (2026-09-29)**: sin QA de compra real con línea $0.
@@ -130,9 +98,9 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto (PGRST200).
 
 ## Pending / Future Sessions
-- **[CRÍTICA]** Antes del 9 oct: nueva fecha real del regalo (`GIFT_OFFER_ENDS_AT`).
-- **[ALTA]** Cerrar exp pack (plan A) + decisión regla BOGO.
-- **[ALTA]** Test regalo en Meta Ads (plan B): costo muñequeras → cargar cost; QA compra real; luego Dashboard AI arma A/B de Meta.
+- **[ALTA]** Decidir regla BOGO `7653e73d` (¿desactivar?) — solo con OK explícito.
+- **[MEDIA]** Test regalo en Meta Ads (plan B) cuando el cliente lo retome.
+- **[BAJA]** Borrar `PackOfferSelector.tsx` y lógica pack inerte en `HeadlessProduct`.
 - **[ALTA]** Construir formulario de dirección MX + QA de compra real.
 - **[ALTA]** Muñequeras: precio final → actualizar también compare_at del producto regalo.
 - **[MEDIA]** Medir clics en tarjeta/drawer del regalo (evento PostHog).

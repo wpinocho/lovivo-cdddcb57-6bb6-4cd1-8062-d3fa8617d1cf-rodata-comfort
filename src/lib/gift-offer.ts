@@ -24,10 +24,10 @@ export const GIFT_NAME_SHORT = 'soporte de muñeca'
 
 /**
  * REAL, FIXED end of the gift promo — same moment for every visitor
- * (never a per-visitor resetting timer). End of day Thu 9 Oct 2026, CDMX (UTC-6).
+ * (never a per-visitor resetting timer). End of day Fri 31 Oct 2026, CDMX (UTC-6).
  * Set to null for "no end date" (then copy falls back to "while stock lasts").
  */
-export const GIFT_OFFER_ENDS_AT: string | null = '2026-10-09T23:59:59-06:00'
+export const GIFT_OFFER_ENDS_AT: string | null = '2026-10-31T23:59:59-06:00'
 
 export const giftOfferEndMs = () => (GIFT_OFFER_ENDS_AT ? new Date(GIFT_OFFER_ENDS_AT).getTime() : null)
 

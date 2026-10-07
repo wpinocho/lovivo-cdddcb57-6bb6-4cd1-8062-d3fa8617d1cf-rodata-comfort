@@ -2,33 +2,6 @@
 // The original ProductPageUI is untouched. No pack experiment here (keeps its data clean).
 import React, { useEffect, useRef, useState } from "react"
 import ProductExpressCheckout from "@/components/ProductExpressCheckout"
-import { PackOfferSelector } from "@/components/PackOfferSelector"
-import { useExperiment } from "@/hooks/useExperiment"
-
-/** UI experiment: presentation of the SHARED 2nd-unit BOGO rule. */
-const OFFER_EXP_KEY = 'exp-cdddcb57-pdp-second-belt-offer'
-/** Only this product (manifest target.product_id) may assign / expose the flag. */
-const OFFER_PRODUCT_ID = '400026a2-c277-407c-abbb-d1683f415120'
-
-type OfferExpState = {
-  variant: 'control' | 'test' | null
-  assignedVariant: 'control' | 'test' | null
-  track: (event: string, props?: Record<string, any>) => void
-}
-const OFFER_EXP_IDLE: OfferExpState = { variant: null, assignedVariant: null, track: () => {} }
-
-/**
- * Mounted ONLY when the target product loaded successfully (never on loading,
- * 404 or another product). Reading the flag is what assigns + exposes, so the
- * mount point is the isolation boundary. Both variants mount it identically.
- */
-const OfferExperimentGate = ({ onChange }: { onChange: (s: OfferExpState) => void }) => {
-  const exp = useExperiment(OFFER_EXP_KEY)
-  useEffect(() => {
-    onChange({ variant: exp.variant, assignedVariant: exp.assignedVariant, track: exp.track })
-  }, [exp.variant, exp.assignedVariant, exp.track, onChange])
-  return null
-}
 import { Skeleton } from "@/components/ui/skeleton"
 import { EcommerceTemplate } from "@/templates/EcommerceTemplate"
 import {
@@ -218,54 +191,8 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
   useEffect(() => { setSelectedImage(null) }, [logic.matchingVariant])
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
-  // ── Offer-presentation experiment ──
-  // Exposure = assignment on the loaded target PDP for BOTH variants, never
-  // "interacted with the pack". Paused flag → no assignment → no exposure and
-  // the visitor sees control (= today's PDP).
-  // Gift PDP never joins the pack experiment
-  const isOfferTarget = false as boolean
-  const [offerExp, setOfferExp] = useState<OfferExpState>(OFFER_EXP_IDLE)
-  useEffect(() => { if (!isOfferTarget) setOfferExp(OFFER_EXP_IDLE) }, [isOfferTarget])
-  // Fail-safe: without a real quotable BOGO rule the test group sees control.
-  const showPack = isOfferTarget && offerExp.variant === 'test' && !!logic.packOffer
-  const secondSizeRef = useRef<HTMLDivElement>(null)
-
-  // Tell the purchase logic whether card "1" / pack UI is what the visitor sees
-  useEffect(() => { logic.setPackUiActive?.(showPack) }, [showPack])
-
-  useEffect(() => {
-    if (!showPack && logic.packQuantity === 2) logic.setPackQuantity?.(1)
-  }, [showPack, logic.packQuantity])
-
-  useEffect(() => {
-    if (logic.purchaseError === 'select_second') {
-      secondSizeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [logic.purchaseError])
-
-  const ctaPrice: number = showPack && logic.packQuantity === 2
-    ? (logic.purchaseQuote > 0 ? logic.purchaseQuote : logic.packOffer.total)
-    : logic.currentPrice
-
-  const offerTrackBase = () => ({
-    experiment_key: OFFER_EXP_KEY,
-    experiment_variant: offerExp.assignedVariant,
-    first_variant_id: logic.matchingVariant?.id,
-  })
-  const handlePackChange = (q: 1 | 2) => {
-    logic.setPackQuantity(q)
-    offerExp.track('offer_option_selected', {
-      ...offerTrackBase(), selected_quantity: q,
-      ...(q === 2 && logic.secondVariant ? { second_variant_id: logic.secondVariant.id } : {}),
-    })
-  }
-  const handleSecondSelect = (optName: string, value: string) => {
-    logic.handleSecondOptionSelect(optName, value)
-    const v = logic.variants?.find((x: any) => x.options?.[optName] === value)
-    offerExp.track('second_size_selected', {
-      ...offerTrackBase(), selected_quantity: 2, second_variant_id: v?.id,
-    })
-  }
+  // Pack experiment concluded 2026-10-07 — single-unit PDP only.
+  const ctaPrice: number = logic.currentPrice
 
   if (logic.loading) return (
     <EcommerceTemplate>
@@ -301,8 +228,6 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
         { label: 'FAQ', href: '#faq' },
       ]}
     >
-
-      {isOfferTarget && <OfferExperimentGate onChange={setOfferExp} />}
 
       {/* ── 1. MAIN PRODUCT ── */}
       <section style={{ backgroundColor: '#111315' }}>
@@ -476,27 +401,7 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                 </div>
               )}
 
-              {/* Pack offer (experiment test variant only) */}
-              {showPack && (
-                <PackOfferSelector
-                  ref={secondSizeRef}
-                  offer={logic.packOffer}
-                  packQuantity={logic.packQuantity}
-                  onPackChange={handlePackChange}
-                  option={logic.product.options?.[0]}
-                  secondValue={logic.product.options?.[0] ? logic.secondSelected[logic.product.options[0].name] : undefined}
-                  onSecondSelect={handleSecondSelect}
-                  isSecondAvailable={logic.isSecondOptionValueAvailable}
-                  getSizeKey={getSizeKey}
-                  getSizeHint={(v) => SIZE_GUIDE.find(s => s.size === getSizeKey(v))?.waist}
-                  showSecondError={logic.purchaseError === 'select_second'}
-                  disabled={logic.purchaseLocked}
-                  formatMoney={logic.formatMoney}
-                />
-              )}
-
-              {/* Quantity (control + fail-safe) */}
-              {!showPack && (
+              {/* Quantity */}
               <div className="flex items-center gap-4">
                 <span className="text-brand-smoke text-sm font-inter">Cantidad:</span>
                 <div className="flex items-center rounded-xl overflow-hidden border border-white/[0.12]">
@@ -505,7 +410,6 @@ export const GiftPDPUI = ({ logic, gift }: GiftPDPUIProps) => {
                   <button onClick={() => logic.handleQuantityChange(logic.quantity + 1)} disabled={logic.purchaseLocked} className="px-3.5 py-2.5 text-brand-smoke hover:text-brand-offwhite hover:bg-brand-graphite transition-colors"><Plus size={14}/></button>
                 </div>
               </div>
-              )}
 
               {/* Urgency / Stock signal */}
               {logic.inStock && (
