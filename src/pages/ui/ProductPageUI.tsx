@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
 import RodataReviews from "@/components/RodataReviews"
+import { REVIEW_STATS } from "@/data/rodataReviews"
 
 // ── Image constants (with Supabase image transform for performance) ──
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
@@ -44,7 +45,9 @@ const UGC_STRIP: { src: string; alt: string; pos?: string }[] = [
   { src: REVIEW_IMG_4, alt: 'Rodata One de un cliente' },
 ]
 
-const REVIEW_COUNT = 167
+// Rating y conteo SIEMPRE derivados de las reseñas publicadas (src/data/rodataReviews.ts)
+const REVIEW_COUNT = REVIEW_STATS.total
+const REVIEW_AVG = REVIEW_STATS.average.toFixed(1)
 
 // ── Helpers ──
 /** Extracts the bare size key from a variant value like "S (60-75 cm)" → "S" */
@@ -306,8 +309,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               </div>
               <h1 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight">{logic.product.title}</h1>
               <div className="flex items-center gap-3">
-                <Stars count={5} size={15} />
-                <span className="text-brand-smoke text-sm font-inter">4.9 <a href="#opiniones" className="text-brand-steel underline underline-offset-2">· {REVIEW_COUNT} reseñas verificadas</a></span>
+                <Stars count={Math.round(REVIEW_STATS.average)} size={15} />
+                <span className="text-brand-smoke text-sm font-inter">{REVIEW_AVG} <a href="#opiniones" className="text-brand-steel underline underline-offset-2">· {REVIEW_COUNT} reseñas verificadas</a></span>
               </div>
 
               {/* Price + badge */}
@@ -530,7 +533,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
       <section style={{ backgroundColor: '#1D2125' }} className="border-y border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="grid grid-cols-3 gap-4 text-center divide-x divide-white/[0.06]">
-            {[{value:'+800', label:'Riders satisfechos'},{value:'4.9 ★', label:'Calificación promedio'},{value:'100%', label:'Envíos en México'}].map(({value, label}) => (
+            {[{value:'+800', label:'Riders satisfechos'},{value:`${REVIEW_AVG} ★`, label:'Calificación promedio'},{value:'100%', label:'Envíos en México'}].map(({value, label}) => (
               <div key={label} className="py-1">
                 <p className="font-sora font-bold text-brand-amber text-xl sm:text-2xl">{value}</p>
                 <p className="text-brand-steel text-xs font-inter mt-0.5">{label}</p>
@@ -597,7 +600,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
       </section>
 
       {/* ── 6. REVIEWS ── */}
-      <RodataReviews reviewCount={REVIEW_COUNT} />
+      <RodataReviews />
 
       {/* ── 7. COMBINED: STEPS + TRUST ── */}
       <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-16 lg:py-20">

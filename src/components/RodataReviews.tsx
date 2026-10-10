@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Star, Check, ChevronDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { PHOTO_REVIEWS, TEXT_REVIEWS, type RodataReview } from "@/data/rodataReviews"
+import { PHOTO_REVIEWS, TEXT_REVIEWS, REVIEW_STATS, type RodataReview } from "@/data/rodataReviews"
 
-const INITIAL_TEXT_REVIEWS = 4
+const INITIAL_TEXT_REVIEWS = 5
+const LOAD_MORE_STEP = 10
 
 const ReviewStars = ({ count, size = 12 }: { count: number; size?: number }) => (
   <div className="flex gap-0.5" aria-label={`${count} de 5 estrellas`}>
@@ -11,7 +11,7 @@ const ReviewStars = ({ count, size = 12 }: { count: number; size?: number }) => 
       <Star
         key={s}
         size={size}
-        className={s <= count ? "text-brand-amber fill-brand-amber" : "text-brand-steel/30"}
+        className={s <= Math.round(count) ? "text-brand-amber fill-brand-amber" : "text-brand-steel/30"}
       />
     ))}
   </div>
@@ -32,35 +32,54 @@ const ReviewerLine = ({ review }: { review: RodataReview }) => (
   </div>
 )
 
-interface RodataReviewsProps {
-  reviewCount: number
+/** Resumen tipo "4.3 ★ · barras por estrella" — calculado de las reseñas publicadas */
+const ReviewSummary = () => {
+  const { average, total, distribution } = REVIEW_STATS
+  const max = Math.max(...distribution.map(d => d.count), 1)
+
+  return (
+    <div className="bg-brand-graphite border border-white/[0.08] rounded-2xl p-5 sm:p-6 grid grid-cols-[auto_1fr] gap-5 sm:gap-8 items-center md:max-w-xl">
+      <div className="text-center">
+        <p className="font-sora font-bold text-brand-offwhite text-5xl leading-none">{average.toFixed(1)}</p>
+        <div className="mt-2 flex justify-center"><ReviewStars count={average} size={15} /></div>
+        <p className="text-brand-steel text-xs font-inter mt-1.5">{total} opiniones</p>
+      </div>
+      <ul className="space-y-1.5" aria-label="Distribución de calificaciones">
+        {distribution.map(({ stars, count }) => (
+          <li key={stars} className="flex items-center gap-2.5 text-xs font-inter">
+            <span className="text-brand-smoke w-6 flex items-center gap-0.5 flex-shrink-0">
+              {stars}<Star size={10} className="text-brand-amber fill-brand-amber" aria-hidden />
+            </span>
+            <span className="relative flex-1 h-1.5 rounded-full bg-brand-carbon overflow-hidden">
+              <span
+                className="absolute inset-y-0 left-0 rounded-full bg-brand-amber"
+                style={{ width: `${(count / max) * 100}%` }}
+              />
+            </span>
+            <span className="text-brand-steel w-5 text-right tabular-nums flex-shrink-0">{count}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
-const RodataReviews = ({ reviewCount }: RodataReviewsProps) => {
-  const [showAll, setShowAll] = useState(false)
-  const visibleText = showAll ? TEXT_REVIEWS : TEXT_REVIEWS.slice(0, INITIAL_TEXT_REVIEWS)
-  const hiddenCount = TEXT_REVIEWS.length - INITIAL_TEXT_REVIEWS
+const RodataReviews = () => {
+  const [visibleCount, setVisibleCount] = useState(INITIAL_TEXT_REVIEWS)
+  const visibleText = TEXT_REVIEWS.slice(0, visibleCount)
+  const remaining = TEXT_REVIEWS.length - visibleCount
+  const nextBatch = Math.min(LOAD_MORE_STEP, remaining)
 
   return (
     <section id="opiniones" className="bg-brand-carbon py-16 lg:py-28 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-10">
+        <div className="grid md:grid-cols-[1fr_auto] gap-6 md:gap-10 items-end mb-10">
           <div>
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-2 block">Reseñas de clientes</span>
             <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Lo que dicen los riders</h2>
             <p className="text-brand-steel text-sm font-inter mt-2">Reseñas de los últimos 2 meses, compartidas por clientes por WhatsApp.</p>
           </div>
-          <div className="flex items-center gap-4 bg-brand-graphite border border-white/[0.08] rounded-2xl px-6 py-4 flex-shrink-0">
-            <div>
-              <p className="font-sora font-bold text-brand-amber text-3xl leading-none">4.9</p>
-              <div className="mt-1.5"><ReviewStars count={5} size={11} /></div>
-            </div>
-            <div className="h-12 w-px bg-white/[0.08]" />
-            <div>
-              <p className="text-brand-offwhite font-sora font-bold text-lg leading-none">{reviewCount}</p>
-              <p className="text-brand-steel text-xs font-inter mt-1">reseñas</p>
-            </div>
-          </div>
+          <ReviewSummary />
         </div>
 
         {/* Reseñas con foto real — carrusel en móvil, grid en desktop */}
@@ -95,8 +114,8 @@ const RodataReviews = ({ reviewCount }: RodataReviewsProps) => {
           ))}
         </div>
 
-        {/* Reseñas de texto */}
-        <div className="grid md:grid-cols-2 gap-4 mt-6">
+        {/* Reseñas de texto — 5 iniciales, luego de 10 en 10 */}
+        <div className="grid md:grid-cols-2 gap-4 mt-6" aria-live="polite">
           {visibleText.map(review => (
             <article key={review.name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
@@ -108,16 +127,19 @@ const RodataReviews = ({ reviewCount }: RodataReviewsProps) => {
           ))}
         </div>
 
-        {hiddenCount > 0 && (
-          <div className="flex justify-center mt-6">
+        {remaining > 0 && (
+          <div className="flex flex-col items-center gap-2 mt-8">
             <button
               type="button"
-              onClick={() => setShowAll(v => !v)}
-              className="inline-flex items-center gap-2 border border-brand-amber/40 text-brand-amber font-sora font-semibold text-sm rounded-full px-6 py-3 hover:bg-brand-amber/10 transition-colors"
+              onClick={() => setVisibleCount(c => c + LOAD_MORE_STEP)}
+              className="inline-flex items-center gap-2 border border-brand-amber/40 text-brand-amber font-sora font-semibold text-sm rounded-full px-7 py-3 hover:bg-brand-amber/10 transition-colors"
             >
-              {showAll ? "Ver menos reseñas" : `Ver ${hiddenCount} reseñas más`}
-              <ChevronDown size={16} className={cn("transition-transform", showAll && "rotate-180")} />
+              Cargar {nextBatch} reseñas más
+              <ChevronDown size={16} aria-hidden />
             </button>
+            <p className="text-brand-steel text-xs font-inter">
+              Mostrando {visibleCount + PHOTO_REVIEWS.length} de {REVIEW_STATS.total}
+            </p>
           </div>
         )}
       </div>

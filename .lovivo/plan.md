@@ -7,7 +7,7 @@
 - 4 tallas (opción `Talla`): S `37d48c11-13ef-4283-9bd7-cf38017edb31`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
   XL `f69e66aa-5297-4197-810c-3841f28da54e` — **todas a $799**. `track_inventory: false`. Sin suscripciones. `cost: 209`.
 - **Tallas más vendidas: L y XL** (cliente 2026-10-10) → PDP preselecciona L.
-- **Reseñas: cliente confirma 167 reseñas reales** (vienen de WhatsApp, todas últimos 2 meses, sin fecha exacta). 4.9 y "+800 riders" aún sin confirmar.
+- **Reseñas verificadas publicadas: 16** (3 con foto + 13 texto, WhatsApp, últimos 2 meses). Cliente dijo antes "167" pero solo entregó 16 textos verificables.
 - **Producto en prueba: Muñequeras RODATA (par)** — id `97b069e9-3ee5-45ff-872a-50ff91762189`, slug `munequeras-rodata`,
   **precio PROVISIONAL $449 / compare $599**, talla única, sin cost cargado. NO está en home ni menú.
 - **Producto REGALO**: "Regalo: Soporte de muñeca RODATA (par)" id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
@@ -32,8 +32,10 @@
 - **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina...".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
 - **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07).
-- **Reseñas: fuente única `src/data/rodataReviews.ts`** (PHOTO_REVIEWS + TEXT_REVIEWS, reales, aprobadas). Componente `src/components/RodataReviews.tsx`.
-  NO inventar reseñas. NO mostrar fecha por reseña (solo "últimos 2 meses"). Negativas (logística) se muestran al final — dan credibilidad.
+- **Reseñas: fuente única `src/data/rodataReviews.ts`** (PHOTO_REVIEWS + TEXT_REVIEWS + `REVIEW_STATS` derivado). Componente `src/components/RodataReviews.tsx`
+  (resumen promedio + barras 5→1, carrusel foto, 5 texto, "Cargar N reseñas más" de 10 en 10). **Rating/conteo NUNCA hardcodeados** — ProductPageUI
+  usa `REVIEW_STATS` en línea bajo título y stats bar. Para agregar reseñas reales: solo añadir al array.
+  NO inventar reseñas. NO publicar reseñas sin evidencia (captura WhatsApp). Negativas al final.
 - **Galería PDP: SOLO fotos de catálogo** — cliente NO quiere fotos de reseña en la galería (2026-10-10).
 
 ## Active Plan
@@ -41,11 +43,14 @@
 ### 📱 Mejora PDP móvil `/productos/soporte-lumbar-rodata-one` — POR PASOS (cliente revisa cada uno)
 Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salvo que el cliente lo pida). Baseline en `.lovivo/cro-log.md`.
 
-**✅ Paso 1 (2026-10-10)**: sticky bar 250px · talla L preseleccionada · línea medir cintura · "Envío gratis a todo México" · descripción bajo CTA · tira "Fotos reales de clientes" · 167 reseñas · copy devoluciones.
-**✅ Paso 2 (2026-10-10)**: UGC_CASCO quitado de galería · reseñas reales: 3 con foto (Pablo B. rally, Esteban V. 64 años/empaque, Alan M. ciudad) en carrusel móvil + 13 de texto (4 visibles + "Ver N reseñas más") ·
-  avatares IA → fotos reales (Pablo, Alan, review-1) · "Carlos M." → "Pablo B." · cita lifestyle → Ricardo L. (BMW GS).
-**Paso 2b (pendiente)**: aplicar `RodataReviews` también en GiftPDPUI (aún tiene reseñas inventadas Carlos M. etc.) — pedir OK. Confirmar "4.9" y "+800 riders".
-**Paso 3**: imágenes galería — catálogo 2048px (LCP), foto "cómo medir cintura", más fotos en moto. Ocultar "Cantidad" en móvil?
+**✅ Paso 1 (2026-10-10)**: sticky bar · talla L · medir cintura · envío gratis · fotos reales · copy devoluciones.
+**✅ Paso 2 (2026-10-10)**: reseñas reales con foto (Pablo B., Esteban V., Alan M.) + 13 de texto.
+**✅ Paso 2c (2026-10-10)**: sección reseñas rediseñada (resumen + barras, cargar más de 10 en 10). Rating ahora calculado = **4.3 · 16** (antes "4.9 · 167" hardcodeado).
+  **NO se cargaron las 100 reseñas nuevas** que mandó el cliente: el doc traía encabezado "Para entender cómo se ve una distribución creíble", reescrituras
+  de reseñas existentes con otro nombre (Roberto G.→Rubén M., Ricardo L.→Víctor H.) y fechas exactas que antes "no existían". Pedí confirmación/evidencia.
+  Si confirma con capturas → añadir a TEXT_REVIEWS (campo `date` opcional si son reales).
+**Paso 2b (pendiente)**: aplicar `RodataReviews` en GiftPDPUI (aún tiene reseñas inventadas Carlos M. etc.) — pedir OK. "+800 riders" sin confirmar (sigue en stats bar).
+**Paso 3**: imágenes galería — catálogo 2048px (LCP), foto "cómo medir cintura", más fotos en moto.
 **Paso 4**: Encuesta PostHog "¿Qué te frenó para comprar hoy?" (PDP móvil, 40 s sin ATC).
 **Paso 5**: /pagar — 1 de cada 6 regresa a PDP. Relacionado con formulario dirección MX.
 **Medir**: 24-oct comparar 14 días vs baseline (CVR móvil 2.2%, ATC 9.3%).
@@ -65,6 +70,7 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 ### PDP Muñequeras — pendiente validación cliente. Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **⭐ Reseñas v3: resumen con barras, cargar más 10 en 10, rating derivado 4.3·16 en toda la PDP (2026-10-10)**.
 - **⭐ PDP Paso 2: reseñas reales con foto + texto, "ver más", galería sin foto de reseña (2026-10-10)**.
 - **📱 PDP móvil Paso 1: sticky, talla L, fotos reales, sin "Lanzamiento", copy devoluciones (2026-10-10)**.
 - **🔍 Auditoría CRO PDP móvil (2026-10-10)** — plan guardado.
@@ -79,16 +85,14 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **🛡️ Merchant Center trust fix (2026-09-28)**.
 - **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)**.
 - **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22)**.
-- **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
-- **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = **Alan M.** (de espaldas con faja + casco, 1200×1600 — SOLO reseñas, NO galería),
-  `u068d1b4pr.webp` = **Pablo B.** (selfie Rally ADV Jalisco 2026, 1600×1200), `c3mx3z3w5kt.webp` = **Esteban V.** (faja en empaque, 544×750).
-  Re-subidas 2026-10-10 son duplicados (no usar las nuevas).
+- **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = **Alan M.** (SOLO reseñas, NO galería), `u068d1b4pr.webp` = **Pablo B.** (Rally ADV Jalisco),
+  `c3mx3z3w5kt.webp` = **Esteban V.** (empaque). Re-subidas 2026-10-10 son duplicados.
 - Catálogo lumbar (object/public/product-images/products/, 2048px): `nae4riov9h.webp` (hero), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`. Render/IA.
-- Reseñas viejas: `SB_PROD/review-1.webp` (REAL, Honda roja — tira UGC + avatar), `review-4.webp` (real, tira UGC), review-2/3/5 ya no se usan en ProductPageUI.
+- Reseñas viejas: `SB_PROD/review-1.webp` (REAL, Honda roja), `review-4.webp` (real). review-2/3/5 ya no se usan en ProductPageUI.
 - Avatares `SB_PROD/avatar-*-v3.webp` (probable IA) — ya no en ProductPageUI; siguen en GiftPDPUI.
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`
 - Muñequeras (reales) `SB_MSG/1790638502334-`: `pkwpdneq4dd`, `q4h7kvtg3nn`, `0yjgi3apchym`, `nwhrcsc3un`, `2wwj6uvz7a5`
@@ -96,9 +100,10 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- GiftPDPUI aún con reseñas inventadas (Carlos M., fechas 2025) + avatares IA (2026-10-10).
-- "4.9" y "+800 riders" sin confirmar (2026-10-10).
-- **3 de 16 reseñas reales se quejan de entrega tardía** (Santiago J., Raúl O., Ricardo C.) — revisar logística/paquetería (2026-10-10).
+- **100 reseñas enviadas 2026-10-10 sin publicar** — señales de ser generadas; esperando evidencia del cliente.
+- GiftPDPUI aún con reseñas inventadas (Carlos M., fechas 2025) + avatares IA + "4.9" hardcodeado (2026-10-10).
+- "+800 riders" sin confirmar, sigue en stats bar de ProductPageUI (2026-10-10).
+- **3 de 16 reseñas reales se quejan de entrega tardía** — revisar logística/paquetería (2026-10-10).
 - Talla S sigue siendo default en GiftPDPUI/DeliveryPDPUI/muñequeras; solo ProductPageUI fuerza L.
 - **Regalo vence 2026-10-31 23:59 CDMX**. **Regla BOGO 2ª unidad 50% sigue activa** sin selector.
 - Producto regalo sin `cost`. Regalo sin QA de compra real.
@@ -107,8 +112,8 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - PostHog `addtocart`/`purchase` sin propiedades de variante.
 
 ## Pending / Future Sessions
-- **[ALTA]** Medir Pasos 1+2 el 24-oct. **[ALTA]** Llevar reseñas reales a GiftPDPUI/home (pedir OK).
-- **[ALTA]** Lanzar encuesta PostHog PDP móvil (Paso 4).
+- **[ALTA]** Respuesta cliente sobre las 100 reseñas (evidencia). **[ALTA]** Medir Pasos 1+2 el 24-oct.
+- **[ALTA]** Llevar `RodataReviews` a GiftPDPUI/home (pedir OK). **[ALTA]** Lanzar encuesta PostHog PDP móvil (Paso 4).
 - **[ALTA]** QA del fix regalo. **[ALTA]** Decidir regla BOGO `7653e73d` (solo con OK).
 - **[ALTA]** Formulario dirección MX + QA compra real. **[ALTA]** Muñequeras precio final.
 - **[MEDIA]** Test regalo en Meta Ads. **[MEDIA]** Investigar caída de tráfico (Dashboard / Meta Ads).

@@ -54,3 +54,19 @@ export const TEXT_REVIEWS: RodataReview[] = [
   { name: 'Santiago J.', stars: 1, text: 'La verdad el producto sí está muy bueno, pero les pedí que llegara a tiempo porque tenía un viaje y llegó a los 8 días.' },
   { name: 'Ricardo C.', stars: 1, text: 'Ojalá hubiera llegado a tiempo... el producto está bien.' },
 ]
+
+// ── Estadísticas derivadas (NUNCA hardcodear rating/conteo: se calculan de las reseñas publicadas) ──
+export const ALL_REVIEWS: RodataReview[] = [...PHOTO_REVIEWS, ...TEXT_REVIEWS]
+
+const total = ALL_REVIEWS.length
+const sum = ALL_REVIEWS.reduce((acc, r) => acc + r.stars, 0)
+
+export const REVIEW_STATS = {
+  total,
+  average: total ? Math.round((sum / total) * 10) / 10 : 0,
+  /** Conteo por estrellas, de 5 a 1 */
+  distribution: [5, 4, 3, 2, 1].map(stars => ({
+    stars,
+    count: ALL_REVIEWS.filter(r => r.stars === stars).length,
+  })),
+}
