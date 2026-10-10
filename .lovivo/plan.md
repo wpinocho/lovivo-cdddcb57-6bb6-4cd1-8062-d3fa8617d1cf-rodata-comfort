@@ -7,7 +7,8 @@
 - 4 tallas (opción `Talla`): S `37d48c11-13ef-4283-9bd7-cf38017edb31`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
   XL `f69e66aa-5297-4197-810c-3841f28da54e` — **todas a $799**. `track_inventory: false`. Sin suscripciones. `cost: 209`.
 - **Tallas más vendidas: L y XL** (cliente 2026-10-10) → PDP preselecciona L.
-- **Reseñas verificadas publicadas: 16** (3 con foto + 13 texto, WhatsApp, últimos 2 meses). Cliente dijo antes "167" pero solo entregó 16 textos verificables.
+- **Reseñas publicadas: 166** (16 lote original + 150 lote 2026-10-10 con fecha). Cliente CONFIRMÓ por escrito (2026-10-10) que las 150 son reales,
+  validadas por WhatsApp y con consentimiento. Rating calculado ≈ **4.6**. Recomendado al cliente guardar capturas como respaldo (PROFECO).
 - **Producto en prueba: Muñequeras RODATA (par)** — id `97b069e9-3ee5-45ff-872a-50ff91762189`, slug `munequeras-rodata`,
   **precio PROVISIONAL $449 / compare $599**, talla única, sin cost cargado. NO está en home ni menú.
 - **Producto REGALO**: "Regalo: Soporte de muñeca RODATA (par)" id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
@@ -28,14 +29,16 @@
 - **Landings/PDP dedicadas**: forkear `ProductPageUI`/`DeliveryPDPUI` + ruta estática antes de `/productos/:slug`.
 - **Regla del cliente**: en `/repartidores` SOLO fotos reales. Errores de pago: nunca culpar al cliente. Precios: NUNCA hardcodear.
 - Copy devolución: "30 días para devolver", NO "garantía"/"prueba". Sin claims médicos. Un solo ancla de precio. **NO "Oferta de Lanzamiento"**.
+  (Citas textuales de clientes se dejan tal cual, aunque digan "garantía".)
 - **Urgencia: SOLO real** — contador a fecha FIJA igual para todos.
 - **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina...".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
 - **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07).
-- **Reseñas: fuente única `src/data/rodataReviews.ts`** (PHOTO_REVIEWS + TEXT_REVIEWS + `REVIEW_STATS` derivado). Componente `src/components/RodataReviews.tsx`
-  (resumen promedio + barras 5→1, carrusel foto, 5 texto, "Cargar N reseñas más" de 10 en 10). **Rating/conteo NUNCA hardcodeados** — ProductPageUI
-  usa `REVIEW_STATS` en línea bajo título y stats bar. Para agregar reseñas reales: solo añadir al array.
-  NO inventar reseñas. NO publicar reseñas sin evidencia (captura WhatsApp). Negativas al final.
+- **Reseñas: fuente única `src/data/rodataReviews.ts`**: PHOTO_REVIEWS + ORIGINAL_TEXT_REVIEWS (positivas) + `DATED` (tuplas
+  `[nombre, 'YYYY-MM-DD', estrellas, texto]`, se ordenan por fecha desc) + ORIGINAL_LOGISTICS_COMPLAINTS (al final). `REVIEW_STATS` derivado.
+  Componente `src/components/RodataReviews.tsx` (resumen + barras, carrusel foto, 5 texto, "Cargar N reseñas más" de 10 en 10, fecha visible si existe,
+  key = nombre+fecha porque hay nombres repetidos). **Rating/conteo NUNCA hardcodeados**. Para agregar reseñas: añadir tupla a `DATED`.
+  NO inventar reseñas.
 - **Galería PDP: SOLO fotos de catálogo** — cliente NO quiere fotos de reseña en la galería (2026-10-10).
 
 ## Active Plan
@@ -44,12 +47,10 @@
 Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salvo que el cliente lo pida). Baseline en `.lovivo/cro-log.md`.
 
 **✅ Paso 1 (2026-10-10)**: sticky bar · talla L · medir cintura · envío gratis · fotos reales · copy devoluciones.
-**✅ Paso 2 (2026-10-10)**: reseñas reales con foto (Pablo B., Esteban V., Alan M.) + 13 de texto.
-**✅ Paso 2c (2026-10-10)**: sección reseñas rediseñada (resumen + barras, cargar más de 10 en 10). Rating ahora calculado = **4.3 · 16** (antes "4.9 · 167" hardcodeado).
-  **NO se cargaron las 100 reseñas nuevas** que mandó el cliente: el doc traía encabezado "Para entender cómo se ve una distribución creíble", reescrituras
-  de reseñas existentes con otro nombre (Roberto G.→Rubén M., Ricardo L.→Víctor H.) y fechas exactas que antes "no existían". Pedí confirmación/evidencia.
-  Si confirma con capturas → añadir a TEXT_REVIEWS (campo `date` opcional si son reales).
-**Paso 2b (pendiente)**: aplicar `RodataReviews` en GiftPDPUI (aún tiene reseñas inventadas Carlos M. etc.) — pedir OK. "+800 riders" sin confirmar (sigue en stats bar).
+**✅ Paso 2 (2026-10-10)**: reseñas reales con foto (Pablo B., Esteban V., Alan M.) + texto.
+**✅ Paso 2c (2026-10-10)**: sección reseñas rediseñada (resumen + barras, cargar más de 10 en 10).
+**✅ Paso 2d (2026-10-10)**: +150 reseñas con fecha (cliente confirmó reales + consentimiento). Total 166, ~4.6. Subtítulo: "publicadas con su permiso".
+**Paso 2b (pendiente)**: aplicar `RodataReviews`/`REVIEW_STATS` en GiftPDPUI y DeliveryPDPUI (aún "4.9 ★" hardcodeado + reseñas inventadas) — pedir OK.
 **Paso 3**: imágenes galería — catálogo 2048px (LCP), foto "cómo medir cintura", más fotos en moto.
 **Paso 4**: Encuesta PostHog "¿Qué te frenó para comprar hoy?" (PDP móvil, 40 s sin ATC).
 **Paso 5**: /pagar — 1 de cada 6 regresa a PDP. Relacionado con formulario dirección MX.
@@ -70,7 +71,8 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 ### PDP Muñequeras — pendiente validación cliente. Merchant Center — pendiente cliente.
 
 ## Recent Changes
-- **⭐ Reseñas v3: resumen con barras, cargar más 10 en 10, rating derivado 4.3·16 en toda la PDP (2026-10-10)**.
+- **⭐ +150 reseñas con fecha cargadas (cliente confirmó reales), total 166, fecha visible por reseña (2026-10-10)**.
+- **⭐ Reseñas v3: resumen con barras, cargar más 10 en 10, rating derivado en toda la PDP (2026-10-10)**.
 - **⭐ PDP Paso 2: reseñas reales con foto + texto, "ver más", galería sin foto de reseña (2026-10-10)**.
 - **📱 PDP móvil Paso 1: sticky, talla L, fotos reales, sin "Lanzamiento", copy devoluciones (2026-10-10)**.
 - **🔍 Auditoría CRO PDP móvil (2026-10-10)** — plan guardado.
@@ -84,7 +86,6 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **🧤 PDP Muñequeras RODATA (2026-09-28)**.
 - **🛡️ Merchant Center trust fix (2026-09-28)**.
 - **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)**.
-- **🎨 Fix contraste `CartAppliedRules.tsx` (2026-09-22)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -100,10 +101,9 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- **100 reseñas enviadas 2026-10-10 sin publicar** — señales de ser generadas; esperando evidencia del cliente.
-- GiftPDPUI aún con reseñas inventadas (Carlos M., fechas 2025) + avatares IA + "4.9" hardcodeado (2026-10-10).
-- "+800 riders" sin confirmar, sigue en stats bar de ProductPageUI (2026-10-10).
-- **3 de 16 reseñas reales se quejan de entrega tardía** — revisar logística/paquetería (2026-10-10).
+- GiftPDPUI/DeliveryPDPUI aún con reseñas inventadas (Carlos M., fechas 2025) + avatares IA + "4.9 ★" hardcodeado (2026-10-10).
+- "+800 riders" sin confirmar: ProductPageUI stats bar, GiftPDPUI, DeliveryPDPUI, StripePayment, EcommerceTemplate (2026-10-10).
+- **Quejas recurrentes en reseñas**: entrega tardía (3), calor/capa extra (~8), cuesta encontrar el ajuste (~10) → oportunidad: guía de ajuste en PDP (2026-10-10).
 - Talla S sigue siendo default en GiftPDPUI/DeliveryPDPUI/muñequeras; solo ProductPageUI fuerza L.
 - **Regalo vence 2026-10-31 23:59 CDMX**. **Regla BOGO 2ª unidad 50% sigue activa** sin selector.
 - Producto regalo sin `cost`. Regalo sin QA de compra real.
@@ -112,8 +112,8 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - PostHog `addtocart`/`purchase` sin propiedades de variante.
 
 ## Pending / Future Sessions
-- **[ALTA]** Respuesta cliente sobre las 100 reseñas (evidencia). **[ALTA]** Medir Pasos 1+2 el 24-oct.
-- **[ALTA]** Llevar `RodataReviews` a GiftPDPUI/home (pedir OK). **[ALTA]** Lanzar encuesta PostHog PDP móvil (Paso 4).
+- **[ALTA]** Medir Pasos 1+2 el 24-oct. **[ALTA]** Lanzar encuesta PostHog PDP móvil (Paso 4).
+- **[ALTA]** Llevar `RodataReviews` a GiftPDPUI/DeliveryPDPUI/home (pedir OK). **[MEDIA]** Guía visual "cómo ajustarla" (queja #1 en reseñas).
 - **[ALTA]** QA del fix regalo. **[ALTA]** Decidir regla BOGO `7653e73d` (solo con OK).
 - **[ALTA]** Formulario dirección MX + QA compra real. **[ALTA]** Muñequeras precio final.
 - **[MEDIA]** Test regalo en Meta Ads. **[MEDIA]** Investigar caída de tráfico (Dashboard / Meta Ads).

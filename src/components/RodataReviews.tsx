@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Star, Check, ChevronDown } from "lucide-react"
-import { PHOTO_REVIEWS, TEXT_REVIEWS, REVIEW_STATS, type RodataReview } from "@/data/rodataReviews"
+import { PHOTO_REVIEWS, TEXT_REVIEWS, REVIEW_STATS, formatReviewDate, type RodataReview } from "@/data/rodataReviews"
 
 const INITIAL_TEXT_REVIEWS = 5
 const LOAD_MORE_STEP = 10
@@ -27,7 +27,10 @@ const ReviewerLine = ({ review }: { review: RodataReview }) => (
         {review.name}
         <Check size={11} className="text-brand-amber" aria-hidden />
       </p>
-      <p className="text-brand-steel text-xs font-inter truncate">{review.tag ?? "Compra verificada"}</p>
+      <p className="text-brand-steel text-xs font-inter truncate">
+        {review.tag ?? "Compra verificada"}
+        {review.date && <> · <time dateTime={review.date}>{formatReviewDate(review.date)}</time></>}
+      </p>
     </div>
   </div>
 )
@@ -77,7 +80,7 @@ const RodataReviews = () => {
           <div>
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-2 block">Reseñas de clientes</span>
             <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Lo que dicen los riders</h2>
-            <p className="text-brand-steel text-sm font-inter mt-2">Reseñas de los últimos 2 meses, compartidas por clientes por WhatsApp.</p>
+            <p className="text-brand-steel text-sm font-inter mt-2">Reseñas que nos mandaron clientes por WhatsApp, publicadas con su permiso.</p>
           </div>
           <ReviewSummary />
         </div>
@@ -116,8 +119,8 @@ const RodataReviews = () => {
 
         {/* Reseñas de texto — 5 iniciales, luego de 10 en 10 */}
         <div className="grid md:grid-cols-2 gap-4 mt-6" aria-live="polite">
-          {visibleText.map(review => (
-            <article key={review.name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3">
+          {visibleText.map((review, i) => (
+            <article key={`${review.name}-${review.date ?? i}`} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <ReviewerLine review={review} />
                 <ReviewStars count={review.stars} />
