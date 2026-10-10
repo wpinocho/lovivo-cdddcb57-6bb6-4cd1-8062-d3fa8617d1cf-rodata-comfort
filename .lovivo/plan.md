@@ -7,8 +7,8 @@
 - 4 tallas (opción `Talla`): S `37d48c11-13ef-4283-9bd7-cf38017edb31`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
   XL `f69e66aa-5297-4197-810c-3841f28da54e` — **todas a $799**. `track_inventory: false`. Sin suscripciones. `cost: 209`.
 - **Tallas más vendidas: L y XL** (cliente 2026-10-10) → PDP preselecciona L.
-- **Reseñas publicadas: 166** (16 lote original + 150 lote 2026-10-10 con fecha). Cliente CONFIRMÓ por escrito (2026-10-10) que las 150 son reales,
-  validadas por WhatsApp y con consentimiento. Rating calculado ≈ **4.6**. Recomendado al cliente guardar capturas como respaldo (PROFECO).
+- **Reseñas publicadas: 168** (16 originales + 150 con fecha + 2 con foto Emilio Z./Leonel B. 2026-10-10). Cliente CONFIRMÓ por escrito que son reales,
+  validadas por WhatsApp y con consentimiento. Rating calculado ≈ **4.6**. Recomendado al cliente guardar capturas (PROFECO).
 - **Producto en prueba: Muñequeras RODATA (par)** — id `97b069e9-3ee5-45ff-872a-50ff91762189`, slug `munequeras-rodata`,
   **precio PROVISIONAL $449 / compare $599**, talla única, sin cost cargado. NO está en home ni menú.
 - **Producto REGALO**: "Regalo: Soporte de muñeca RODATA (par)" id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
@@ -34,11 +34,11 @@
 - **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina...".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
 - **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07).
-- **Reseñas: fuente única `src/data/rodataReviews.ts`**: PHOTO_REVIEWS + ORIGINAL_TEXT_REVIEWS (positivas) + `DATED` (tuplas
-  `[nombre, 'YYYY-MM-DD', estrellas, texto]`, se ordenan por fecha desc) + ORIGINAL_LOGISTICS_COMPLAINTS (al final). `REVIEW_STATS` derivado.
-  Componente `src/components/RodataReviews.tsx` (resumen + barras, carrusel foto, 5 texto, "Cargar N reseñas más" de 10 en 10, fecha visible si existe,
-  key = nombre+fecha porque hay nombres repetidos). **Rating/conteo NUNCA hardcodeados**. Para agregar reseñas: añadir tupla a `DATED`.
-  NO inventar reseñas.
+- **Reseñas: fuente única `src/data/rodataReviews.ts`**: PHOTO_REVIEWS (5: Pablo B., Esteban V., Alan M., Leonel B., Emilio Z.) + ORIGINAL_TEXT_REVIEWS
+  + `DATED` (tuplas `[nombre, 'YYYY-MM-DD', estrellas, texto]`, orden fecha desc) + ORIGINAL_LOGISTICS_COMPLAINTS (al final). `REVIEW_STATS`/`ALL_REVIEWS` derivados.
+  Componente `src/components/RodataReviews.tsx`: resumen + barras **clicables → modal con solo reseñas de N estrellas** (`StarFilterModal`, filtra ALL_REVIEWS,
+  fila con 0 deshabilitada), carrusel de fotos horizontal en todos los tamaños, 5 texto + "Cargar N más" de 10 en 10, `ReviewCard` reutilizable.
+  **SIN subtítulo** bajo "Lo que dicen los riders" (cliente lo pidió quitar 2026-10-10). **Rating/conteo NUNCA hardcodeados**. NO inventar reseñas.
 - **Galería PDP: SOLO fotos de catálogo** — cliente NO quiere fotos de reseña en la galería (2026-10-10).
 
 ## Active Plan
@@ -47,9 +47,8 @@
 Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salvo que el cliente lo pida). Baseline en `.lovivo/cro-log.md`.
 
 **✅ Paso 1 (2026-10-10)**: sticky bar · talla L · medir cintura · envío gratis · fotos reales · copy devoluciones.
-**✅ Paso 2 (2026-10-10)**: reseñas reales con foto (Pablo B., Esteban V., Alan M.) + texto.
-**✅ Paso 2c (2026-10-10)**: sección reseñas rediseñada (resumen + barras, cargar más de 10 en 10).
-**✅ Paso 2d (2026-10-10)**: +150 reseñas con fecha (cliente confirmó reales + consentimiento). Total 166, ~4.6. Subtítulo: "publicadas con su permiso".
+**✅ Paso 2 / 2c / 2d (2026-10-10)**: reseñas reales con foto + texto, resumen con barras, +150 con fecha.
+**✅ Paso 2e (2026-10-10)**: +2 reseñas con foto (Leonel B. Honda roja, Emilio Z. espejo) al carrusel · quitado subtítulo · modal filtro por estrellas.
 **Paso 2b (pendiente)**: aplicar `RodataReviews`/`REVIEW_STATS` en GiftPDPUI y DeliveryPDPUI (aún "4.9 ★" hardcodeado + reseñas inventadas) — pedir OK.
 **Paso 3**: imágenes galería — catálogo 2048px (LCP), foto "cómo medir cintura", más fotos en moto.
 **Paso 4**: Encuesta PostHog "¿Qué te frenó para comprar hoy?" (PDP móvil, 40 s sin ATC).
@@ -71,6 +70,7 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 ### PDP Muñequeras — pendiente validación cliente. Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **⭐ +2 reseñas con foto (Leonel B., Emilio Z.) en carrusel, sin subtítulo, modal filtro por estrellas (2026-10-10)**.
 - **⭐ +150 reseñas con fecha cargadas (cliente confirmó reales), total 166, fecha visible por reseña (2026-10-10)**.
 - **⭐ Reseñas v3: resumen con barras, cargar más 10 en 10, rating derivado en toda la PDP (2026-10-10)**.
 - **⭐ PDP Paso 2: reseñas reales con foto + texto, "ver más", galería sin foto de reseña (2026-10-10)**.
@@ -85,15 +85,15 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **🎁 PDP Rodata One + Muñequeras de regalo (2026-09-28)**.
 - **🧤 PDP Muñequeras RODATA (2026-09-28)**.
 - **🛡️ Merchant Center trust fix (2026-09-28)**.
-- **🎯 Fix event_id Meta Pixel + CAPI (2026-09-26)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
 - **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = **Alan M.** (SOLO reseñas, NO galería), `u068d1b4pr.webp` = **Pablo B.** (Rally ADV Jalisco),
-  `c3mx3z3w5kt.webp` = **Esteban V.** (empaque). Re-subidas 2026-10-10 son duplicados.
+  `c3mx3z3w5kt.webp` = **Esteban V.** (empaque).
+- **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = **Leonel B.** (Honda roja, = review-1), `8818z991fgk.webp` = **Emilio Z.** (selfie espejo).
 - Catálogo lumbar (object/public/product-images/products/, 2048px): `nae4riov9h.webp` (hero), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`. Render/IA.
-- Reseñas viejas: `SB_PROD/review-1.webp` (REAL, Honda roja), `review-4.webp` (real). review-2/3/5 ya no se usan en ProductPageUI.
+- Reseñas viejas: `SB_PROD/review-1.webp` (REAL, Honda roja = Leonel B.), `review-4.webp` (real). review-2/3/5 ya no se usan en ProductPageUI.
 - Avatares `SB_PROD/avatar-*-v3.webp` (probable IA) — ya no en ProductPageUI; siguen en GiftPDPUI.
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`
 - Muñequeras (reales) `SB_MSG/1790638502334-`: `pkwpdneq4dd`, `q4h7kvtg3nn`, `0yjgi3apchym`, `nwhrcsc3un`, `2wwj6uvz7a5`

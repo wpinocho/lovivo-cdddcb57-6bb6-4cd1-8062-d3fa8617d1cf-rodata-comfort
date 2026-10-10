@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Star, Check, ChevronDown } from "lucide-react"
-import { PHOTO_REVIEWS, TEXT_REVIEWS, REVIEW_STATS, formatReviewDate, type RodataReview } from "@/data/rodataReviews"
+import { Star, Check, ChevronDown, ChevronRight } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { PHOTO_REVIEWS, TEXT_REVIEWS, ALL_REVIEWS, REVIEW_STATS, formatReviewDate, type RodataReview } from "@/data/rodataReviews"
 
 const INITIAL_TEXT_REVIEWS = 5
 const LOAD_MORE_STEP = 10
@@ -35,8 +36,54 @@ const ReviewerLine = ({ review }: { review: RodataReview }) => (
   </div>
 )
 
-/** Resumen tipo "4.3 ★ · barras por estrella" — calculado de las reseñas publicadas */
-const ReviewSummary = () => {
+/** Tarjeta de reseña (texto + foto opcional) usada en la lista y en el modal */
+const ReviewCard = ({ review }: { review: RodataReview }) => (
+  <article className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3">
+    <div className="flex items-start justify-between gap-3">
+      <ReviewerLine review={review} />
+      <ReviewStars count={review.stars} />
+    </div>
+    <blockquote className="text-brand-smoke text-sm font-inter leading-relaxed">"{review.text}"</blockquote>
+    {review.photo && (
+      <img
+        src={review.photo}
+        alt={`Foto real de ${review.name} con su RODATA`}
+        className="w-24 h-24 rounded-xl object-cover"
+        style={review.photoPos ? { objectPosition: review.photoPos } : undefined}
+        loading="lazy"
+      />
+    )}
+  </article>
+)
+
+/** Modal con solo las reseñas de N estrellas */
+const StarFilterModal = ({ stars, onClose }: { stars: number | null; onClose: () => void }) => {
+  const filtered = stars ? ALL_REVIEWS.filter(r => r.stars === stars) : []
+
+  return (
+    <Dialog open={stars !== null} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="w-[calc(100%-1.5rem)] max-w-xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden rounded-2xl bg-brand-carbon border-white/10 text-brand-offwhite">
+        <DialogHeader className="p-5 pb-4 border-b border-white/[0.08] text-left">
+          <DialogTitle className="font-sora text-lg flex items-center gap-2">
+            Reseñas de {stars}
+            <Star size={16} className="text-brand-amber fill-brand-amber" aria-hidden />
+          </DialogTitle>
+          <DialogDescription className="text-brand-steel text-xs font-inter">
+            {filtered.length} {filtered.length === 1 ? "opinión" : "opiniones"} de {REVIEW_STATS.total}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="overflow-y-auto p-4 space-y-3">
+          {filtered.map((review, i) => (
+            <ReviewCard key={`${review.name}-${review.date ?? i}`} review={review} />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Resumen tipo "4.3 ★ · barras por estrella" — calculado de las reseñas publicadas. Cada fila abre el modal filtrado. */
+const ReviewSummary = ({ onSelectStars }: { onSelectStars: (stars: number) => void }) => {
   const { average, total, distribution } = REVIEW_STATS
   const max = Math.max(...distribution.map(d => d.count), 1)
 
@@ -49,7 +96,14 @@ const ReviewSummary = () => {
       </div>
       <ul className="space-y-1.5" aria-label="Distribución de calificaciones">
         {distribution.map(({ stars, count }) => (
-          <li key={stars} className="flex items-center gap-2.5 text-xs font-inter">
+          <li key={stars}>
+            <button
+              type="button"
+              disabled={count === 0}
+              onClick={() => onSelectStars(stars)}
+              aria-label={`Ver ${count} reseñas de ${stars} estrellas`}
+              className="group w-full flex items-center gap-2.5 text-xs font-inter py-0.5 rounded-md enabled:hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-default transition-colors"
+            >
             <span className="text-brand-smoke w-6 flex items-center gap-0.5 flex-shrink-0">
               {stars}<Star size={10} className="text-brand-amber fill-brand-amber" aria-hidden />
             </span>
@@ -59,7 +113,9 @@ const ReviewSummary = () => {
                 style={{ width: `${(count / max) * 100}%` }}
               />
             </span>
-            <span className="text-brand-steel w-5 text-right tabular-nums flex-shrink-0">{count}</span>
+            <span className="text-brand-steel w-6 text-right tabular-nums flex-shrink-0 group-enabled:group-hover:text-brand-amber">{count}</span>
+            <ChevronRight size={12} className="text-brand-steel/60 flex-shrink-0 group-disabled:invisible" aria-hidden />
+            </button>
           </li>
         ))}
       </ul>
@@ -69,6 +125,7 @@ const ReviewSummary = () => {
 
 const RodataReviews = () => {
   const [visibleCount, setVisibleCount] = useState(INITIAL_TEXT_REVIEWS)
+  const [starFilter, setStarFilter] = useState<number | null>(null)
   const visibleText = TEXT_REVIEWS.slice(0, visibleCount)
   const remaining = TEXT_REVIEWS.length - visibleCount
   const nextBatch = Math.min(LOAD_MORE_STEP, remaining)
@@ -80,20 +137,19 @@ const RodataReviews = () => {
           <div>
             <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-2 block">Reseñas de clientes</span>
             <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Lo que dicen los riders</h2>
-            <p className="text-brand-steel text-sm font-inter mt-2">Reseñas que nos mandaron clientes por WhatsApp, publicadas con su permiso.</p>
           </div>
-          <ReviewSummary />
+          <ReviewSummary onSelectStars={setStarFilter} />
         </div>
 
         {/* Reseñas con foto real — carrusel en móvil, grid en desktop */}
         <div
-          className="flex md:grid md:grid-cols-3 gap-4 md:gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 pb-2"
+          className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 pb-2"
           style={{ scrollbarWidth: "none" }}
         >
           {PHOTO_REVIEWS.map(review => (
             <article
               key={review.name}
-              className="flex-shrink-0 w-[82%] sm:w-[60%] md:w-auto snap-start bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col"
+              className="flex-shrink-0 w-[82%] sm:w-[60%] md:w-[31%] snap-start bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="relative aspect-square overflow-hidden bg-brand-carbon">
                 <img
@@ -120,13 +176,7 @@ const RodataReviews = () => {
         {/* Reseñas de texto — 5 iniciales, luego de 10 en 10 */}
         <div className="grid md:grid-cols-2 gap-4 mt-6" aria-live="polite">
           {visibleText.map((review, i) => (
-            <article key={`${review.name}-${review.date ?? i}`} className="bg-brand-graphite border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
-                <ReviewerLine review={review} />
-                <ReviewStars count={review.stars} />
-              </div>
-              <blockquote className="text-brand-smoke text-sm font-inter leading-relaxed">"{review.text}"</blockquote>
-            </article>
+            <ReviewCard key={`${review.name}-${review.date ?? i}`} review={review} />
           ))}
         </div>
 
@@ -146,6 +196,8 @@ const RodataReviews = () => {
           </div>
         )}
       </div>
+
+      <StarFilterModal stars={starFilter} onClose={() => setStarFilter(null)} />
     </section>
   )
 }

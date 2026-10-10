@@ -47,6 +47,22 @@ export const PHOTO_REVIEWS: RodataReview[] = [
     photoPos: '50% 70%',
     text: 'Muy contento con mi RODATA. Ando en la ciudad con mi moto todos los días y la traigo puesta siempre.',
   },
+  {
+    name: 'Leonel B.',
+    stars: 5,
+    date: '2026-09-25',
+    photo: `${SB_MSG}/1791663680441-cr0tattp1ss.webp?width=700&quality=75`,
+    photoPos: '50% 40%',
+    text: 'Me sorprendió la calidad. Se ajusta perfecto y no molesta debajo de la chamarra.',
+  },
+  {
+    name: 'Emilio Z.',
+    stars: 5,
+    date: '2026-08-08',
+    photo: `${SB_MSG}/1791663680441-8818z991fgk.webp?width=700&quality=75`,
+    photoPos: '50% 60%',
+    text: 'Muy cómoda, la uso en mis rodadas de fin de semana y sí se nota la diferencia. Buena compra.',
+  },
 ]
 
 // Lote original: positivas primero; las 3 quejas de logística van al final de TEXT_REVIEWS.
