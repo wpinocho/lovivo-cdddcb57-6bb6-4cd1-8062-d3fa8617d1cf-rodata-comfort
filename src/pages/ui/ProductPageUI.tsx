@@ -36,6 +36,19 @@ const REVIEW_IMG_3 = `${SUPABASE_PROD}/review-3.webp?width=600&quality=75`
 const REVIEW_IMG_4 = `${SUPABASE_PROD}/review-4.webp?width=600&quality=75`
 const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 
+// Fotos REALES de clientes (enviadas por el dueño 2026-10-10)
+const UGC_CASCO = `${SUPABASE_MSG}/1791657732114-ghaahb3lsec.webp?width=800&quality=75`
+const UGC_RALLY = `${SUPABASE_MSG}/1791657732114-u068d1b4pr.webp?width=600&quality=75`
+const UGC_UNBOX = `${SUPABASE_MSG}/1791657732114-c3mx3z3w5kt.webp?width=500&quality=75`
+const UGC_STRIP: { src: string; alt: string; pos?: string }[] = [
+  { src: UGC_RALLY, alt: 'Cliente con su Rodata One en el Rally ADV Jalisco 2026', pos: '25% 50%' },
+  { src: REVIEW_IMG_1, alt: 'Cliente usando el Rodata One junto a su moto' },
+  { src: UGC_UNBOX, alt: 'Rodata One recién llegado en su empaque' },
+  { src: REVIEW_IMG_4, alt: 'Rodata One de un cliente' },
+]
+
+const REVIEW_COUNT = 167
+
 // ── Helpers ──
 /** Extracts the bare size key from a variant value like "S (60-75 cm)" → "S" */
 const getSizeKey = (value: string) =>
@@ -135,27 +148,51 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [expressAvailable, setExpressAvailable] = useState(false)
-  const [showStickyBar, setShowStickyBar] = useState(false)
+  const [ctaInView, setCtaInView] = useState(false)
+  const [scrolledPast, setScrolledPast] = useState(false)
+  const [mobileIdx, setMobileIdx] = useState(0)
 
-  // Sticky bar: only shows AFTER the CTA has been visible at least once
+  // Sticky bar: visible tras un poco de scroll, salvo cuando el CTA inline está en pantalla
+  // (antes solo aparecía después de ver el CTA → quien no bajaba nunca veía botón)
   const ctaRef = useRef<HTMLDivElement>(null)
-  const hasCTABeenVisible = useRef(false)
 
   useEffect(() => {
     const el = ctaRef.current
     if (!el) return
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) hasCTABeenVisible.current = true
-        if (hasCTABeenVisible.current) setShowStickyBar(!entry.isIntersecting)
-      },
+      ([entry]) => setCtaInView(entry.isIntersecting),
       { threshold: 0 }
     )
     observer.observe(el)
     return () => observer.disconnect()
   }, [logic.product])
 
-  const productImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
+  useEffect(() => {
+    const onScroll = () => setScrolledPast(window.scrollY > 250)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const showStickyBar = scrolledPast && !ctaInView
+
+  // Talla L por default (L/XL son las más vendidas) — solo una vez, reemplazando el auto-select de la primera talla
+  const didPresetSize = useRef(false)
+  useEffect(() => {
+    if (didPresetSize.current || !logic.product?.options?.length) return
+    const opt = logic.product.options.find((o: any) => /talla/i.test(o.name))
+    if (!opt) { didPresetSize.current = true; return }
+    const current = logic.selected?.[opt.name]
+    if (!current) return // esperar al auto-select de HeadlessProduct
+    didPresetSize.current = true
+    if (current !== opt.values[0]) return
+    const large = opt.values.find((v: string) => getSizeKey(v) === 'L')
+    if (large && logic.isOptionValueAvailable(opt.name, large)) logic.handleOptionSelect(opt.name, large)
+  }, [logic.product, logic.selected])
+
+  const baseImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
+  // Foto real de cliente como 2ª imagen de la galería
+  const productImages: string[] = [baseImages[0], UGC_CASCO, ...baseImages.slice(1)]
   const displayImage = selectedImage ?? productImages[0]
   const discountPct = logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice
     ? Math.round((1 - logic.currentPrice / logic.currentCompareAt) * 100) : null
@@ -227,6 +264,11 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 <div
                   className="flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-4 px-4 pb-1"
                   style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                  onScroll={(e) => {
+                    const el = e.currentTarget
+                    const w = (el.firstElementChild as HTMLElement | null)?.offsetWidth ?? el.clientWidth
+                    setMobileIdx(Math.round(el.scrollLeft / (w + 12)))
+                  }}
                 >
                   {productImages.map((img, i) => (
                     <div key={i} className="flex-shrink-0 w-[calc(100%-32px)] snap-center">
@@ -242,6 +284,13 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     </div>
                   ))}
                 </div>
+                {productImages.length > 1 && (
+                  <div className="flex justify-center gap-1.5 pt-2" aria-hidden="true">
+                    {productImages.map((_, i) => (
+                      <span key={i} className={cn("h-1.5 rounded-full transition-all duration-300", i === mobileIdx ? "w-4 bg-brand-amber" : "w-1.5 bg-brand-steel/50")} />
+                    ))}
+                  </div>
+                )}
                 {discountPct && (
                   <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg pointer-events-none">
                     -{discountPct}%
@@ -263,14 +312,14 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
 
             {/* Info panel */}
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <span className="h-px w-6 bg-brand-amber block" />
                 <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">Diseñado para la postura de manejo</span>
               </div>
               <h1 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight">{logic.product.title}</h1>
               <div className="flex items-center gap-3">
                 <Stars count={5} size={15} />
-                <span className="text-brand-smoke text-sm font-inter">4.9 <span className="text-brand-steel">· 127 reseñas verificadas</span></span>
+                <span className="text-brand-smoke text-sm font-inter">4.9 <a href="#opiniones" className="text-brand-steel underline underline-offset-2">· {REVIEW_COUNT} reseñas verificadas</a></span>
               </div>
 
               {/* Price + badge */}
@@ -288,23 +337,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     </>
                   )}
                 </div>
-                {/* Launch offer badge */}
+                {/* Free shipping badge (ya no es lanzamiento) */}
                 <div className="inline-flex items-center gap-1.5 bg-brand-amber/10 border border-brand-amber/20 rounded-full px-3.5 py-1.5">
-                  <span className="text-brand-amber text-xs font-sora font-semibold">🏷 Oferta de Lanzamiento · Envío gratis incluido</span>
-                </div>
-              </div>
-
-              <div className="border-t border-white/[0.08] pt-5 space-y-3">
-                <p className="text-brand-smoke text-sm leading-relaxed font-inter">
-                  El soporte confiado por los motociclistas mexicanos diseñado para eliminar el dolor de espalda.
-                </p>
-                <div className="space-y-2">
-                  {['Baja de la moto sin ese dolor que acumulas en cada rodada', 'Flexible: se mueve contigo y no estorba el manejo ni bajo la chamarra', 'Ajuste en segundos y se queda exactamente donde lo pusiste'].map(item => (
-                    <div key={item} className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><Check size={9} className="text-brand-amber" /></div>
-                      <span className="text-brand-smoke text-xs font-inter">{item}</span>
-                    </div>
-                  ))}
+                  <Truck size={13} className="text-brand-amber" />
+                  <span className="text-brand-amber text-xs font-sora font-semibold">Envío gratis a todo México</span>
                 </div>
               </div>
 
@@ -354,6 +390,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                           )
                         })}
                       </div>
+                      <p className="text-brand-steel text-[11px] font-inter leading-relaxed mt-2.5">
+                        Mide tu cintura a la altura del ombligo. Si estás entre dos tallas, elige la mayor.{' '}
+                        <span className="text-brand-smoke">El primer cambio de talla es gratis.</span>
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -409,7 +449,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     </button>
                     <button onClick={logic.handleAddToCart} disabled={ctaDisabled} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
                     <p className="text-brand-steel text-[11px] font-inter text-center">
-                      🔒 Pago seguro · Envío gratis · 30 días de prueba
+                      🔒 Pago seguro · Envío gratis · 30 días para devolver
                     </p>
                   </>
                 ) : (
@@ -417,9 +457,37 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 )}
               </div>
 
+              {/* Fotos reales de clientes */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-brand-smoke text-sm font-sora font-semibold">Fotos reales de clientes</p>
+                  <a href="#opiniones" className="text-brand-amber text-xs font-inter underline underline-offset-2">Ver {REVIEW_COUNT} reseñas</a>
+                </div>
+                <div className="flex gap-2 overflow-x-auto snap-x -mx-4 px-4 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'none' }}>
+                  {UGC_STRIP.map(({ src, alt, pos }) => (
+                    <div key={src} className="flex-shrink-0 w-[38%] sm:w-[24%] aspect-[3/4] rounded-xl overflow-hidden bg-brand-graphite snap-start">
+                      <img src={src} alt={alt} className="w-full h-full object-cover" style={pos ? { objectPosition: pos } : undefined} loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Beneficios (movidos debajo del CTA para subir el botón en móvil) */}
+              <div className="space-y-2">
+                <p className="text-brand-smoke text-sm leading-relaxed font-inter">
+                  Soporte lumbar hecho para la postura de manejo: para que termines cada rodada con menos fatiga en la espalda baja.
+                </p>
+                {['Llegas con menos fatiga en la espalda baja', 'Flexible: se mueve contigo y no estorba el manejo ni bajo la chamarra', 'Ajuste en segundos y se queda exactamente donde lo pusiste'].map(item => (
+                  <div key={item} className="flex items-center gap-2.5">
+                    <div className="h-4 w-4 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><Check size={9} className="text-brand-amber" /></div>
+                    <span className="text-brand-smoke text-xs font-inter">{item}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* Trust row */}
               <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/[0.08]">
-                {[{icon: Truck, label: 'Envío gratis', sub: 'A todo México'}, {icon: RotateCcw, label: '30 días', sub: 'De prueba'}, {icon: Ruler, label: 'Cambio talla', sub: 'Sin costo'}].map(({icon: Icon, label, sub}) => (
+                {[{icon: Truck, label: 'Envío gratis', sub: 'A todo México'}, {icon: RotateCcw, label: '30 días', sub: 'Para devolver'}, {icon: Ruler, label: '1er cambio talla', sub: 'Sin costo'}].map(({icon: Icon, label, sub}) => (
                   <div key={label} className="flex flex-col items-center text-center gap-1">
                     <div className="h-8 w-8 rounded-full bg-brand-amber/10 border border-brand-amber/20 flex items-center justify-center"><Icon size={13} className="text-brand-amber"/></div>
                     <p className="text-brand-smoke text-[11px] font-sora font-semibold leading-tight">{label}</p>
@@ -440,8 +508,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   <AccordionContent className="text-brand-steel text-xs font-inter leading-relaxed pb-4 space-y-2">
                     <p><span className="text-brand-smoke font-semibold">🚚 Envío gratis</span> a todo México. Sin costo mínimo de compra.</p>
                     <p><span className="text-brand-smoke font-semibold">📅 Fecha estimada de entrega:</span> En {DELIVERY_RANGE_LABEL} · llega entre el {deliveryDate}.</p>
-                    <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos con el cambio sin costo.</p>
-                    <p><span className="text-brand-smoke font-semibold">✅ 30 días de prueba:</span> Si no queda como esperabas, lo resolvemos.</p>
+                    <p><span className="text-brand-smoke font-semibold">🔄 Cambio de talla:</span> Si no es la talla correcta, contáctanos por WhatsApp y te ayudamos. El primer cambio de talla es sin costo.</p>
+                    <p><span className="text-brand-smoke font-semibold">✅ 30 días para devolver:</span> Contados desde que lo recibes.</p>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -551,7 +619,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             <div className="flex items-center gap-4 bg-brand-graphite border border-white/[0.08] rounded-2xl px-6 py-4 flex-shrink-0">
               <div><p className="font-sora font-bold text-brand-amber text-3xl leading-none">4.9</p><div className="mt-1.5"><Stars count={5} size={11}/></div></div>
               <div className="h-12 w-px bg-white/[0.08]"/>
-              <div><p className="text-brand-offwhite font-sora font-bold text-lg leading-none">127</p><p className="text-brand-steel text-xs font-inter mt-1">reseñas</p></div>
+              <div><p className="text-brand-offwhite font-sora font-bold text-lg leading-none">{REVIEW_COUNT}</p><p className="text-brand-steel text-xs font-inter mt-1">reseñas</p></div>
             </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -604,8 +672,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
           <div className="border-t border-white/[0.06] my-10" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              {icon:RotateCcw, title:'30 días de prueba', desc:'Si no te convence, lo resolvemos.'},
-              {icon:Ruler, title:'Cambio de talla fácil', desc:'Para que el ajuste sea el correcto.'},
+              {icon:RotateCcw, title:'30 días para devolver', desc:'Contados desde que lo recibes.'},
+              {icon:Ruler, title:'1er cambio de talla gratis', desc:'Para que el ajuste sea el correcto.'},
               {icon:Truck, title:'Envío gratis', desc:'Sin costo a todo México.'},
               {icon:MessageSquare, title:'Soporte WhatsApp', desc:'Personas reales que responden.'},
             ].map(({icon: Icon, title, desc}) => (
@@ -644,7 +712,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-4 block">Rodata One</span>
           <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">¿Cuántas rodadas más vas a terminar con dolor de espalda?</h2>
-          <p className="text-brand-smoke font-inter text-sm mb-8">Envío gratis en México · 30 días de prueba · Cambio de talla fácil</p>
+          <p className="text-brand-smoke font-inter text-sm mb-8">Envío gratis en México · 30 días para devolver · 1er cambio de talla gratis</p>
           <div className="flex items-baseline justify-center gap-3 mb-7">
             {logic.isPriceResolving ? (
               <Skeleton className="h-10 w-40" />
@@ -657,7 +725,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
-      {/* ── STICKY BAR (solo aparece después de que el CTA fue visible) ── */}
+      {/* ── STICKY BAR (tras 250px de scroll, oculta mientras el CTA inline está en pantalla) ── */}
       {logic.inStock && showStickyBar && (
         <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md border-t border-white/[0.1] transition-transform duration-300 ease-out pb-[env(safe-area-inset-bottom)]" style={{backgroundColor:'rgba(17,19,21,0.96)'}}>
           <div className="max-w-7xl mx-auto px-4 py-3">

@@ -14,6 +14,15 @@
 - **Top sources**: direct 45%, meta ads 30%, organic 25%
 -->
 
+### 2026-10-10 — Baseline PDP móvil antes de "Paso 1" (claridad/confianza, NO experimento)
+- 30d: Mobile 3,187 PDP → 229 ATC → 71 compras (**2.2%**) · Desktop 176 → 15 (8.5%)
+- Semana 28-sep: PDP 644 → ATC 60 (9.3%) → compra 24 (3.7%). 5–10 oct: 2.8%. Tráfico PDP ~300–650/sem (−75% vs agosto).
+- 59 regresos /pagar → PDP en 30d. 46% sale con <10% scroll.
+- **Paso 1 aplicado 2026-10-10** (`ProductPageUI.tsx`): sticky bar tras 250px scroll · talla L por default + línea "cómo medir / 1er cambio gratis" ·
+  badge "Oferta de Lanzamiento" → "Envío gratis a todo México" · eyebrow oculto en móvil · descripción/bullets movidos debajo del CTA ·
+  foto real (casco) como 2ª en galería + dots · tira "Fotos reales de clientes" bajo el CTA · 167 reseñas · claim médico quitado · "30 días de prueba" → "30 días para devolver".
+- **Leer**: comparar 14 días (24-oct) CVR móvil PDP→compra, ATC rate y % sticky clicks vs este baseline. Con cautela: mezcla de anuncios cambia.
+
 ### 2026-09-04 — Baseline previo al test de precio
 - **Periodo**: 30 días
 - **Tráfico**: 6,362 visitantes únicos / 9,915 pageviews. **94% mobile.**
