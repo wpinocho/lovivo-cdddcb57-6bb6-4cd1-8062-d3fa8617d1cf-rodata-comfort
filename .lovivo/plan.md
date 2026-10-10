@@ -2,18 +2,18 @@
 
 ## Brand & Context
 - Marca premium de equipo para motociclistas mexicanos. **Nombre público: "RODATA"** (NUNCA "rodata.mx"). Dominio oficial: **https://rodata.store**
-- Producto principal: Rodata One — soporte lumbar (MX$799, compare_at MX$999, 20% OFF)
+- Producto principal: Rodata One — soporte lumbar (MX$799). ⚠️ **compare_at cambió a $1,339 el 2026-10-10 18:02 UTC** (antes 999 → ahora muestra "40% OFF"). Confirmar con cliente si fue intencional.
 - Slug: `soporte-lumbar-rodata-one` (id `400026a2-c277-407c-abbb-d1683f415120`)
-- 4 tallas (opción `Talla`): S `37d48c11-...`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
-  XL `f69e66aa-...` — **todas a $799**, `compare_at_price` 999. `track_inventory: false`. Sin suscripciones. `cost: 209`.
+- 4 tallas (opción `Talla`): S `37d48c11-13ef-4283-9bd7-cf38017edb31`, M `b6995a9e-82a5-4fd9-a1b6-2043b70955ec`, L `f4e5d229-4e32-47bc-8fae-9064ba74f358`,
+  XL `f69e66aa-5297-4197-810c-3841f28da54e` — **todas a $799**. `track_inventory: false`. Sin suscripciones. `cost: 209`.
 - **Producto en prueba: Muñequeras RODATA (par)** — id `97b069e9-3ee5-45ff-872a-50ff91762189`, slug `munequeras-rodata`,
   **precio PROVISIONAL $449 / compare $599**, talla única, sin cost cargado. NO está en home ni menú.
-- **Producto REGALO**: título **"Regalo: Soporte de muñeca RODATA (par)"** id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
-  **price 0**, compare_at 449. Tags `regalo,no-listar`. **SIN cost cargado** (necesario para medir margen real). Nombre visible: "Soporte de muñeca para moto".
+- **Producto REGALO**: "Regalo: Soporte de muñeca RODATA (par)" id `f29e9557-14ac-4101-8c97-7c7b427c5e70`, slug `regalo-munequeras-rodata`,
+  price 0, compare_at 449. Tags `regalo,no-listar`. SIN cost cargado.
 - Tono: directo, técnico-emocional, sin fluff. Habla como rider, no como médico.
 - **Avatar 1**: rider carretera → PDP `/productos/soporte-lumbar-rodata-one` · **Avatar 2**: repartidor → `/repartidores`
 - **Dos repos hermanos**: Rodata US y Rodata MX. Agente solo tiene acceso a MX.
-- **Tráfico (30d, 2026-09-04)**: 6,362 únicos. PDP 91%. **94% mobile.** ~80% Meta Ads. ~130 ventas/30d, CVR PDP ≈ 2.2–2.7%.
+- **Tráfico**: 94% mobile, ~80% Meta Ads. Tráfico PDP cayó fuerte: 2,481 únicos/sem (3-ago) → 644 (28-sep) → 287 (5–10 oct).
 - **Política oficial (2026-09-28)**: 30 días desde que recibe · devolución normal = cliente paga regreso · defectuoso = RODATA cubre ·
   1er cambio de talla SIN COSTO · reembolso máx 10 días hábiles · envío estándar gratis en MX · preparación 24–48 h.
 - WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
@@ -23,49 +23,72 @@
 - Amber: `brand-amber` #C98B2E / `brand-amber-light` #E5A842 — único acento. Sora (headings), Inter (body).
 - **Identidad pública — `src/lib/brand.ts`**. Páginas legales: `PolicyLayout.tsx`.
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
-- **Landings/PDP dedicadas**: forkear `ProductPageUI`/`DeliveryPDPUI` + ruta estática antes de `/productos/:slug`. NO tocar PDP original.
+- **Landings/PDP dedicadas**: forkear `ProductPageUI`/`DeliveryPDPUI` + ruta estática antes de `/productos/:slug`.
 - **Regla del cliente**: en `/repartidores` SOLO fotos reales. Errores de pago: nunca culpar al cliente. Precios: NUNCA hardcodear.
-- Copy devolución: "30 días para devolver", NO "garantía". Sin claims médicos. Un solo ancla de precio.
-- **Urgencia: SOLO real** — contador a fecha FIJA igual para todos (nunca por visitante).
-- **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina la vibración / quita hormigueo / túnel carpiano".
+- Copy devolución: "30 días para devolver", NO "garantía"/"prueba". Sin claims médicos. Un solo ancla de precio.
+- **Urgencia: SOLO real** — contador a fecha FIJA igual para todos.
+- **Vibración (claim honesto)**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina...".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
-- **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07): ninguna otra página debe agregar el regalo.
+- **Regalo SOLO desde la URL regalo** (regla cliente 2026-10-07).
 
 ## Active Plan
 
+### 🔍 Auditoría CRO PDP móvil `/productos/soporte-lumbar-rodata-one` (2026-10-10) — PROPUESTA, esperando OK
+Archivo principal: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salvo que el cliente lo pida).
+
+**Datos (PostHog, únicos por persona):**
+- CVR PDP→compra semanal: 3-ago 1.4% · 10-ago 1.8% · 17-ago 2.0% · 24-ago 2.4% · 31-ago 1.8% · 7-sep 2.7% · 14-sep 2.7% ·
+  21-sep 1.6% (arranca exp pack) · 28-sep 3.7% · 5–10 oct 2.8%. → **La tasa NO cayó; lo que cayó es el TRÁFICO** (−75% vs agosto). Decirle al cliente.
+- 30d por dispositivo: Mobile 3,187 PDP → 229 ATC → 71 compras (**2.2%**) · Desktop 176 → 15 (**8.5%**).
+- Funnel 28-sep: PDP 644 → ATC 60 (9.3%) → checkout 57 → contacto 34 → dirección 23 → compra 24. Checkout→compra ≈ 42%.
+- **59 vueltas /pagar → PDP en 30d** (~1 de cada 6 checkouts), normalmente 10–15 s después de entrar a /pagar con "Comprar ahora".
+- Scroll en salida: 46% se va con <10% de scroll; 37% llega a 75%+. La mayoría pasa 30–120 s (interés, no rebote ciego).
+- LCP móvil p50 2.1 s / p75 2.9 s (límite). CLS/INP OK.
+- 0 encuestas PostHog creadas.
+
+**Hallazgos + cambios propuestos (orden de prioridad):**
+1. **Botón de compra fuera de la primera pantalla.** En 390×844 el CTA queda ~1.3 pantallas abajo (header + foto cuadrada + eyebrow + título + precio + badge + descripción + 3 bullets + talla + cantidad).
+   La sticky bar solo aparece DESPUÉS de haber visto el CTA (`hasCTABeenVisible`) → quien no baja nunca ve botón.
+   → Sticky bar móvil visible tras ~300px de scroll (o siempre) aunque no haya visto el CTA; ocultarla solo mientras el CTA inline está en pantalla.
+   → Compactar arriba: quitar eyebrow "Diseñado para la postura de manejo" en móvil, quitar badge "Oferta de Lanzamiento", mover talla justo debajo del precio, bullets debajo del CTA, ocultar "Cantidad" en móvil (o mover abajo).
+2. **Talla S preseleccionada por default** (`HeadlessProduct.tsx` ~L133 selecciona el primer valor disponible = S, la más chica). Riesgo de pedido con talla incorrecta / cambios / duda.
+   → Agregar prop opcional `defaultOptionValues` a `HeadlessProduct` (solo usada por `Product.tsx`) para preseleccionar **M (75–90 cm)**; mostrar debajo de las tallas línea fija "Mide tu cintura a la altura del ombligo · Entre dos tallas, elige la mayor · 1er cambio de talla gratis". No romper otros consumidores de HeadlessProduct.
+   → Pedir al cliente (Dashboard) distribución real de tallas vendidas para confirmar M.
+3. **Credibilidad de reseñas.** Fechas "Ene–Mar 2025" pero la tienda se creó abr-2026 → inconsistencia visible. "127 reseñas verificadas", "4.9", "+800 riders" deben ser números reales. Avatares `avatar-*-v3` parecen IA.
+   → Pedir al cliente: nº real de reseñas/clientes, reseñas reales (texto + ciudad + mes), fotos/screenshots de WhatsApp de clientes. Cambiar fechas a reales (2026). NO inventar. Si no hay datos, quitar números exactos y usar formulaciones verificables.
+   → Subir las reseñas: insertar 2–3 reseñas en carrusel horizontal justo debajo del bloque de compra (antes de stats/lifestyle). Hoy están ~60% abajo y solo 37% llega ahí.
+4. **Galería**: 5 imágenes, todas render/estudio (3 con texto encima). Falta: rider en la moto con postura de manejo, foto REAL de cliente, imagen de guía de tallas/cómo medir, "qué incluye". Sin indicador de que hay más fotos.
+   → Añadir dots/contador "1/5" en galería móvil. Agregar `review-1.webp` (real, Honda roja) como 2ª imagen. Pedir al cliente fotos reales en moto; si no hay, generar imagen "cómo medir tu cintura" (Craft, `media.product-imagery`).
+   → Imágenes de galería: verificar que `displayImages` use `render/image/public ... ?width=800&quality=75` (catálogo trae 2048px 300–480 KB → LCP).
+5. **Claim médico** en descripción del hero: "diseñado para eliminar el dolor de espalda" → viola regla propia y política Meta. Cambiar a "para que termines cada rodada con menos fatiga en la espalda baja".
+6. **Ancla de precio**: compare_at nuevo $1,339 (40% OFF) + badge "Oferta de Lanzamiento" a 6 meses del lanzamiento → riesgo de "descuento falso" (PROFECO). Confirmar intención; quitar "Lanzamiento". Un solo ancla.
+7. **Copy "30 días de prueba"** (trust line, trust row, accordion, sección 7, CTA final) → cambiar a "30 días para devolver" + "1er cambio de talla gratis" (política oficial).
+8. **"Comprar ahora" → /pagar directo y 1 de cada 6 regresa a la PDP.** No cambiar flujo aún; revisar en /pagar que el resumen (producto, talla, $799, envío gratis, fecha de entrega) sea lo primero visible en móvil. Relacionado con plan "Formulario dirección MX".
+9. **Encuesta PostHog** (Craft/tool `posthog-survey`): PDP móvil, tras 40 s sin ATC: "¿Qué te frenó para comprar hoy?" opciones: Precio · No sé qué talla · No sé si me va a servir · Desconfianza en la tienda · Tiempo de entrega · Solo estaba viendo · Otro. Leer en 7–10 días.
+
+**Medición**: tráfico actual ~650 PDP/sem → A/B no concluyente en tiempos razonables. Aplicar 1–7 como arreglos de claridad/confianza (no experimento), registrar baseline en `.lovivo/cro-log.md` (CVR móvil 2.2% 30d, ATC 9.3%, 59 regresos /pagar→PDP), comparar 14 días antes/después con cautela (la mezcla de anuncios cambia).
+
 ### ✅ A) Experimento pack 2ª unidad 50% — CERRADO 2026-10-07 (gana control)
-- Manifiesto `rodata-one-pack-presentation.json` → `completed`. Selector/gate quitado de `ProductPageUI.tsx` y `GiftPDPUI.tsx` (`ctaPrice = logic.currentPrice`).
-- `HeadlessProduct` conserva lógica `packOffer` inerte. `PackOfferSelector.tsx` sin imports (se puede borrar).
-- **Regla BOGO `7653e73d` SIGUE ACTIVA** — el cliente pidió no tocar nada más.
+- Selector quitado de `ProductPageUI.tsx` y `GiftPDPUI.tsx`. `PackOfferSelector.tsx` sin imports. **Regla BOGO `7653e73d` SIGUE ACTIVA**.
 
-### 🎁 B) Test "PDP normal vs PDP regalo" — EN PAUSA (cliente: "por ahora nada más")
-- Recomendación: A/B en Meta Ads (ad set duplicado, solo cambia URL con `utm_content=control|regalo`), NO redirect en tienda.
-- Break-even: margen/pedido control ≈ $423. Regalo costo X → necesita +X/(423−X) conversión. Pedir costo real del par.
-- `GIFT_OFFER_ENDS_AT = '2026-10-31T23:59:59-06:00'`.
+### 🎁 B) Test "PDP normal vs PDP regalo" — EN PAUSA
+- Recomendación: A/B en Meta Ads (`utm_content=control|regalo`). Break-even margen/pedido ≈ $423. `GIFT_OFFER_ENDS_AT = '2026-10-31T23:59:59-06:00'`.
+- Nota: PostHog muestra ~1 visitante/semana en la URL regalo (casi sin tráfico).
 
-### 🎁 Lógica de elegibilidad del regalo (FIX 2026-10-07)
-- ANTES: visitar la URL regalo ponía flag 7 días (`rodata-gift-eligible`) → el regalo se agregaba desde CUALQUIER PDP (bug reportado).
-- AHORA (`gift-offer.ts` + `GiftCartSync.tsx`): el regalo se agrega SOLO si hay Rodata One en carrito mientras `pathname === GIFT_PDP_PATH`.
-  Eso marca `rodata-gift-claimed` (TTL 7d). Línea regalo sin claim → se quita. Sin Rodata One → se quita y se borra el claim.
-  "Comprar ahora" en PDP regalo llama `markGiftClaimed()` antes de `checkoutWithItems`. Flag legacy se borra.
-- Nota: si alguien tiene Rodata One en carrito y entra a la URL regalo, el regalo se agrega al entrar (intencional).
+### 🎁 Elegibilidad regalo (FIX 2026-10-07)
+- Regalo solo si hay Rodata One en carrito mientras `pathname === GIFT_PDP_PATH` → claim `rodata-gift-claimed` (TTL 7d).
 
-### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK del cliente)
-- Reemplazar Stripe AddressElement (solo envío) por `src/components/MxAddressForm.tsx`: Nombre(s)|Apellidos · Calle y número exterior (`line1`) · Núm. interior (opc) · Colonia (req) · CP | Ciudad · Estado (select 32) · Teléfono (`CountryPhoneSelect`).
-- `line2` = `[Int. X, ]Col. Y`. País fijo MX. Mantener contrato `onAddressChange(addressValue, complete)` en CheckoutUI.tsx. Revisar `StripePayment.tsx`.
-- Rollback `USE_CUSTOM_ADDRESS_FORM`. Fix `clients-upsert 400 "email requerido"`.
+### 🏠 Formulario de dirección estilo México (PLANEADO 2026-09-29 — esperando OK)
+- `src/components/MxAddressForm.tsx`: Nombre(s)|Apellidos · Calle y núm ext · Núm int · Colonia · CP | Ciudad · Estado · Teléfono. Rollback `USE_CUSTOM_ADDRESS_FORM`. Fix `clients-upsert 400`.
 
-### 🎁 PDP Regalo v2 — CONSTRUIDA 2026-09-29 (QA real pendiente)
-URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer.ts`, `GiftCountdown.tsx`, `GiftDetailsDrawer.tsx`, `GiftLanding.tsx` (al vencer → Navigate a PDP normal), `GiftPDPUI.tsx`, `GiftCartSync.tsx` (montado en App dentro de BrowserRouter).
-
-### PDP Muñequeras — pendiente validación cliente (precio final, cierre/material, reseña "Ricardo G., Guadalajara").
-### Merchant Center — cliente: dominio rodata.store + políticas + revisión.
+### PDP Muñequeras — pendiente validación cliente. Merchant Center — pendiente cliente.
 
 ## Recent Changes
-- **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)** — ahora solo desde la URL regalo.
+- **🔍 Auditoría CRO PDP móvil (2026-10-10)** — plan guardado, sin cambios de código.
+- **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)**.
 - **✅ Exp pack 2ª unidad 50% cerrado + regalo extendido al 31 oct (2026-10-07)**.
 - **📋 Plan cerrar exp pack + test regalo vía Meta A/B (2026-10-07)**.
-- **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)** — pendiente.
+- **📋 Plan formulario de dirección estilo México + Colonia (2026-09-29)**.
 - **🎁 PDP Regalo v2 construida (2026-09-29)**.
 - **📋 Plan PDP Regalo v2 (2026-09-29)**.
 - **🎁 PDP Rodata One + Muñequeras de regalo (2026-09-28)**.
@@ -76,34 +99,34 @@ URL `/productos/soporte-lumbar-rodata-one-regalo`. Archivos: `src/lib/gift-offer
 - **🚀 Experimento de pack ACTIVADO + BOGO activa (2026-09-22)**.
 - **✅ `/politica-de-devoluciones` creada** (2026-09-22).
 - **✅ Meta `google-site-verification` en `index.html`** (2026-09-22). NO QUITAR.
-- **⚪ Test de precio $799 vs $849 CERRADO inconcluso** (2026-09-22).
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
-- Catálogo lumbar (object/public/product-images/products/): `nae4riov9h.webp` (ganadora), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`
-- **Kit regalo (IA 2026-09-28)**: `SB_PROD/kit-rodata-one-munequeras.webp`
-- Muñequeras (reales) `SB_MSG/1790638502334-`: `pkwpdneq4dd` (estudio, thumb tarjeta), `q4h7kvtg3nn` (manubrio), `0yjgi3apchym` (callouts), `nwhrcsc3un` ("Esto recibes" — drawer), `2wwj6uvz7a5` (reseña)
-- PDP carretera: LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · FEAT 1-3 `SB_MSG/177577713367x-*` · REVIEW_IMG_1-5 `SB_PROD/review-1..5.webp`
+- Catálogo lumbar (object/public/product-images/products/, 2048px): `nae4riov9h.webp` (hero: rider de espaldas con chamarra, texto "Se siente parte de tu equipo"), `j8kw94s83hn` (producto en carretera atardecer, texto), `pjleekrch4l` (callouts: correas/panel/malla), `b5mg4lv2qbf` (estudio frente), `0evbcgfgplnh` (estudio interior, 1254px). Todas render/IA — **ninguna en moto ni real**.
+- Reseñas: `SB_PROD/review-1.webp` (REAL: hombre con faja junto a Honda roja — candidata a galería), `review-4.webp` (real: faja en piso de madera), review-2/3/5 sin revisar.
+- Avatares `SB_PROD/avatar-{carlos,jorge,andres}-v3.webp` (probable IA).
+- **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`
+- Muñequeras (reales) `SB_MSG/1790638502334-`: `pkwpdneq4dd`, `q4h7kvtg3nn`, `0yjgi3apchym`, `nwhrcsc3un`, `2wwj6uvz7a5`
+- PDP carretera: LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · FEAT 1-3 `SB_MSG/177577713367x-*`
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- **Regalo vence 2026-10-31 23:59 CDMX** (2026-10-07): después la URL regalo redirige a PDP normal.
-- **Regla BOGO 2ª unidad 50% sigue activa** (2026-10-07) sin selector visible; se acumula con el regalo si alguien compra 2.
-- **Producto regalo sin `cost`** (2026-10-07): margen sobrestimado hasta cargarlo.
-- **Fix regalo 2026-10-07**: carritos viejos con regalo agregado antes del fix (desde la URL regalo) pierden el regalo si salen de esa página antes de pagar (no hay forma de distinguirlos del bug). Ventana pequeña.
-- **Checkout (2026-09-29)**: etiquetas de Stripe confusas + sin campo Colonia. `clients-upsert` 400 "email requerido".
-- **Regalo (2026-09-29)**: sin QA de compra real con línea $0.
-- **Muñequeras**: precio provisional; reseña sin validar.
-- "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx` (permiso pendiente). Canonical estático PDP carretera.
-- Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto (PGRST200).
+- **compare_at Rodata One cambió 999 → 1,339 (2026-10-10)** — sin confirmar si fue intencional; PDP ahora dice 40% OFF.
+- **Reseñas PDP con fechas 2025** (tienda creada abr-2026) + cifras 127/4.9/+800 sin verificar (2026-10-10).
+- **Talla S preseleccionada por default** en todas las PDP que usan HeadlessProduct (2026-10-10).
+- **Claim "eliminar el dolor de espalda"** en hero PDP (2026-10-10).
+- **Regalo vence 2026-10-31 23:59 CDMX**. **Regla BOGO 2ª unidad 50% sigue activa** sin selector.
+- Producto regalo sin `cost`. Regalo sin QA de compra real.
+- **Checkout (2026-09-29)**: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400.
+- "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto.
+- PostHog `addtocart`/`purchase` sin propiedades de variante (no se puede ver talla por evento).
 
 ## Pending / Future Sessions
-- **[ALTA]** QA del fix regalo: PDP normal → agregar → sin regalo; URL regalo → agregar → con regalo → ir a /pagar → regalo sigue.
-- **[ALTA]** Decidir regla BOGO `7653e73d` (¿desactivar?) — solo con OK explícito.
-- **[MEDIA]** Test regalo en Meta Ads (plan B) cuando el cliente lo retome.
-- **[BAJA]** Borrar `PackOfferSelector.tsx` y lógica pack inerte en `HeadlessProduct`.
-- **[ALTA]** Construir formulario de dirección MX + QA de compra real.
-- **[ALTA]** Muñequeras: precio final → actualizar también compare_at del producto regalo.
-- **[MEDIA]** Medir clics en tarjeta/drawer del regalo (evento PostHog).
-- **[ALTA]** Merchant Center. **[MEDIA]** "Garantía" → lenguaje devolución. **[ALTA]** vitest + build. **[CRÍTICA]** decisión `DEDE`.
+- **[ALTA]** Ejecutar auditoría PDP móvil (puntos 1–7) tras OK del cliente + registrar baseline en cro-log.
+- **[ALTA]** Lanzar encuesta PostHog PDP móvil (punto 9).
+- **[ALTA]** Preguntar: ¿compare_at $1,339 intencional? · nº real de reseñas/clientes · fotos reales en moto · distribución de tallas vendidas.
+- **[ALTA]** QA del fix regalo. **[ALTA]** Decidir regla BOGO `7653e73d` (solo con OK).
+- **[ALTA]** Formulario dirección MX + QA compra real. **[ALTA]** Muñequeras precio final.
+- **[MEDIA]** Test regalo en Meta Ads. **[MEDIA]** Investigar caída de tráfico (Dashboard / Meta Ads).
+- **[BAJA]** Borrar `PackOfferSelector.tsx`. **[ALTA]** Merchant Center. **[CRÍTICA]** decisión `DEDE`.
