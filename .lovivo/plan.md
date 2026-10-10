@@ -40,6 +40,10 @@
   fila con 0 deshabilitada), carrusel de fotos horizontal en todos los tamaños, 5 texto + "Cargar N más" de 10 en 10, `ReviewCard` reutilizable.
   **SIN subtítulo** bajo "Lo que dicen los riders" (cliente lo pidió quitar 2026-10-10). **Rating/conteo NUNCA hardcodeados**. NO inventar reseñas.
 - **Galería PDP: SOLO fotos de catálogo** — cliente NO quiere fotos de reseña en la galería (2026-10-10).
+- **Info panel PDP (título/precio) usa `flex flex-col gap-5`, NO `space-y-*`** — con `space-y` el div "eyebrow" `hidden md:flex` sigue
+  contando para el margen del h1 en mobile (space-y no respeta la clase `hidden`, solo el atributo HTML `hidden`), causaba hueco en blanco
+  arriba del título (fix 2026-10-10).
+- **H1 título PDP**: `text-2xl sm:text-3xl md:text-4xl` (antes `text-3xl sm:text-4xl` se iba a 2 líneas en mobile con "Soporte Lumbar Rodata One").
 
 ## Active Plan
 
@@ -47,8 +51,9 @@
 Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salvo que el cliente lo pida). Baseline en `.lovivo/cro-log.md`.
 
 **✅ Paso 1 (2026-10-10)**: sticky bar · talla L · medir cintura · envío gratis · fotos reales · copy devoluciones.
-**✅ Paso 2 / 2c / 2d (2026-10-10)**: reseñas reales con foto + texto, resumen con barras, +150 con fecha.
-**✅ Paso 2e (2026-10-10)**: +2 reseñas con foto (Leonel B. Honda roja, Emilio Z. espejo) al carrusel · quitado subtítulo · modal filtro por estrellas.
+**✅ Paso 2 / 2c / 2d / 2e (2026-10-10)**: reseñas reales con foto + texto, resumen con barras, +150 con fecha, modal filtro estrellas.
+**✅ Paso 2f (2026-10-10)**: fix h1 2 líneas + hueco en blanco arriba del título (flex gap-5 en vez de space-y-5) + nueva foto real en
+  sección "Rueda horas sin detenerte a ajustar nada" (desierto, reemplaza foto genérica) en `FEAT_IMG_2`.
 **Paso 2b (pendiente)**: aplicar `RodataReviews`/`REVIEW_STATS` en GiftPDPUI y DeliveryPDPUI (aún "4.9 ★" hardcodeado + reseñas inventadas) — pedir OK.
 **Paso 3**: imágenes galería — catálogo 2048px (LCP), foto "cómo medir cintura", más fotos en moto.
 **Paso 4**: Encuesta PostHog "¿Qué te frenó para comprar hoy?" (PDP móvil, 40 s sin ATC).
@@ -70,6 +75,7 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 ### PDP Muñequeras — pendiente validación cliente. Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **📐 Fix h1 2 líneas + hueco blanco arriba de título + nueva foto real sección "Rueda horas..." (2026-10-10)**.
 - **⭐ +2 reseñas con foto (Leonel B., Emilio Z.) en carrusel, sin subtítulo, modal filtro por estrellas (2026-10-10)**.
 - **⭐ +150 reseñas con fecha cargadas (cliente confirmó reales), total 166, fecha visible por reseña (2026-10-10)**.
 - **⭐ Reseñas v3: resumen con barras, cargar más 10 en 10, rating derivado en toda la PDP (2026-10-10)**.
@@ -84,7 +90,6 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **📋 Plan PDP Regalo v2 (2026-09-29)**.
 - **🎁 PDP Rodata One + Muñequeras de regalo (2026-09-28)**.
 - **🧤 PDP Muñequeras RODATA (2026-09-28)**.
-- **🛡️ Merchant Center trust fix (2026-09-28)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -92,12 +97,14 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = **Alan M.** (SOLO reseñas, NO galería), `u068d1b4pr.webp` = **Pablo B.** (Rally ADV Jalisco),
   `c3mx3z3w5kt.webp` = **Esteban V.** (empaque).
 - **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = **Leonel B.** (Honda roja, = review-1), `8818z991fgk.webp` = **Emilio Z.** (selfie espejo).
+- **UGC REAL (feature 02)** `SB_MSG/1791664562254-pgzyfsa1vdo.webp` = foto real desierto (rider con lumbar puesto) → ahora `FEAT_IMG_2` en sección
+  "Rueda horas sin detenerte a ajustar nada" (reemplazó foto genérica `1775777133672-xhxki05535d`, 2026-10-10).
 - Catálogo lumbar (object/public/product-images/products/, 2048px): `nae4riov9h.webp` (hero), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`. Render/IA.
 - Reseñas viejas: `SB_PROD/review-1.webp` (REAL, Honda roja = Leonel B.), `review-4.webp` (real). review-2/3/5 ya no se usan en ProductPageUI.
 - Avatares `SB_PROD/avatar-*-v3.webp` (probable IA) — ya no en ProductPageUI; siguen en GiftPDPUI.
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`
 - Muñequeras (reales) `SB_MSG/1790638502334-`: `pkwpdneq4dd`, `q4h7kvtg3nn`, `0yjgi3apchym`, `nwhrcsc3un`, `2wwj6uvz7a5`
-- PDP carretera: LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · FEAT 1-3 `SB_MSG/177577713367x-*`
+- PDP carretera: LIFESTYLE_CITY `/pdp-lifestyle-1.jpg` · LIFESTYLE_HIGHWAY `SB_MSG/1775768374485-uca4dkx21g.webp` · FEAT 1,3 `SB_MSG/177577713367x-*`
 - Home: HERO `SB_MSG/1775772513540-16g7elmcuii.webp`. Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
@@ -110,6 +117,7 @@ Archivo: `src/pages/ui/ProductPageUI.tsx` (NO tocar GiftPDPUI/DeliveryPDPUI salv
 - **Checkout (2026-09-29)**: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400.
 - "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Tests vitest nunca ejecutados. Código `DEDE` 98% activo. `useURLCartLoader` roto.
 - PostHog `addtocart`/`purchase` sin propiedades de variante.
+- Revisar en celular real que el h1 ya no se vaya a 2 líneas y que no quede hueco arriba (fix aplicado 2026-10-10, sin QA visual post-deploy).
 
 ## Pending / Future Sessions
 - **[ALTA]** Medir Pasos 1+2 el 24-oct. **[ALTA]** Lanzar encuesta PostHog PDP móvil (Paso 4).

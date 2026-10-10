@@ -25,7 +25,7 @@ const LIFESTYLE_HIGHWAY = `${SUPABASE_MSG}/1775768374485-uca4dkx21g.webp?width=1
 const PRODUCT_FLAT      = `${SUPABASE_MSG}/1775767354281-gqxi2j4hklp.webp?width=800&quality=75`
 
 const FEAT_IMG_1 = `${SUPABASE_MSG}/1775777133671-80hvv9dmxa.webp?width=800&quality=75`
-const FEAT_IMG_2 = `${SUPABASE_MSG}/1775777133672-xhxki05535d.webp?width=800&quality=75`
+const FEAT_IMG_2 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1791664562254-pgzyfsa1vdo.webp?width=800&quality=75'
 const FEAT_IMG_3 = `${SUPABASE_MSG}/1775777133672-dzkdrl1lt2.webp?width=800&quality=75`
 
 const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
@@ -302,12 +302,12 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             </div>
 
             {/* Info panel */}
-            <div className="space-y-5">
+            <div className="flex flex-col gap-5">
               <div className="hidden md:flex items-center gap-2">
                 <span className="h-px w-6 bg-brand-amber block" />
                 <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em]">Diseñado para la postura de manejo</span>
               </div>
-              <h1 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight">{logic.product.title}</h1>
+              <h1 className="font-sora font-bold text-brand-offwhite text-2xl sm:text-3xl md:text-4xl leading-tight">{logic.product.title}</h1>
               <div className="flex items-center gap-3">
                 <Stars count={Math.round(REVIEW_STATS.average)} size={15} />
                 <span className="text-brand-smoke text-sm font-inter">{REVIEW_AVG} <a href="#opiniones" className="text-brand-steel underline underline-offset-2">· {REVIEW_COUNT} reseñas verificadas</a></span>
