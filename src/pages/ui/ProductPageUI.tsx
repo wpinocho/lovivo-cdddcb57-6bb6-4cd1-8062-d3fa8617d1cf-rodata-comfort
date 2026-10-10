@@ -12,15 +12,12 @@ import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
+import RodataReviews from "@/components/RodataReviews"
 
 // ── Image constants (with Supabase image transform for performance) ──
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
 const SUPABASE_PROD = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf'
 
-// Avatares — resize=cover hace el crop a cuadrado en el servidor, no en el browser
-const AVATAR_CARLOS = `${SUPABASE_PROD}/avatar-carlos-v3.webp?width=72&height=72&resize=cover&quality=80`
-const AVATAR_JORGE  = `${SUPABASE_PROD}/avatar-jorge-v3.webp?width=72&height=72&resize=cover&quality=80`
-const AVATAR_ANDRES = `${SUPABASE_PROD}/avatar-andres-v3.webp?width=72&height=72&resize=cover&quality=80`
 
 const LIFESTYLE_CITY    = '/pdp-lifestyle-1.jpg'
 const LIFESTYLE_HIGHWAY = `${SUPABASE_MSG}/1775768374485-uca4dkx21g.webp?width=1200&quality=75`
@@ -31,13 +28,13 @@ const FEAT_IMG_2 = `${SUPABASE_MSG}/1775777133672-xhxki05535d.webp?width=800&qua
 const FEAT_IMG_3 = `${SUPABASE_MSG}/1775777133672-dzkdrl1lt2.webp?width=800&quality=75`
 
 const REVIEW_IMG_1 = `${SUPABASE_PROD}/review-1.webp?width=600&quality=75`
-const REVIEW_IMG_2 = `${SUPABASE_PROD}/review-2.webp?width=600&quality=75`
-const REVIEW_IMG_3 = `${SUPABASE_PROD}/review-3.webp?width=600&quality=75`
 const REVIEW_IMG_4 = `${SUPABASE_PROD}/review-4.webp?width=600&quality=75`
-const REVIEW_IMG_5 = `${SUPABASE_PROD}/review-5.webp?width=600&quality=75`
 
 // Fotos REALES de clientes (enviadas por el dueño 2026-10-10)
-const UGC_CASCO = `${SUPABASE_MSG}/1791657732114-ghaahb3lsec.webp?width=800&quality=75`
+// Avatares reales (crop cuadrado en servidor)
+const AVATAR_PABLO = `${SUPABASE_MSG}/1791657732114-u068d1b4pr.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_ALAN  = `${SUPABASE_MSG}/1791657732114-ghaahb3lsec.webp?width=72&height=72&resize=cover&quality=80`
+const AVATAR_REVIEW1 = `${SUPABASE_PROD}/review-1.webp?width=72&height=72&resize=cover&quality=80`
 const UGC_RALLY = `${SUPABASE_MSG}/1791657732114-u068d1b4pr.webp?width=600&quality=75`
 const UGC_UNBOX = `${SUPABASE_MSG}/1791657732114-c3mx3z3w5kt.webp?width=500&quality=75`
 const UGC_STRIP: { src: string; alt: string; pos?: string }[] = [
@@ -97,14 +94,6 @@ const FEATURES: { number: string; icon: React.ElementType; title: string; desc: 
         <strong className="text-brand-smoke">sin deformarse ni perder estructura</strong>.
       </>
     ), image: FEAT_IMG_3 },
-]
-
-const REVIEWS = [
-  { name: 'Carlos M.', city: 'CDMX',        stars: 5, initial: 'C', date: 'Mar 2025', photo: REVIEW_IMG_1, text: 'Trayecto CDMX–Querétaro y llegué mucho menos tenso. Ya es parte de mi equipo en cada salida.' },
-  { name: 'Jorge R.',  city: 'Guadalajara', stars: 5, initial: 'J', date: 'Feb 2025', photo: REVIEW_IMG_2, text: 'Firme y cómodo. Cabe perfecto bajo la chamarra, no se nota y no estorba. La calidad se siente.' },
-  { name: 'Andrés V.', city: 'Monterrey',   stars: 5, initial: 'A', date: 'Mar 2025', photo: REVIEW_IMG_3, text: 'Llevo años rodando y siempre terminaba tenso. Con el Rodata One llego mucho más fresco. Vale la pena.' },
-  { name: 'Miguel T.', city: 'Puebla',      stars: 4, initial: 'M', date: 'Ene 2025', photo: REVIEW_IMG_4, text: 'La talla M me quedó exacta con la guía. El ajuste con las correas es muy fácil. Lo recomiendo.' },
-  { name: 'Rodrigo S.', city: 'CDMX',       stars: 5, initial: 'R', date: 'Feb 2025', photo: REVIEW_IMG_5, text: 'Compré dudando si iba a ser incómodo — es todo lo contrario. Sale conmigo en cada rodada.' },
 ]
 
 const FAQS = [
@@ -191,8 +180,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   }, [logic.product, logic.selected])
 
   const baseImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
-  // Foto real de cliente como 2ª imagen de la galería
-  const productImages: string[] = [baseImages[0], UGC_CASCO, ...baseImages.slice(1)]
+  const productImages: string[] = baseImages
   const displayImage = selectedImage ?? productImages[0]
   const discountPct = logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice
     ? Math.round((1 - logic.currentPrice / logic.currentCompareAt) * 100) : null
@@ -517,14 +505,14 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
               {/* Social proof block */}
               <div className="flex items-center gap-3 bg-brand-graphite border border-white/[0.08] rounded-xl px-4 py-3">
                 <div className="flex -space-x-2 flex-shrink-0">
-                  {[AVATAR_CARLOS, AVATAR_JORGE, AVATAR_ANDRES].map((src, i) => (
+                  {[AVATAR_PABLO, AVATAR_ALAN, AVATAR_REVIEW1].map((src, i) => (
                     <div key={i} className="h-9 w-9 rounded-full overflow-hidden border-2 border-brand-graphite flex-shrink-0" style={{ zIndex: 3 - i }}>
                       <img src={src} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
                 <p className="text-brand-smoke text-xs font-inter">
-                  <span className="text-brand-offwhite font-semibold">Carlos M. ✓</span> y{' '}
+                  <span className="text-brand-offwhite font-semibold">Pablo B. ✓</span> y{' '}
                   <span className="text-brand-offwhite font-semibold">+800 riders</span> ya lo usan a diario
                 </p>
               </div>
@@ -601,53 +589,15 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         <div className="relative z-10 flex items-end min-h-[40vh] pb-10">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
             <blockquote>
-              <p className="font-sora font-semibold text-brand-offwhite text-xl sm:text-2xl mb-2">"Ahora el Rodata One sale conmigo en cada rodada."</p>
-              <cite className="text-brand-smoke text-sm font-inter not-italic">Carlos M., CDMX</cite>
+              <p className="font-sora font-semibold text-brand-offwhite text-xl sm:text-2xl mb-2">"Me bajé de la moto sin esa sensación de traer toda la cintura tiesa."</p>
+              <cite className="text-brand-smoke text-sm font-inter not-italic">Ricardo L., BMW GS</cite>
             </blockquote>
           </div>
         </div>
       </section>
 
       {/* ── 6. REVIEWS ── */}
-      <section id="opiniones" style={{backgroundColor:'#111315'}} className="py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
-            <div>
-              <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-2 block">Reseñas verificadas</span>
-              <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl">Lo que dicen los riders</h2>
-            </div>
-            <div className="flex items-center gap-4 bg-brand-graphite border border-white/[0.08] rounded-2xl px-6 py-4 flex-shrink-0">
-              <div><p className="font-sora font-bold text-brand-amber text-3xl leading-none">4.9</p><div className="mt-1.5"><Stars count={5} size={11}/></div></div>
-              <div className="h-12 w-px bg-white/[0.08]"/>
-              <div><p className="text-brand-offwhite font-sora font-bold text-lg leading-none">{REVIEW_COUNT}</p><p className="text-brand-steel text-xs font-inter mt-1">reseñas</p></div>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {REVIEWS.map(({name, city, stars, date, initial, text, photo}) => (
-              <div key={name} className="bg-brand-graphite border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col hover:border-brand-amber/20 transition-colors duration-300">
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img src={photo} alt={`Foto de ${name} usando el Rodata One`} className="w-full h-full object-cover" loading="lazy"/>
-                  <div className="absolute inset-0" style={{background:'linear-gradient(to bottom, transparent 50%, rgba(17,19,21,0.7) 100%)'}}/>
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-                    <Check size={10} className="text-brand-amber"/><span className="text-brand-amber text-[10px] font-inter font-medium">Compra verificada</span>
-                  </div>
-                </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-9 w-9 rounded-full bg-brand-amber/15 border border-brand-amber/30 flex items-center justify-center flex-shrink-0"><span className="font-sora font-bold text-brand-amber text-sm">{initial}</span></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-sora font-semibold text-brand-offwhite text-sm">{name}</p>
-                      <p className="text-brand-steel text-xs font-inter">{city} · {date}</p>
-                    </div>
-                  </div>
-                  <Stars count={stars} size={12}/>
-                  <blockquote className="text-brand-smoke text-sm font-inter leading-relaxed mt-3 flex-1">"{text}"</blockquote>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <RodataReviews reviewCount={REVIEW_COUNT} />
 
       {/* ── 7. COMBINED: STEPS + TRUST ── */}
       <section style={{backgroundColor:'#1D2125'}} className="border-y border-white/[0.06] py-16 lg:py-20">
