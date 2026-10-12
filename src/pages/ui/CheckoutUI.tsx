@@ -317,7 +317,8 @@ export default function CheckoutUI() {
                             order_id: logic.orderId ?? '',
                             ...(logic.discount?.code ? { discount_code: logic.discount.code } : {})
                           }}
-                          email={logic.email}
+                          email={logic.email || logic.prefillEmail}
+                          defaultAddress={logic.defaultStripeAddress}
                           name={`${logic.firstName} ${logic.lastName}`.trim()}
                           phone={logic.phone}
                           orderId={logic.orderId}
@@ -386,9 +387,10 @@ export default function CheckoutUI() {
                             setAddressElementComplete(complete);
                             const { address, name, phone } = addressValue;
 
+                            // display 'split' entrega firstName/lastName: respeta nombres compuestos
                             const nameParts = (name || '').split(' ');
-                            const first = nameParts[0] || '';
-                            const last = nameParts.slice(1).join(' ') || '';
+                            const first = addressValue.firstName ?? (nameParts[0] || '');
+                            const last = addressValue.lastName ?? (nameParts.slice(1).join(' ') || '');
 
                             logic.setFirstName(first);
                             logic.setLastName(last);
@@ -561,8 +563,8 @@ export default function CheckoutUI() {
                                   variant="outline"
                                   size="sm"
                                   className="w-8 h-8 p-0 border-white/[0.15] text-brand-smoke bg-transparent hover:bg-white/[0.06] hover:text-brand-offwhite"
-                                  disabled={logic.updatingItems.has(item.key)}
-                                  aria-disabled={logic.updatingItems.has(item.key)}
+                                  disabled={logic.quantityLocked || logic.updatingItems.has(item.key)}
+                                  aria-disabled={logic.quantityLocked || logic.updatingItems.has(item.key)}
                                   onClick={() => logic.updateOrderQuantity(item.key, item.quantity - 1)}
                                 >
                                   -
@@ -572,8 +574,8 @@ export default function CheckoutUI() {
                                   variant="outline"
                                   size="sm"
                                   className="w-8 h-8 p-0 border-white/[0.15] text-brand-smoke bg-transparent hover:bg-white/[0.06] hover:text-brand-offwhite"
-                                  disabled={logic.updatingItems.has(item.key)}
-                                  aria-disabled={logic.updatingItems.has(item.key)}
+                                  disabled={logic.quantityLocked || logic.updatingItems.has(item.key)}
+                                  aria-disabled={logic.quantityLocked || logic.updatingItems.has(item.key)}
                                   onClick={() => logic.updateOrderQuantity(item.key, item.quantity + 1)}
                                 >
                                   +
@@ -646,20 +648,36 @@ export default function CheckoutUI() {
                         </span>
                       </div>
 
-                      {/* Applied rules */}
-                      {logic.appliedRules && logic.appliedRules.length > 0 && (
-                        <CartAppliedRules
-                          appliedRules={logic.appliedRules}
-                          formatMoney={(v: number) => formatMoney(v, logic.currencyCode)}
-                        />
-                      )}
+                      {logic.usesOrderTotals ? (
+                        /* Pedido cargado: un solo renglón con order.discount_amount (incluye descuento manual) */
+                        logic.discountAmount > 0 && (
+                          <div className="flex justify-between text-brand-amber text-sm">
+                            <span>
+                              Descuento
+                              {logic.discount ? ` (${logic.couponCode})` : ''}
+                              {logic.appliedRules?.length > 0 ? ` · ${logic.appliedRules.map((r: any) => r.title).join(', ')}` : ''}
+                            </span>
+                            <span>- {formatMoney(logic.discountAmount, logic.currencyCode)}</span>
+                          </div>
+                        )
+                      ) : (
+                        <>
+                          {/* Applied rules */}
+                          {logic.appliedRules && logic.appliedRules.length > 0 && (
+                            <CartAppliedRules
+                              appliedRules={logic.appliedRules}
+                              formatMoney={(v: number) => formatMoney(v, logic.currencyCode)}
+                            />
+                          )}
 
-                      {/* Manual discount */}
-                      {logic.discount && logic.backendDiscountAmount === 0 && (
-                        <div className="flex justify-between text-brand-amber text-sm">
-                          <span>Descuento ({logic.getDiscountDisplayText(logic.discount, logic.totalQuantity)})</span>
-                          <span>- {formatMoney(logic.discountAmount, logic.currencyCode)}</span>
-                        </div>
+                          {/* Manual discount */}
+                          {logic.discount && logic.backendDiscountAmount === 0 && (
+                            <div className="flex justify-between text-brand-amber text-sm">
+                              <span>Descuento ({logic.getDiscountDisplayText(logic.discount, logic.totalQuantity)})</span>
+                              <span>- {formatMoney(logic.discountAmount, logic.currencyCode)}</span>
+                            </div>
+                          )}
+                        </>
                       )}
 
                       <div className="flex justify-between items-baseline pt-3 border-t border-white/[0.08]">

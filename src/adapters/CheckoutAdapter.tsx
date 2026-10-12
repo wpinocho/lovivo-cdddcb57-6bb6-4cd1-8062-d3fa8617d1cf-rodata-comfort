@@ -6,6 +6,8 @@ import { STORE_ID } from "@/lib/config";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useOrderItems } from "@/hooks/useOrderItems";
+import { useCheckoutState } from "@/hooks/useCheckoutState";
+import { pickOrderTotals, patchCachedOrderTotals, parseOrderShippingAddress, type OrderTotals } from "@/lib/order-totals";
 import { calculateDiscountAmount, validateDiscount, type Discount } from "@/lib/discount-utils";
 import { logger } from "@/lib/logger";
 import { trackInitiateCheckout, tracking } from "@/lib/tracking-utils";
@@ -37,8 +39,29 @@ export const useCheckoutLogic = () => {
     updateDiscountCode,
     updateStates,
     appliedRules,
-    backendDiscountAmount
+    backendDiscountAmount,
+    lastOrder
   } = useCheckout();
+  const { isPaymentLinkOrder } = useCheckoutState();
+
+  // ── Totales del servidor: cuando hay pedido, él es la fuente de verdad ──
+  const [serverTotals, setServerTotals] = useState<Partial<OrderTotals> | null>(null);
+
+  /** Reemplaza subtotal/descuento/envío/total con lo que responde checkout-update. */
+  const applyServerTotals = (resp: any) => {
+    const patch = pickOrderTotals(resp);
+    if (Object.keys(patch).length === 0) return;
+    setServerTotals(prev => ({ ...(prev || {}), ...patch }));
+    patchCachedOrderTotals(patch);
+  };
+
+  // Pedido cacheado (carga inicial, checkout-create y updates de items vía checkout:updated)
+  const cachedOrder = (lastOrder as any)?.order;
+  useEffect(() => {
+    if (!cachedOrder) return;
+    const patch = pickOrderTotals(cachedOrder);
+    if (Object.keys(patch).length > 0) setServerTotals(prev => ({ ...(prev || {}), ...patch }));
+  }, [cachedOrder]);
   
   const { 
     orderItems, 
@@ -310,6 +333,7 @@ export const useCheckoutLogic = () => {
         console.log('Received shipping_amount from checkout-update:', response.shipping_amount);
         setShippingFromCheckout(response.shipping_amount);
       }
+      if (response) applyServerTotals(response);
     }).catch(console.error);
   }, [address.country, address.state, address.postal_code, address.city, address.line1, address.line2, firstName, lastName, hasActiveCheckout, orderId, updateShippingAddress]);
 
@@ -436,7 +460,8 @@ export const useCheckoutLogic = () => {
           console.log('Setting discount and calling updateDiscountCode');
           setDiscount(discountData);
           try {
-            await updateDiscountCode(couponCode.trim().toUpperCase(), true);
+            const resp = await updateDiscountCode(couponCode.trim().toUpperCase(), true);
+            if (resp) applyServerTotals(resp);
             console.log('checkout-update sent for discount_code apply');
           } catch (err) {
             console.error('Failed to update checkout with discount_code:', err);
@@ -493,7 +518,8 @@ export const useCheckoutLogic = () => {
     setIsValidatingCoupon(false);
     try {
       console.log('Calling updateDiscountCode with null');
-      await updateDiscountCode(null, true);
+      const resp = await updateDiscountCode(null, true);
+      if (resp) applyServerTotals(resp);
       console.log('checkout-update sent for discount_code removal');
     } catch (err) {
       console.error('Failed to remove discount_code from checkout:', err);
@@ -627,22 +653,80 @@ export const useCheckoutLogic = () => {
 
   // Summary calculations
   const summaryItems = orderItems;
-  const summaryTotal = orderTotal;
   const totalQuantity = orderTotalQuantity;
+
+  // Hay pedido con totales del servidor → se muestran tal cual (sin recalcular)
+  const usesOrderTotals = typeof serverTotals?.total_amount === 'number';
+  const summaryTotal = usesOrderTotals && typeof serverTotals?.subtotal === 'number' ? serverTotals.subtotal : orderTotal;
   
   const itemsFingerprint = useMemo(() => 
     summaryItems.map(i => `${i.key}:${i.quantity}`).sort().join('|'), 
     [summaryItems]
   );
 
+  // Cálculo en navegador: SOLO mientras todavía no existe pedido
   const localDiscountAmount = useMemo(() => {
-    return discount ? calculateDiscountAmount(summaryTotal, discount.discount_type, discount.value, totalQuantity, discount.volume_conditions) : 0;
-  }, [discount, summaryTotal, totalQuantity]);
+    return discount ? calculateDiscountAmount(orderTotal, discount.discount_type, discount.value, totalQuantity, discount.volume_conditions) : 0;
+  }, [discount, orderTotal, totalQuantity]);
+  const localComputedDiscount = backendDiscountAmount > 0 ? backendDiscountAmount : localDiscountAmount;
 
-  // Use backend discount (applied_rules) when available, fallback to local calculation
-  const discountAmount = backendDiscountAmount > 0 ? backendDiscountAmount : localDiscountAmount;
+  // Con pedido: descuento (incluye el manual de la tienda), envío y total vienen del servidor
+  const discountAmount = usesOrderTotals ? (serverTotals?.discount_amount ?? 0) : localComputedDiscount;
+  const effectiveShipping = usesOrderTotals && typeof serverTotals?.shipping_amount === 'number' ? serverTotals.shipping_amount : shippingCost;
+  const finalTotal = usesOrderTotals
+    ? (serverTotals!.total_amount as number)
+    : Math.max(0, orderTotal - localComputedDiscount + shippingCost);
 
-  const finalTotal = Math.max(0, summaryTotal - discountAmount + shippingCost);
+  // Link de pago con descuento manual: la cantidad queda fija
+  const quantityLocked = isPaymentLinkOrder && discountAmount > 0;
+  const guardedUpdateQuantity = (key: string, qty: number) => {
+    if (quantityLocked) return;
+    return updateOrderQuantity(key, qty);
+  };
+  const guardedRemoveItem = (key: string) => {
+    if (quantityLocked) return;
+    return removeOrderItem(key);
+  };
+
+  // ── Prellenar formulario con order.shipping_address ──
+  const prefill = useMemo(
+    () => parseOrderShippingAddress(cachedOrder?.shipping_address, cachedOrder?.email || cachedOrder?.customer_email),
+    [cachedOrder?.shipping_address, cachedOrder?.email, cachedOrder?.customer_email]
+  );
+  const prefillDoneRef = useRef(false);
+  useEffect(() => {
+    if (prefillDoneRef.current || !prefill) return;
+    prefillDoneRef.current = true;
+    if (prefill.first_name) setFirstName(prev => prev || prefill.first_name);
+    if (prefill.last_name) setLastName(prev => prev || prefill.last_name);
+    if (prefill.phone) setPhone(prev => prev || prefill.phone);
+    if (prefill.email && isValidEmail(prefill.email)) setEmail(prev => prev || prefill.email);
+    setAddress(prev => ({
+      ...prev,
+      country: prefill.countryName || prev.country,
+      line1: prev.line1 || prefill.line1,
+      line2: prev.line2 || prefill.line2,
+      city: prev.city || prefill.city,
+      state: prev.state || prefill.state,
+      postal_code: prev.postal_code || prefill.postal_code,
+    }));
+  }, [prefill]);
+
+  // Valores por defecto para el AddressElement de Stripe
+  const defaultStripeAddress = useMemo(() => prefill ? {
+    firstName: prefill.first_name,
+    lastName: prefill.last_name,
+    name: `${prefill.first_name} ${prefill.last_name}`.trim(),
+    phone: prefill.phone,
+    address: {
+      line1: prefill.line1,
+      line2: prefill.line2,
+      city: prefill.city,
+      state: prefill.state,
+      postal_code: prefill.postal_code,
+      country: prefill.countryCode,
+    },
+  } : undefined, [prefill]);
 
   // Payment enablement rules
   const requiresDeliveryMethod = !selectedPickupLocation && !!(deliveryExpectations && deliveryExpectations.length > 0);
@@ -660,11 +744,11 @@ export const useCheckoutLogic = () => {
     address,
     selectedPickupLocation,
     selectedDeliveryMethod,
-    shippingCost,
+    shippingCost: effectiveShipping,
     usePickup,
     useSameAddress,
     billingAddress,
-    shippingFromCheckout,
+    shippingFromCheckout: usesOrderTotals ? effectiveShipping : shippingFromCheckout,
     couponCode,
     discount,
     isValidatingCoupon,
@@ -705,6 +789,11 @@ export const useCheckoutLogic = () => {
     isCalculatingTotal,
     canPay,
     requiresDeliveryMethod,
+    usesOrderTotals,
+    quantityLocked,
+    isPaymentLinkOrder,
+    defaultStripeAddress,
+    prefillEmail: prefill?.email || '',
     
     // Actions
     setEmail,
@@ -727,8 +816,8 @@ export const useCheckoutLogic = () => {
     removeCoupon,
     getDiscountDisplayText,
     validateCheckoutFields,
-    updateOrderQuantity,
-    removeOrderItem,
+    updateOrderQuantity: guardedUpdateQuantity,
+    removeOrderItem: guardedRemoveItem,
     refreshItems,
     isValidEmail,
     isValidPhone,

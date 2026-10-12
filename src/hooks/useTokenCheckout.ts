@@ -36,6 +36,7 @@ export const useTokenCheckout = () => {
           checkout_token: res.checkout_token,
           store_id: res.store_id || STORE_ID,
           updatedAt: Date.now(),
+          source: 'payment_link' as const,
           discount_code: res.discount_code || undefined,
           order: res.order || {
             id: res.order_id,

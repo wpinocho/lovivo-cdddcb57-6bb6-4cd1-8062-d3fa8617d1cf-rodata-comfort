@@ -8,6 +8,8 @@ export interface CheckoutState {
   store_id: string
   updatedAt: number
   discount_code?: string
+  /** 'payment_link' cuando el pedido se abrió desde /pagar?token=… */
+  source?: 'payment_link'
   // Cache de la orden completa
   order?: {
     id: string
@@ -204,6 +206,7 @@ export const useCheckoutState = () => {
     isOrderStale,     // Checks if data is stale but still usable
     hasActiveCheckout: Boolean(hasActiveCheckout),
     isInitialized,
+    isPaymentLinkOrder: checkoutState?.source === 'payment_link',
     orderId: checkoutState?.order_id,
     checkoutToken: checkoutState?.checkout_token
   }

@@ -72,7 +72,7 @@ interface StripePaymentProps {
   onEmailChange?: (email: string) => void
   onAddressChange?: (address: StripeAddressValue, complete: boolean) => void
   allowedCountries?: string[]
-  defaultAddress?: Partial<StripeAddressValue>
+  defaultAddress?: Partial<StripeAddressValue> & { firstName?: string; lastName?: string }
   showAddressElement?: boolean
   /**
    * Whether the on-page AddressElement currently has a complete address.
@@ -871,8 +871,8 @@ function PaymentForm({
                 name: 'split',
               },
               defaultValues: defaultAddress ? {
-                firstName: defaultAddress.name?.split(' ')[0] || '',
-                lastName: defaultAddress.name?.split(' ').slice(1).join(' ') || '',
+                firstName: defaultAddress.firstName ?? (defaultAddress.name?.split(' ')[0] || ''),
+                lastName: defaultAddress.lastName ?? (defaultAddress.name?.split(' ').slice(1).join(' ') || ''),
                 address: defaultAddress.address ? {
                   line1: defaultAddress.address.line1 || '',
                   line2: defaultAddress.address.line2 || '',
@@ -888,6 +888,14 @@ function PaymentForm({
               ...(allowedCountries && allowedCountries.length > 0 ? {
                 allowedCountries,
               } : {}),
+            }}
+            onReady={(el) => {
+              // Pedido con dirección guardada: sincroniza los valores prellenados
+              // (Stripe no siempre emite onChange con defaultValues).
+              if (!defaultAddress || !onAddressChange) return
+              el.getValue()
+                .then((res) => onAddressChange(res.value as StripeAddressValue, res.complete))
+                .catch(() => {})
             }}
             onChange={(event) => {
               if (onAddressChange) {

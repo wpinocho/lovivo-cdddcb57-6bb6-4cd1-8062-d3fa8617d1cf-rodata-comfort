@@ -93,6 +93,7 @@ export function PaypalExpressButton({
             try {
               const result = await callEdge('paypal-create-order', {
                 store_id: STORE_ID,
+                order_id: orderId,
                 checkout_token: checkoutToken,
                 amount,
                 currency: currencyUpper,
@@ -117,6 +118,7 @@ export function PaypalExpressButton({
               const res = await callEdge('paypal-capture-order', {
                 store_id: STORE_ID,
                 paypal_order_id: data.orderID,
+                order_id: orderId,
                 checkout_token: checkoutToken,
                 attribution,
               })
