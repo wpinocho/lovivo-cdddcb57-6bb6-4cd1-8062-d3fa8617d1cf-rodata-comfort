@@ -14,8 +14,22 @@ import type { CartProductItem } from '@/contexts/CartContext'
  * removed by <GiftCartSync/>. The claim is cleared when the Rodata One leaves
  * the cart (incl. after purchase).
  */
-export const GIFT_MAIN_PRODUCT_ID = '400026a2-c277-407c-abbb-d1683f415120'
-export const GIFT_MAIN_PRODUCT_SLUG = 'soporte-lumbar-rodata-one'
+/**
+ * PRICE PER URL (2026-10-26): the gift PDP sells a DUPLICATE Rodata One priced
+ * $899 in the DB (tags `no-listar,precio-899`). The backend recomputes prices
+ * from the DB, so the charge is really $899. Every other URL keeps the original
+ * $799 product. The gift is ONLY attached to the duplicate.
+ */
+export const GIFT_MAIN_PRODUCT_ID = '00155506-c9ce-4e2c-b299-296b948f3254'
+export const GIFT_MAIN_PRODUCT_SLUG = 'soporte-lumbar-rodata-one-899'
+/** Original $799 PDP — used for canonical + post-promo redirect only. */
+export const ORIGINAL_PRODUCT_SLUG = 'soporte-lumbar-rodata-one'
+
+/** Products tagged `no-listar` never appear in home/listings/search. */
+export const isListableProduct = (p: object) => {
+  const tags = (p as { tags?: unknown }).tags
+  return !(Array.isArray(tags) && tags.includes('no-listar'))
+}
 export const GIFT_PRODUCT_ID = 'f29e9557-14ac-4101-8c97-7c7b427c5e70'
 export const GIFT_PRODUCT_SLUG = 'regalo-munequeras-rodata'
 export const GIFT_PDP_PATH = '/productos/soporte-lumbar-rodata-one-regalo'

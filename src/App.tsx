@@ -81,6 +81,8 @@ const App = () => (
                         <Route path={GIFT_PDP_PATH} element={<GiftLanding />} />
                         {/* The $0 gift product is never sold on its own */}
                         <Route path="/productos/regalo-munequeras-rodata" element={<Navigate to={GIFT_PDP_PATH} replace />} />
+                        {/* $899 duplicate is only sold from the gift URL */}
+                        <Route path="/productos/soporte-lumbar-rodata-one-899" element={<Navigate to={GIFT_PDP_PATH} replace />} />
                         <Route path="/productos/:slug" element={<Product />} />
                         <Route path="/repartidores" element={<DeliveryLanding />} />
                         <Route path="/paquete/:slug" element={<Bundle />} />

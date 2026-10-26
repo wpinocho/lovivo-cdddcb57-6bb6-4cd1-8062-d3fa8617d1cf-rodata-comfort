@@ -7,11 +7,12 @@ import { useCheckout } from "@/hooks/useCheckout"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackAddToCart, tracking } from "@/lib/tracking-utils"
 import { SITE_URL } from "@/lib/brand"
-import { GIFT_MAIN_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftClaimed } from "@/lib/gift-offer"
+import { GIFT_MAIN_PRODUCT_SLUG, ORIGINAL_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftClaimed } from "@/lib/gift-offer"
 
 /**
  * ROUTE — /productos/soporte-lumbar-rodata-one-regalo
- * Rodata One + par de Muñequeras de regalo ($0 line in cart/checkout).
+ * Rodata One DUPLICATE at $899 (own DB product) + Muñequeras de regalo ($0 line).
+ * All other URLs keep the original $799 product.
  * Does NOT touch the original PDP. noindex + canonical to the main PDP.
  */
 const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> }) => {
@@ -29,7 +30,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
     document.head.appendChild(robots)
     const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
     const prevHref = canonical?.href
-    if (canonical) canonical.href = `${SITE_URL}/productos/${GIFT_MAIN_PRODUCT_SLUG}`
+    if (canonical) canonical.href = `${SITE_URL}/productos/${ORIGINAL_PRODUCT_SLUG}`
     return () => {
       robots.remove()
       if (canonical && prevHref) canonical.href = prevHref
@@ -86,7 +87,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
 
 /** After the real end date the promo URL sends visitors (and ads) to the normal PDP. */
 const GiftLanding = () => {
-  if (!isGiftOfferActive()) return <Navigate to={`/productos/${GIFT_MAIN_PRODUCT_SLUG}`} replace />
+  if (!isGiftOfferActive()) return <Navigate to={`/productos/${ORIGINAL_PRODUCT_SLUG}`} replace />
   return (
     <HeadlessProduct slug={GIFT_MAIN_PRODUCT_SLUG}>
       {(logic) => <GiftPDPWithGift logic={logic} />}

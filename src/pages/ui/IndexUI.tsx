@@ -26,6 +26,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import type { UseIndexLogicReturn } from '@/components/headless/HeadlessIndex'
+import { isListableProduct } from '@/lib/gift-offer'
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
 const REVIEW_IMG_1 = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/review-1.webp'
@@ -59,7 +60,7 @@ export const IndexUI = ({ logic }: IndexUIProps) => {
   const heroProduct = useMemo(
     () =>
       logic.filteredProducts.find((p) => p.slug === PRODUCT_SLUG) ??
-      logic.filteredProducts[0],
+      logic.filteredProducts.find(isListableProduct),
     [logic.filteredProducts],
   )
 
