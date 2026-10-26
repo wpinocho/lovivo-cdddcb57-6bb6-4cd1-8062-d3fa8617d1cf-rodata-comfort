@@ -14,6 +14,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { getDeliveryRangeLong, DELIVERY_RANGE_LABEL } from "@/lib/delivery-estimate"
 import RodataReviews from "@/components/RodataReviews"
 import { REVIEW_STATS } from "@/data/rodataReviews"
+import { GiftDetailsDrawer } from "@/components/GiftDetailsDrawer"
+import {
+  GIFT_KIT_IMG, GIFT_FAQS, GIFT_NAME_SHORT, GiftKitBadge, GiftPriceBadge, GiftOfferCard, GiftSection, GiftFinalCtaLine,
+} from "@/components/gift/GiftPDPBlocks"
 
 // ── Image constants (with Supabase image transform for performance) ──
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
@@ -119,6 +123,8 @@ const Stars = ({ count, size = 14 }: { count: number; size?: number }) => (
 
 // ── Types ──
 interface ProductPageUIProps {
+  /** Only on the gift URL: renders gift blocks (kit image, badge, card, section, drawer). */
+  giftOffer?: { value: number | null }
   logic: {
     product: any; loading: boolean; notFound: boolean
     selected: Record<string, string>; quantity: number; matchingVariant: any
@@ -136,7 +142,11 @@ interface ProductPageUIProps {
   }
 }
 
-export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
+export const ProductPageUI = ({ logic, giftOffer }: ProductPageUIProps) => {
+  const isGift = !!giftOffer
+  const giftValue = giftOffer?.value ?? null
+  const [giftOpen, setGiftOpen] = useState(false)
+  const openGift = () => setGiftOpen(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [expressAvailable, setExpressAvailable] = useState(false)
@@ -183,7 +193,10 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
   }, [logic.product, logic.selected])
 
   const baseImages: string[] = logic.displayImages?.length ? logic.displayImages : [PRODUCT_FLAT]
-  const productImages: string[] = baseImages
+  // Gift URL: image 1 unchanged, image 2 = kit (belt + wrist wraps)
+  const productImages: string[] = isGift ? [baseImages[0], GIFT_KIT_IMG, ...baseImages.slice(1)] : baseImages
+  const faqs = isGift ? [...GIFT_FAQS, ...FAQS] : FAQS
+  const giftSuffix = isGift ? ' + regalo' : ''
   const displayImage = selectedImage ?? productImages[0]
   const discountPct = logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice
     ? Math.round((1 - logic.currentPrice / logic.currentCompareAt) * 100) : null
@@ -242,6 +255,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 <div className="rounded-2xl overflow-hidden bg-brand-graphite aspect-square relative">
                   <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                   <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">RODATA</div>
+                  {isGift && displayImage === GIFT_KIT_IMG && <GiftKitBadge onClick={openGift} />}
                 </div>
                 {discountPct && (
                   <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg">
@@ -263,7 +277,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 >
                   {productImages.map((img, i) => (
                     <div key={i} className="flex-shrink-0 w-[calc(100%-32px)] snap-center">
-                      <div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite">
+                      <div className="aspect-square rounded-2xl overflow-hidden bg-brand-graphite relative">
+                        {isGift && img === GIFT_KIT_IMG && <GiftKitBadge onClick={openGift} />}
                         <img
                           src={img}
                           alt={`${logic.product.title} ${i + 1}`}
@@ -328,11 +343,15 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                     </>
                   )}
                 </div>
-                {/* Free shipping badge (ya no es lanzamiento) */}
-                <div className="inline-flex items-center gap-1.5 bg-brand-amber/10 border border-brand-amber/20 rounded-full px-3.5 py-1.5">
-                  <Truck size={13} className="text-brand-amber" />
-                  <span className="text-brand-amber text-xs font-sora font-semibold">Envío gratis a todo México</span>
-                </div>
+                {isGift ? (
+                  <GiftPriceBadge giftValue={giftValue} formatMoney={logic.formatMoney} />
+                ) : (
+                  /* Free shipping badge (ya no es lanzamiento) */
+                  <div className="inline-flex items-center gap-1.5 bg-brand-amber/10 border border-brand-amber/20 rounded-full px-3.5 py-1.5">
+                    <Truck size={13} className="text-brand-amber" />
+                    <span className="text-brand-amber text-xs font-sora font-semibold">Envío gratis a todo México</span>
+                  </div>
+                )}
               </div>
 
               {/* Size selector */}
@@ -408,6 +427,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 </div>
               )}
 
+              {isGift && <GiftOfferCard giftValue={giftValue} formatMoney={logic.formatMoney} onClick={openGift} />}
+
               {/* CTAs */}
               <div ref={ctaRef} className="flex flex-col gap-3">
                 {logic.inStock ? (
@@ -436,7 +457,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                       </div>
                     )}
                     <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora w-full text-base disabled:opacity-60 disabled:cursor-not-allowed">
-                      <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(ctaPrice)}`}
+                      <ShoppingCart size={18}/>Comprar ahora{logic.isPriceResolving ? '' : ` · ${logic.formatMoney(ctaPrice)}${giftSuffix}`}
                     </button>
                     <button onClick={logic.handleAddToCart} disabled={ctaDisabled} className="btn-outline-light font-sora w-full disabled:opacity-60 disabled:cursor-not-allowed">Agregar al carrito</button>
                     <p className="text-brand-steel text-[11px] font-inter text-center">
@@ -585,6 +606,9 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
         </div>
       </section>
 
+      {/* ── 4b. GIFT SECTION (solo URL regalo) ── */}
+      {isGift && <GiftSection onOpen={openGift} />}
+
       {/* ── 5. CITY LIFESTYLE ── */}
       <section className="relative overflow-hidden" style={{minHeight:'40vh'}}>
         <img src={LIFESTYLE_CITY} alt="Rider urbano con Rodata One en CDMX" className="w-full h-full object-cover absolute inset-0" loading="lazy"/>
@@ -650,7 +674,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             <h2 className="font-sora font-bold text-brand-offwhite text-3xl">Preguntas frecuentes</h2>
           </div>
           <Accordion type="single" collapsible className="space-y-3">
-            {FAQS.map(({q, a}, i) => (
+            {faqs.map(({q, a}, i) => (
               <AccordionItem key={i} value={`item-${i}`} className="bg-brand-carbon border border-white/[0.07] rounded-xl px-6 data-[state=open]:border-brand-amber/20 transition-colors duration-200">
                 <AccordionTrigger className="font-sora font-semibold text-brand-offwhite text-sm py-5 hover:no-underline hover:text-brand-amber [&>svg]:text-brand-amber">{q}</AccordionTrigger>
                 <AccordionContent className="text-brand-smoke text-sm font-inter leading-relaxed pb-5">{a}</AccordionContent>
@@ -674,7 +698,8 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
             )}
             {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-xl line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
           </div>
-          <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora<ChevronRight size={18}/></button>
+          {isGift && <GiftFinalCtaLine />}
+          <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora{giftSuffix}<ChevronRight size={18}/></button>
         </div>
       </section>
 
@@ -689,7 +714,7 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                   {logic.isPriceResolving ? (
                     <Skeleton className="h-5 w-20" />
                   ) : (
-                    <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(ctaPrice)}</span>
+                    <span className="font-sora font-bold text-brand-offwhite">{logic.formatMoney(ctaPrice)}{isGift && <span className="text-brand-amber"> + regalo</span>}</span>
                   )}
                   {!logic.isPriceResolving && logic.currentCompareAt && logic.currentCompareAt > logic.currentPrice && <span className="text-brand-steel text-sm line-through font-inter">{logic.formatMoney(logic.currentCompareAt)}</span>}
                 </div>
@@ -704,14 +729,26 @@ export const ProductPageUI = ({ logic }: ProductPageUIProps) => {
                 {logic.isPriceResolving ? (
                   <Skeleton className="h-4 w-20" />
                 ) : (
-                  <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(ctaPrice)}</p>
+                  <p className="font-sora font-bold text-brand-offwhite text-sm">{logic.formatMoney(ctaPrice)}{isGift && <span className="text-brand-amber"> + regalo</span>}</p>
                 )}
-                <p className="text-brand-steel text-xs font-inter truncate">{logic.product.title}</p>
+                <p className="text-brand-steel text-xs font-inter truncate">{isGift ? `Incluye ${GIFT_NAME_SHORT} gratis` : logic.product.title}</p>
               </div>
               <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber amber-glow font-sora flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"><ShoppingCart size={14}/>Comprar ahora</button>
             </div>
           </div>
         </div>
+      )}
+
+      {isGift && (
+        <GiftDetailsDrawer
+          open={giftOpen}
+          onOpenChange={setGiftOpen}
+          giftValue={giftValue}
+          formatMoney={logic.formatMoney}
+          onBuy={handlePrimary}
+          ctaDisabled={ctaDisabled || !logic.inStock}
+          ctaLabel={logic.isPriceResolving ? 'Comprar ahora' : `Comprar ahora · ${logic.formatMoney(ctaPrice)} + regalo`}
+        />
       )}
 
     </EcommerceTemplate>

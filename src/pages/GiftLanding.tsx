@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { HeadlessProduct, useProductLogic } from "@/components/headless/HeadlessProduct"
-import { GiftPDPUI } from "@/pages/ui/GiftPDPUI"
+import { ProductPageUI } from "@/pages/ui/ProductPageUI"
 import { useGiftProduct } from "@/hooks/useGiftProduct"
 import { useCheckout } from "@/hooks/useCheckout"
 import { useSettings } from "@/contexts/SettingsContext"
@@ -13,7 +13,8 @@ import { GIFT_MAIN_PRODUCT_SLUG, ORIGINAL_PRODUCT_SLUG, buildGiftCartItem, isGif
  * ROUTE — /productos/soporte-lumbar-rodata-one-regalo
  * Rodata One DUPLICATE at $899 (own DB product) + Muñequeras de regalo ($0 line).
  * All other URLs keep the original $799 product.
- * Does NOT touch the original PDP. noindex + canonical to the main PDP.
+ * Renders the SAME ProductPageUI as the main PDP with `giftOffer` (gift blocks on top),
+ * so every PDP improvement reaches this URL automatically. noindex + canonical to the main PDP.
  */
 const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> }) => {
   const gift = useGiftProduct(true)
@@ -73,8 +74,8 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   }
 
   return (
-    <GiftPDPUI
-      gift={gift}
+    <ProductPageUI
+      giftOffer={{ value: gift?.compare_at_price && gift.compare_at_price > 0 ? gift.compare_at_price : null }}
       logic={{
         ...logic,
         handleBuyNow,
