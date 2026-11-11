@@ -6,6 +6,7 @@ import {
   ADV_DEFAULT_DEK,
   ADV_DEFAULT_VARIANT,
   ADV_FAQ,
+  ADV_MECHANISM_ALT,
   ADV_MECHANISM_IMAGE,
   ADV_ORDERS_CLAIM,
   ADV_PRODUCT_PHOTO,
@@ -110,18 +111,33 @@ export default function AdvertorialEspalda() {
           <P>En un coche, el respaldo carga el peso del torso. En la moto, ese trabajo lo hacen los músculos de la zona lumbar: sostienen el cuerpo inclinado hacia adelante, sin apoyo, durante todo el trayecto.</P>
           <P>No es un esfuerzo fuerte. Es un esfuerzo que no descansa.</P>
           <P>Por eso la molestia no aparece en el kilómetro 10 sino en el 150. No es falta de aguante ni de condición. Es un músculo haciendo el trabajo de un respaldo que no existe.</P>
-          <figure className="my-8">
-            <div className="-mx-5 overflow-hidden border-y border-brand-graphite bg-brand-graphite/40 px-2 py-3 sm:mx-0 sm:rounded-xl sm:border sm:p-4">
-              {ADV_MECHANISM_IMAGE ? (
-                <img src={img(ADV_MECHANISM_IMAGE, 900)} alt="Ilustración de la zona lumbar del piloto" loading="lazy" decoding="async" className="w-full rounded-lg" />
-              ) : (
+          {ADV_MECHANISM_IMAGE && ADV_MECHANISM_IMAGE !== variant.heroImage ? (
+            <figure className="my-8">
+              <img
+                src={img(ADV_MECHANISM_IMAGE, 1100)}
+                srcSet={`${img(ADV_MECHANISM_IMAGE, 700)} 700w, ${img(ADV_MECHANISM_IMAGE, 1100)} 1100w`}
+                sizes="(max-width: 680px) 100vw, 680px"
+                alt={ADV_MECHANISM_ALT}
+                width={1254}
+                height={1254}
+                loading="lazy"
+                decoding="async"
+                className="-mx-5 block aspect-square w-[calc(100%+2.5rem)] max-w-none object-cover sm:mx-0 sm:w-full sm:rounded-xl"
+              />
+              <figcaption className="mt-3 text-base leading-snug text-brand-smoke">
+                <B>En el coche, el respaldo carga el torso.</B> En la moto, ese trabajo lo hace la espalda baja, sola, todo el trayecto.
+              </figcaption>
+            </figure>
+          ) : (
+            <figure className="my-8">
+              <div className="-mx-5 overflow-hidden border-y border-brand-graphite bg-brand-graphite/40 px-2 py-3 sm:mx-0 sm:rounded-xl sm:border sm:p-4">
                 <LumbarMechanismIllustration />
-              )}
-            </div>
-            <figcaption className="mt-3 text-base leading-snug text-brand-smoke">
-              <B>Aquí trabaja el músculo, sin ningún apoyo.</B> Sostiene el torso inclinado durante todo el trayecto.
-            </figcaption>
-          </figure>
+              </div>
+              <figcaption className="mt-3 text-base leading-snug text-brand-smoke">
+                <B>Aquí trabaja el músculo, sin ningún apoyo.</B> Sostiene el torso inclinado durante todo el trayecto.
+              </figcaption>
+            </figure>
+          )}
           <Link {...ctaProps('cta1_mecanismo')} className="group inline-flex items-center gap-1 font-semibold text-brand-amber-light underline decoration-brand-amber/50 underline-offset-4">
             Ver el soporte lumbar hecho para manejar moto
             <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />

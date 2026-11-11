@@ -29,6 +29,7 @@
 - **Advertorial** `/lectura/espalda-baja-moto`: página standalone SIN EcommerceTemplate, columna 680px, texto 18px, noindex.
   Contenido/variantes/fuentes/FAQ/microcopy en `src/data/advertorialEspalda.ts`; medición en `src/hooks/useAdvertorialTracking.ts`; SVG en `src/components/advertorial/`.
   **`?v=125…138`** cambia titular + bajada (`dek`, opcional) + imagen (1:1 por defecto; `heroAspect` para recortar, ej. 133 solo foto superior). Sin v / desconocido → `default` (= 128). Claves viejas a1/a2/a3 = alias de 128/134/131.
+  **Bloque 5 (mecanismo)**: foto coche-vs-moto (`ADV_MECHANISM_IMAGE` = AD_IMG[127]) con caption propio; si la variante ya la usa de hero (127, 136) → cae a la ilustración SVG para no repetir.
   SIN precio (vive en PDP). CTAs → PDP conservando UTMs + `utm_term=adv_<v>_<cta>`.
   **Reglas advertorial**: CERO links salientes en el cuerpo (fuentes solo al pie, plegadas, nofollow). Reseñas sin palabras de salud. Sin etiqueta "Contenido de Rodata". Rating/conteo desde `REVIEW_STATS`. **Solo datos verificados** (estudio estudiantes: edad promedio 22, NO "mayoría 20–30 años").
 - **Pixel**: `facebook-pixel.ts` manda eventos NO estándar con `trackCustom` automáticamente (2026-11-11).
@@ -47,7 +48,8 @@
 - Hecho v2: estudios sin países, fuentes plegadas, reseñas + rating + fotos UGC, FAQ, cierre Km 150, CTAs con microcopy, Pixel trackCustom.
 - Hecho variantes: 14 anuncios `?v=125…138` + default con titular/bajada/imagen según tabla del cliente. 135–138 (tarjetas negras) usan foto eco: 135→128, 136→127, 137→129, 138→132.
 - **Cambio vs tabla del cliente**: bajada 138 → "edad promedio era de 22 años" (la tabla decía "mayoría entre 20 y 30", no verificado). Avisado.
-- **Pendiente cliente**: (1) Imagen silueta → `ADV_MECHANISM_IMAGE`. (2) ¿Historia real del fundador?
+- Hecho: imagen del bloque "lo que la moto no trae" = foto coche vs moto (2026-11-11).
+- **Pendiente cliente**: ¿Historia real del fundador?
 - **Medición**: leer ~2026-11-25 por variante (ver cro-log).
 - **NO hacer**: autor/médico inventado, logos de medios, "como se vio en", fecha falsa, contador de urgencia, precio en la página, reseñas editadas.
 
@@ -58,6 +60,7 @@
 ### 🏠 Formulario dirección MX (PLANEADO — esperando OK). PDP Muñequeras / Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **📰 Advertorial: bloque 5 usa foto coche-vs-moto (sin repetir en variantes 127/136, ahí queda el SVG) (2026-11-11)**.
 - **📰 Advertorial: variantes `?v=125…138` con titular, bajada e imagen por anuncio; hero 1:1; 133 recortada a la foto (2026-11-11)**.
 - **📰 Advertorial v2: sin países, fuentes plegadas, reseñas + rating + fotos UGC, FAQ, cierre Km 150, CTAs con microcopy, Pixel trackCustom (2026-11-11)**.
 - **📋 Plan Advertorial v2 (2026-11-11)**.
@@ -72,12 +75,11 @@
 - **⭐ Reseñas v3: resumen con barras, cargar más (2026-10-10)**.
 - **⭐ PDP Paso 2: reseñas reales con foto (2026-10-10)**.
 - **📱 PDP móvil Paso 1 (2026-10-10)**.
-- **🔍 Auditoría CRO PDP móvil (2026-10-10)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
-- **Anuncios advertorial CR-MX (1:1)** `SB_MSG/`: 125 `1794420461297-6t16v1adhd6` · 126 `1794420461298-pa4gy6tk98` · 127 `…-gozxkcg96dj` · 128 `…-qk0u2y7eswn` (gasolinera, default) · 129 `…-45v9h42v3jd` · 130 `…-b5u75g7jkme` · 131 `…-9xzxueaao8t` · 132 `…-lwezis2obqk` · 133 `…-21cj3hu2vgf` (trae franja de texto abajo; se recorta con CSS) · 134 `…-q3xeo7zz6t`. Todas `.webp`.
+- **Anuncios advertorial CR-MX (1:1)** `SB_MSG/`: 125 `1794420461297-6t16v1adhd6` · 126 `1794420461298-pa4gy6tk98` · 127 `…-gozxkcg96dj` (coche vs moto; también bloque 5) · 128 `…-qk0u2y7eswn` (gasolinera, default) · 129 `…-45v9h42v3jd` · 130 `…-b5u75g7jkme` · 131 `…-9xzxueaao8t` · 132 `…-lwezis2obqk` · 133 `…-21cj3hu2vgf` (trae franja de texto abajo; se recorta con CSS) · 134 `…-q3xeo7zz6t`. Todas `.webp`.
 - **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = Alan M. (SOLO reseñas/tira UGC), `u068d1b4pr.webp` = Pablo B., `c3mx3z3w5kt.webp` = Esteban V.
 - **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = Leonel B. (advertorial bloque 7), `8818z991fgk.webp` = Emilio Z.
 - **UGC REAL (feature 02)** `SB_MSG/1791664562254-pgzyfsa1vdo.webp` = desierto → `FEAT_IMG_2`.
@@ -88,7 +90,7 @@
 - Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
 
 ## Known Issues
-- **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED — se usó SVG en advertorial.
+- **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED.
 - **`GiftPDPUI.tsx` aparece aún en el repo (2026-11-11)** aunque el plan dice borrado — revisar y borrar si no se usa.
 - **Duplicado $899 sin compare_at/cost/paquete** (2026-10-26). Cliente debe ponerlos en Dashboard.
 - Checkout links de pago (2026-10-12): sin QA con link real.
@@ -97,7 +99,7 @@
 - Checkout: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400. "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Código `DEDE` 98%. `useURLCartLoader` roto.
 
 ## Pending / Future Sessions
-- **[ALTA]** Advertorial: QA móvil de las 14 variantes + embudo PostHog por variante ~2026-11-25. Imagen silueta (`ADV_MECHANISM_IMAGE`).
+- **[ALTA]** Advertorial: QA móvil de las 14 variantes + embudo PostHog por variante ~2026-11-25.
 - **[MEDIA]** Advertorial: variante repartidores (`?v=r1`, titular turno 8 h, hero foto real repartidor). ¿Historia real del fundador? (preguntar; NO inventar).
 - **[ALTA]** QA compra de prueba URL $899 + compare_at en Dashboard.
 - **[ALTA]** QA links de pago con descuento manual. **[ALTA]** Medir PDP móvil + encuesta PostHog.

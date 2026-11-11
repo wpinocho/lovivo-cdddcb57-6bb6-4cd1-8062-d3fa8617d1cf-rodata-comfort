@@ -109,8 +109,10 @@ ADV_VARIANTS.a3 = ADV_VARIANTS['131']
 
 export const ADV_DEFAULT_VARIANT = 'default'
 
-/** Imagen del anuncio 5 (silueta). Si queda vacía se usa la ilustración vectorial. */
-export const ADV_MECHANISM_IMAGE = ''
+/** Imagen del bloque 5 "lo que la moto no trae" (coche con respaldo vs moto sin respaldo = misma foto del anuncio 127).
+ *  Si la variante ya la usa como imagen principal, la página muestra la ilustración vectorial para no repetirla. */
+export const ADV_MECHANISM_IMAGE = AD_IMG[127]
+export const ADV_MECHANISM_ALT = 'Asiento de coche con respaldo que sostiene la espalda, comparado con asiento de moto sin ningún apoyo'
 
 /** Foto REAL del producto puesto (Leonel B., cliente) */
 export const ADV_PRODUCT_PHOTO = `${SB_MSG}/1791663680441-cr0tattp1ss.webp`
