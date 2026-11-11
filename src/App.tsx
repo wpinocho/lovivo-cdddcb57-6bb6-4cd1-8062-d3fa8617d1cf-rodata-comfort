@@ -37,6 +37,7 @@ const OrderTrack = lazy(() => import('./pages/OrderTrack'));
 const DeliveryLanding = lazy(() => import('./pages/DeliveryLanding'));
 const WristWrapLanding = lazy(() => import('./pages/WristWrapLanding'));
 const GiftLanding = lazy(() => import('./pages/GiftLanding'));
+const AdvertorialEspalda = lazy(() => import('./pages/AdvertorialEspalda'));
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
                         <Route path="/productos/soporte-lumbar-rodata-one-899" element={<Navigate to={GIFT_PDP_PATH} replace />} />
                         <Route path="/productos/:slug" element={<Product />} />
                         <Route path="/repartidores" element={<DeliveryLanding />} />
+                        <Route path="/lectura/espalda-baja-moto" element={<AdvertorialEspalda />} />
                         <Route path="/paquete/:slug" element={<Bundle />} />
                         <Route path="/carrito" element={<Cart />} />
                         <Route path="/pagar" element={<Checkout />} />
