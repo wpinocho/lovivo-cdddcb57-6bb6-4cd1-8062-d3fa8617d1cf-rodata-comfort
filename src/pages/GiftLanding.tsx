@@ -7,12 +7,15 @@ import { useCheckout } from "@/hooks/useCheckout"
 import { useSettings } from "@/contexts/SettingsContext"
 import { trackAddToCart, tracking } from "@/lib/tracking-utils"
 import { SITE_URL } from "@/lib/brand"
+import { supabase } from "@/lib/supabase"
+import { STORE_ID } from "@/lib/config"
 import { GIFT_MAIN_PRODUCT_SLUG, ORIGINAL_PRODUCT_SLUG, buildGiftCartItem, isGiftOfferActive, markGiftClaimed } from "@/lib/gift-offer"
 
 /**
  * ROUTE — /productos/soporte-lumbar-rodata-one-regalo
- * Rodata One DUPLICATE at $899 (own DB product) + Muñequeras de regalo ($0 line).
- * All other URLs keep the original $799 product.
+ * Rodata One DUPLICATE (own DB product, same $799 as the main PDP since Buen Fin 2026) + Muñequeras de regalo ($0 line).
+ * Crossed-out price: if the duplicate has no compare_at in the DB, we show the ORIGINAL product's
+ * compare_at (same anchor as the normal PDP, never hardcoded).
  * Renders the SAME ProductPageUI as the main PDP with `giftOffer` (gift blocks on top),
  * so every PDP improvement reaches this URL automatically. noindex + canonical to the main PDP.
  */
@@ -22,6 +25,27 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   const { currencyCode } = useSettings()
   const navigate = useNavigate()
   const [buying, setBuying] = useState(false)
+  const [originalCompareAt, setOriginalCompareAt] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (logic.currentCompareAt) return
+    let alive = true
+    supabase
+      .from('products')
+      .select('compare_at_price, variants')
+      .eq('store_id', STORE_ID)
+      .eq('slug', ORIGINAL_PRODUCT_SLUG)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive || !data) return
+        const v = Array.isArray(data.variants) ? data.variants.find((x: any) => x?.compare_at_price) : null
+        const value = Number(v?.compare_at_price ?? data.compare_at_price) || null
+        setOriginalCompareAt(value)
+      })
+    return () => { alive = false }
+  }, [logic.currentCompareAt])
+
+  const compareAt = logic.currentCompareAt || (originalCompareAt && originalCompareAt > logic.currentPrice ? originalCompareAt : undefined)
 
   useEffect(() => {
     document.title = 'Buen Fin: Rodata One + Soporte de muñeca de regalo | RODATA'
@@ -78,6 +102,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
       giftOffer={{ value: gift?.compare_at_price && gift.compare_at_price > 0 ? gift.compare_at_price : null }}
       logic={{
         ...logic,
+        currentCompareAt: compareAt,
         handleBuyNow,
         isBuyingNow: logic.isBuyingNow || buying,
         selectedPurchaseItems: purchaseItems,

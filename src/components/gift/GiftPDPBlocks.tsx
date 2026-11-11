@@ -34,14 +34,23 @@ export const GiftKitBadge = ({ onClick }: { onClick: () => void }) => (
   </button>
 )
 
+/** Official Buen Fin logo pinned to the top-right of the gallery (stays put while swiping). */
+export const BuenFinGalleryLogo = () => (
+  <img
+    src={BUEN_FIN_LOGO}
+    alt="Buen Fin 2026, del 13 al 17 de noviembre"
+    className="absolute top-2 right-2 z-10 w-[72px] md:w-24 h-auto pointer-events-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.45)]"
+    width={96}
+    height={88}
+    loading="eager"
+  />
+)
+
 /** Banner right under the price. */
 export const GiftPriceBadge = ({ giftValue, formatMoney }: { giftValue: number | null; formatMoney: Money }) => (
-  <div className="flex items-center gap-3">
-    <img src={BUEN_FIN_LOGO} alt="Buen Fin 2026, del 13 al 17 de noviembre" className="h-14 w-auto flex-shrink-0" width={60} height={56} />
-    <div className="inline-flex items-center gap-2 bg-brand-amber text-brand-carbon rounded-lg px-3.5 py-2 shadow-[0_0_16px_rgba(201,139,46,0.3)]">
-      <Gift size={15} className="flex-shrink-0" />
-      <span className="text-xs sm:text-sm font-sora font-bold">REGALO {GIFT_PROMO_NAME.toUpperCase()}: {GIFT_NAME_SHORT} para moto{giftValue ? ` (valor ${formatMoney(giftValue)})` : ''}</span>
-    </div>
+  <div className="inline-flex items-center gap-2 bg-brand-amber text-brand-carbon rounded-lg px-3.5 py-2 shadow-[0_0_16px_rgba(201,139,46,0.3)]">
+    <Gift size={15} className="flex-shrink-0" />
+    <span className="text-xs sm:text-sm font-sora font-bold">REGALO {GIFT_PROMO_NAME.toUpperCase()}: {GIFT_NAME_SHORT} para moto{giftValue ? ` (valor ${formatMoney(giftValue)})` : ''}</span>
   </div>
 )
 

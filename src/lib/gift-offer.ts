@@ -15,10 +15,10 @@ import type { CartProductItem } from '@/contexts/CartContext'
  * the cart (incl. after purchase).
  */
 /**
- * PRICE PER URL (2026-10-26): the gift PDP sells a DUPLICATE Rodata One priced
- * $899 in the DB (tags `no-listar,precio-899`). The backend recomputes prices
- * from the DB, so the charge is really $899. Every other URL keeps the original
- * $799 product. The gift is ONLY attached to the duplicate.
+ * PRICE PER URL: the gift PDP sells a DUPLICATE Rodata One (tags `no-listar,buen-fin`).
+ * Buen Fin 2026 (2026-11-11): duplicate set to $799 = same as the main PDP; the crossed-out
+ * price comes from the original product's compare_at (see GiftLanding). The backend
+ * recomputes prices from the DB. The gift is ONLY attached to the duplicate.
  */
 export const GIFT_MAIN_PRODUCT_ID = '00155506-c9ce-4e2c-b299-296b948f3254'
 export const GIFT_MAIN_PRODUCT_SLUG = 'soporte-lumbar-rodata-one-899'
