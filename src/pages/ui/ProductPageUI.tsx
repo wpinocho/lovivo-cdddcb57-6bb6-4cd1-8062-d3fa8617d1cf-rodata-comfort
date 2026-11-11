@@ -256,7 +256,7 @@ export const ProductPageUI = ({ logic, giftOffer }: ProductPageUIProps) => {
                   <img src={displayImage} alt={logic.product.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                   <div className="absolute bottom-3 right-3 bg-brand-carbon/80 backdrop-blur-sm text-brand-smoke text-[10px] font-inter px-2 py-1 rounded border border-white/[0.08]">RODATA</div>
                   {isGift && displayImage === GIFT_KIT_IMG && <GiftKitBadge onClick={openGift} />}
-                  {isGift && <BuenFinGalleryLogo />}
+                  {isGift && <BuenFinGalleryLogo className="top-4 right-4 w-32 lg:w-36" />}
                 </div>
                 {discountPct && (
                   <div className="absolute top-0 left-5 -translate-y-1/2 z-10 bg-brand-amber text-brand-carbon text-sm font-bold px-3.5 py-1.5 rounded-lg font-sora shadow-lg">
@@ -303,7 +303,7 @@ export const ProductPageUI = ({ logic, giftOffer }: ProductPageUIProps) => {
                     -{discountPct}%
                   </div>
                 )}
-                {isGift && <BuenFinGalleryLogo />}
+                {isGift && <BuenFinGalleryLogo className="top-2.5 right-[42px] w-[92px]" />}
               </div>
 
               {/* Desktop thumbnails */}

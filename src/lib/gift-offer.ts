@@ -49,7 +49,8 @@ export const GIFT_OFFER_ENDS_AT: string | null = '2026-11-17T23:59:59-06:00'
 /** Current reason for the gift (copy). Buen Fin 2026 — official logo + QR (participation requirement). */
 export const GIFT_PROMO_NAME = 'Buen Fin'
 const SB_MSG_RENDER = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
-export const BUEN_FIN_LOGO = `${SB_MSG_RENDER}/1794427528866-zncp0j0ad3s.webp?width=240&quality=85`
+/** Official Buen Fin 2026 calendar logo, background removed (transparent, 400×373). */
+export const BUEN_FIN_LOGO = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/buen-fin-2026-logo.webp'
 export const BUEN_FIN_QR = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1794427528866-38mnaj0p5ig.webp'
 
 export const giftOfferEndMs = () => (GIFT_OFFER_ENDS_AT ? new Date(GIFT_OFFER_ENDS_AT).getTime() : null)

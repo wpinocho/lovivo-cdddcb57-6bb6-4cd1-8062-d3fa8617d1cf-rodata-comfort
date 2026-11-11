@@ -34,15 +34,17 @@ export const GiftKitBadge = ({ onClick }: { onClick: () => void }) => (
   </button>
 )
 
-/** Official Buen Fin logo pinned to the top-right of the gallery (stays put while swiping). */
-export const BuenFinGalleryLogo = () => (
+/** Official Buen Fin logo pinned to the top-right corner of the photo (stays put while swiping).
+ *  Pass `className` with the absolute offsets for each gallery (mobile slide is 32px narrower than its wrapper). */
+export const BuenFinGalleryLogo = ({ className }: { className?: string }) => (
   <img
     src={BUEN_FIN_LOGO}
     alt="Buen Fin 2026, del 13 al 17 de noviembre"
-    className="absolute top-2 right-2 z-10 w-[72px] md:w-24 h-auto pointer-events-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.45)]"
-    width={96}
-    height={88}
+    className={`absolute z-10 h-auto pointer-events-none select-none drop-shadow-[0_6px_14px_rgba(0,0,0,0.5)] ${className ?? 'top-3 right-3 w-28'}`}
+    width={400}
+    height={373}
     loading="eager"
+    decoding="async"
   />
 )
 
