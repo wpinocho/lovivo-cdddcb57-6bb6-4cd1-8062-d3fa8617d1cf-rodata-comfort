@@ -16,7 +16,7 @@ import RodataReviews from "@/components/RodataReviews"
 import { REVIEW_STATS } from "@/data/rodataReviews"
 import { GiftDetailsDrawer } from "@/components/GiftDetailsDrawer"
 import {
-  GIFT_KIT_IMG, GIFT_FAQS, GIFT_NAME_SHORT, GiftKitBadge, GiftPriceBadge, GiftOfferCard, GiftSection, GiftFinalCtaLine,
+  GIFT_KIT_IMG, GIFT_FAQS, GIFT_NAME_SHORT, GiftKitBadge, GiftPriceBadge, GiftOfferCard, GiftSection, GiftFinalCtaLine, BuenFinOfficialStrip,
 } from "@/components/gift/GiftPDPBlocks"
 
 // ── Image constants (with Supabase image transform for performance) ──
@@ -702,6 +702,8 @@ export const ProductPageUI = ({ logic, giftOffer }: ProductPageUIProps) => {
           <button onClick={handlePrimary} disabled={ctaDisabled} className="btn-amber-lg amber-glow font-sora text-base px-12 disabled:opacity-60 disabled:cursor-not-allowed">Comprar ahora{giftSuffix}<ChevronRight size={18}/></button>
         </div>
       </section>
+
+      {isGift && <BuenFinOfficialStrip />}
 
       {/* ── STICKY BAR (tras 250px de scroll, oculta mientras el CTA inline está en pantalla) ── */}
       {logic.inStock && showStickyBar && (

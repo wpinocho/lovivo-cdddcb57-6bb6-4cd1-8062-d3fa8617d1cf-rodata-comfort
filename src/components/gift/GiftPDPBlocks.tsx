@@ -1,6 +1,6 @@
 // Gift-offer blocks for the Rodata One PDP (only rendered on the gift URL via ProductPageUI `giftOffer`).
 import { Check, ChevronRight, Gift } from "lucide-react"
-import { GIFT_NAME, GIFT_NAME_SHORT, formatGiftEndDate } from "@/lib/gift-offer"
+import { GIFT_NAME, GIFT_NAME_SHORT, GIFT_PROMO_NAME, BUEN_FIN_LOGO, BUEN_FIN_QR, formatGiftEndDate } from "@/lib/gift-offer"
 import { GiftCountdown } from "@/components/GiftCountdown"
 
 const SUPABASE_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
@@ -19,8 +19,8 @@ const GIFT_LINES = [
 ]
 
 export const GIFT_FAQS = [
-  { q: '¿El regalo tiene costo?', a: 'No. El soporte de muñeca (par) va incluido en tu pedido y se agrega solo; no tienes que hacer nada.' },
-  { q: '¿Hasta cuándo?', a: GIFT_END_SHORT ? `Hasta el ${formatGiftEndDate(true)}.` : 'Por tiempo limitado.' },
+  { q: '¿El regalo tiene costo?', a: `No. Por el ${GIFT_PROMO_NAME}, el soporte de muñeca (par) va incluido en tu pedido y se agrega solo; no tienes que hacer nada.` },
+  { q: '¿Hasta cuándo?', a: GIFT_END_SHORT ? `Hasta el ${formatGiftEndDate(true)}, último día del ${GIFT_PROMO_NAME}.` : 'Por tiempo limitado.' },
   { q: '¿El soporte de muñeca sirve para la vibración?', a: 'Ayuda a que la vibración del manubrio te canse menos: la compresión mantiene la muñeca firme en su posición natural. Si la molestia o el hormigueo siguen después de bajarte, conviene consultarlo con un médico.' },
 ]
 
@@ -36,10 +36,11 @@ export const GiftKitBadge = ({ onClick }: { onClick: () => void }) => (
 
 /** Banner right under the price. */
 export const GiftPriceBadge = ({ giftValue, formatMoney }: { giftValue: number | null; formatMoney: Money }) => (
-  <div className="flex">
+  <div className="flex items-center gap-3">
+    <img src={BUEN_FIN_LOGO} alt="Buen Fin 2026, del 13 al 17 de noviembre" className="h-14 w-auto flex-shrink-0" width={60} height={56} />
     <div className="inline-flex items-center gap-2 bg-brand-amber text-brand-carbon rounded-lg px-3.5 py-2 shadow-[0_0_16px_rgba(201,139,46,0.3)]">
       <Gift size={15} className="flex-shrink-0" />
-      <span className="text-xs sm:text-sm font-sora font-bold">+ REGALO: {GIFT_NAME_SHORT} para moto{giftValue ? ` (valor ${formatMoney(giftValue)})` : ''}</span>
+      <span className="text-xs sm:text-sm font-sora font-bold">REGALO {GIFT_PROMO_NAME.toUpperCase()}: {GIFT_NAME_SHORT} para moto{giftValue ? ` (valor ${formatMoney(giftValue)})` : ''}</span>
     </div>
   </div>
 )
@@ -57,7 +58,7 @@ export const GiftOfferCard = ({ giftValue, formatMoney, onClick }: { giftValue: 
         <img src={WRIST_THUMB} alt={`${GIFT_NAME} de regalo`} className="w-full h-full object-cover" loading="lazy" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.12em] flex items-center gap-1"><Gift size={11}/>Tu regalo · Nuevo en RODATA</p>
+        <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.12em] flex items-center gap-1"><Gift size={11}/>Tu regalo de {GIFT_PROMO_NAME}</p>
         <p className="text-brand-offwhite text-sm font-sora font-semibold leading-tight mt-0.5">{GIFT_NAME}</p>
         <p className="text-brand-steel text-[11px] font-inter mt-0.5">Incluye 2 · contra la fatiga por vibración</p>
       </div>
@@ -70,7 +71,7 @@ export const GiftOfferCard = ({ giftValue, formatMoney, onClick }: { giftValue: 
       <p className="flex items-center gap-1.5 text-brand-amber-light text-[11px] font-inter min-w-0">
         <span className="h-1.5 w-1.5 rounded-full bg-brand-amber-light animate-pulse flex-shrink-0" />
         {GIFT_END_SHORT
-          ? <span>Gratis solo por <GiftCountdown /></span>
+          ? <span>El {GIFT_PROMO_NAME} termina en <GiftCountdown /></span>
           : <span>Gratis por tiempo limitado</span>}
       </p>
       <span className="flex items-center text-brand-amber text-[11px] font-sora font-semibold flex-shrink-0">Ver qué incluye<ChevronRight size={13}/></span>
@@ -87,10 +88,10 @@ export const GiftSection = ({ onOpen }: { onOpen: () => void }) => (
         <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-brand-amber text-brand-carbon text-xs font-sora font-bold px-3 py-1.5 rounded-lg shadow-lg"><Gift size={13}/>Incluido gratis</div>
       </div>
       <div>
-        <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Tu regalo · Nuevo en RODATA</span>
+        <span className="text-brand-amber text-xs font-sora font-semibold uppercase tracking-[0.18em] mb-3 block">Tu regalo de {GIFT_PROMO_NAME}</span>
         <h2 className="font-sora font-bold text-brand-offwhite text-3xl sm:text-4xl leading-tight mb-4">Porque la espalda no es lo único que se cansa</h2>
         <p className="text-brand-smoke text-sm font-inter leading-relaxed mb-6">
-          La moto vibra todo el camino y esa vibración pega en dos lugares: tu espalda baja y tus muñecas. El Rodata One cuida la primera. Este {GIFT_NAME_SHORT}, la segunda.
+          La moto vibra todo el camino y esa vibración pega en dos lugares: tu espalda baja y tus muñecas. El Rodata One cuida la primera. Este {GIFT_NAME_SHORT}, la segunda. Por el {GIFT_PROMO_NAME}, va incluido con tu Rodata One.
         </p>
         <div className="space-y-4">
           {GIFT_LINES.map(({title, desc}) => (
@@ -111,8 +112,21 @@ export const GiftSection = ({ onOpen }: { onOpen: () => void }) => (
 /** Small line under the final-CTA price. */
 export const GiftFinalCtaLine = () => (
   <p className="text-brand-amber-light text-sm font-sora font-semibold -mt-4 mb-7 flex items-center justify-center gap-1.5">
-    <Gift size={14}/>+ {GIFT_NAME_SHORT} de regalo{GIFT_END_SHORT ? ` · hasta el ${GIFT_END_SHORT}` : ''}
+    <Gift size={14}/>+ {GIFT_NAME_SHORT} de regalo por el {GIFT_PROMO_NAME}{GIFT_END_SHORT ? ` · hasta el ${GIFT_END_SHORT}` : ''}
   </p>
+)
+
+/** Official Buen Fin participation strip with QR (requirement — kept discreet, at the bottom). */
+export const BuenFinOfficialStrip = () => (
+  <section className="border-t border-white/[0.06] py-8" style={{ backgroundColor: '#111315' }}>
+    <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-5">
+      <img src={BUEN_FIN_QR} alt="Código QR de participación oficial en El Buen Fin 2026" className="h-24 w-24 rounded-md flex-shrink-0" width={96} height={96} loading="lazy" />
+      <div className="min-w-0">
+        <p className="text-brand-smoke text-xs font-sora font-semibold">RODATA participa en El Buen Fin 2026</p>
+        <p className="text-brand-steel text-[11px] font-inter leading-relaxed mt-1">Del 13 al 17 de noviembre. Escanea el código para verificar nuestra participación.</p>
+      </div>
+    </div>
+  </section>
 )
 
 export { GIFT_NAME_SHORT }

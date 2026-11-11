@@ -40,10 +40,17 @@ export const GIFT_NAME_SHORT = 'soporte de muñeca'
 
 /**
  * REAL, FIXED end of the gift promo — same moment for every visitor
- * (never a per-visitor resetting timer). End of day Fri 31 Oct 2026, CDMX (UTC-6).
+ * (never a per-visitor resetting timer). BUEN FIN 2026 (13–17 nov): end of day
+ * Tue 17 Nov 2026, CDMX (UTC-6). Previous run (launch gift) ended 31 Oct.
  * Set to null for "no end date" (then copy falls back to "while stock lasts").
  */
-export const GIFT_OFFER_ENDS_AT: string | null = '2026-10-31T23:59:59-06:00'
+export const GIFT_OFFER_ENDS_AT: string | null = '2026-11-17T23:59:59-06:00'
+
+/** Current reason for the gift (copy). Buen Fin 2026 — official logo + QR (participation requirement). */
+export const GIFT_PROMO_NAME = 'Buen Fin'
+const SB_MSG_RENDER = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
+export const BUEN_FIN_LOGO = `${SB_MSG_RENDER}/1794427528866-zncp0j0ad3s.webp?width=240&quality=85`
+export const BUEN_FIN_QR = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1794427528866-38mnaj0p5ig.webp'
 
 export const giftOfferEndMs = () => (GIFT_OFFER_ENDS_AT ? new Date(GIFT_OFFER_ENDS_AT).getTime() : null)
 

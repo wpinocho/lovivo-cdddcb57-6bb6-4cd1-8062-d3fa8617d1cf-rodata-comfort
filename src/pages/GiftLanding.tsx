@@ -24,7 +24,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   const [buying, setBuying] = useState(false)
 
   useEffect(() => {
-    document.title = 'Rodata One + Soporte de muñeca de regalo | RODATA'
+    document.title = 'Buen Fin: Rodata One + Soporte de muñeca de regalo | RODATA'
     const robots = document.createElement('meta')
     robots.name = 'robots'
     robots.content = 'noindex, follow'

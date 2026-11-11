@@ -1,7 +1,7 @@
 import { Check, Gift, ShoppingCart, Clock } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription, DrawerClose } from '@/components/ui/drawer'
 import { GiftCountdown } from '@/components/GiftCountdown'
-import { GIFT_NAME, formatGiftEndDate } from '@/lib/gift-offer'
+import { GIFT_NAME, GIFT_PROMO_NAME, formatGiftEndDate } from '@/lib/gift-offer'
 
 const GIFT_PHOTO = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1790638502334-nwhrcsc3un.webp?width=800&quality=75'
 
@@ -36,7 +36,7 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
             </div>
           </div>
 
-          <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.16em] mt-5">Nuevo en RODATA</p>
+          <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.16em] mt-5">Regalo de {GIFT_PROMO_NAME}</p>
           <DrawerTitle className="font-sora font-bold text-brand-offwhite text-xl leading-tight mt-1">
             {GIFT_NAME} (par)
           </DrawerTitle>
@@ -47,7 +47,7 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
           </div>
 
           <DrawerDescription className="text-brand-smoke text-sm font-inter leading-relaxed mt-4">
-            Es lo más nuevo de RODATA. Queremos que más riders lo prueben, así que durante el lanzamiento va gratis con cada Rodata One.
+            Es nuestro {GIFT_PROMO_NAME}: del 13 al 17 de noviembre, cada Rodata One lleva de regalo el par de soportes de muñeca.
           </DrawerDescription>
           <p className="text-brand-steel text-sm font-inter leading-relaxed mt-2">
             El manubrio te pasa vibración todo el camino. A la hora, la muñeca ya se siente cansada — a veces hasta dormida.
@@ -70,8 +70,8 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
             <p className="flex items-start gap-2 text-brand-offwhite text-sm font-inter leading-snug">
               <Clock size={15} className="text-brand-amber mt-0.5 flex-shrink-0" />
               {endDate
-                ? <span>Gratis hasta el <strong className="font-sora">{endDate}</strong> o hasta agotar el inventario de lanzamiento, lo que pase primero.</span>
-                : <span>Gratis mientras dure el inventario de lanzamiento.</span>}
+                ? <span>Gratis hasta el <strong className="font-sora">{endDate}</strong>, último día del {GIFT_PROMO_NAME}.</span>
+                : <span>Gratis por tiempo limitado.</span>}
             </p>
             <GiftCountdown variant="boxes" />
           </div>
