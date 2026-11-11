@@ -17,6 +17,7 @@
 - **Política oficial (2026-09-28)**: 30 días · devolución normal = cliente paga regreso · defectuoso = RODATA cubre · 1er cambio de talla SIN COSTO ·
   reembolso máx 10 días hábiles · envío estándar gratis en MX · preparación 24–48 h.
 - WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
+- **Cliente (2026-11-11)**: nombres de países lejanos (Katmandú, Nigeria…) se sienten ajenos a su público → hablar de QUIÉN se estudió (repartidores, mototaxistas), no de DÓNDE.
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
@@ -28,6 +29,7 @@
 - **Advertorial** `/lectura/espalda-baja-moto` (2026-11-11): página standalone SIN EcommerceTemplate (sin menú/carrito), columna 680px, texto 18px, noindex.
   Contenido/variantes/fuentes en `src/data/advertorialEspalda.ts`; medición en `src/hooks/useAdvertorialTracking.ts`; SVG en `src/components/advertorial/`.
   `?v=a1|a2|a3` cambia titular + imagen. SIN precio (vive en PDP). CTAs → PDP conservando UTMs del anuncio + `utm_term=adv_<v>_<cta>`.
+  **Regla advertorial**: CERO links salientes dentro del cuerpo (las fuentes solo al pie, plegadas). Reseñas sin palabras de salud ("alivio", "dolor se quitó").
 - **Regla del cliente**: en `/repartidores` SOLO fotos reales. Errores de pago: nunca culpar al cliente. Precios: NUNCA hardcodear.
 - **Precio distinto por URL = PRODUCTO DUPLICADO en la BD**. Duplicados llevan tag `no-listar` + redirect de su slug.
 - `isListableProduct()` en `src/lib/gift-offer.ts` filtra `no-listar`. `HeadlessIndex` es FORBIDDEN.
@@ -39,13 +41,50 @@
 
 ## Active Plan
 
-### 📰 Advertorial Meta Ads (CONSTRUIDO 2026-11-11 — falta assets + QA)
-- URL: `/lectura/espalda-baja-moto` (+ `?v=a2` / `?v=a3` para titulares alternos).
-- Eventos: Pixel `ViewContent` (content_category advertorial) + `AdvertorialCTAClick` {cta, variant}; PostHog `advertorial_view`, `advertorial_scroll` {depth 25/50/75/100}, `AdvertorialCTAClick`.
-- CTAs: `cta1_mecanismo` (texto), `cta2_producto`, `cta3_cierre`, `sticky` (barra fija desde 40% scroll).
-- **Pendiente cliente**: imágenes de cada anuncio (gasolinera a1, silueta anuncio 5 → `ADV_MECHANISM_IMAGE`); hoy hero = foto real de carretera y mecanismo = SVG propio.
-- **Verificar con fuentes del cliente**: Bangladesh "casi 6 de cada 10", Katmandú "más de la mitad 20–30 años", Nigeria 40.9% (estudio Ilesa reporta ~41% "alguna vez").
-- Ajustes de copy hechos por política: "Más ligera que unos guantes" → "Ligera y delgada" (sin dato de peso); cierre "Pruébala" → "Úsala" + devolución 30 días + 1er cambio de talla gratis.
+### 📰 Advertorial v2 — revisión CRO + copy (PLANEADO 2026-11-11, esperando OK del cliente)
+Archivos: `src/pages/AdvertorialEspalda.tsx`, `src/data/advertorialEspalda.ts`, `src/hooks/useAdvertorialTracking.ts`,
+`src/lib/facebook-pixel.ts` (o `tracking-utils.ts`), `src/components/advertorial/LumbarMechanismIllustration.tsx`.
+
+**PRIORIDAD ALTA**
+1. **Bloque 4 sin países + sin links en cifras** (los `<Cite>` mandan a ResearchGate = fuga de tráfico pagado). Reemplazar párrafo por:
+   - "Investigadores en varios países han estudiado a gente que pasa horas diarias arriba de la moto: repartidores, mototaxistas, gente que va y viene del trabajo. En tres estudios distintos, **entre 4 y 6 de cada 10** tenían dolor de espalda baja."
+   - "Y lo que más pesó no fue la edad. Fueron **las horas arriba de la moto y los kilómetros** recorridos." ← VERIFICAR en el estudio de Katmandú (Gautam 2023) que los factores asociados fueron horas/distancia; si no se confirma: "En esos estudios había de todo: también muchachos de veintitantos."
+   - Quitar "más de la mitad tenía entre 20 y 30 años" salvo que se confirme en la fuente. H2 si no se confirma la edad: "Les pasa a 4 de cada 10. Y no es la edad."
+   - Fuentes que se quedan (verificadas): Katmandú 43.8%, Nigeria ~41%, Tailandia 58.3%. **Quitar Bangladesh** (no verificado). Eliminar componente `Cite` y `advSource`.
+2. **Pie de página**: dejar 1 línea chica "Información general; no sustituye la valoración de un profesional de la salud." + `<details>` "Ver estudios citados (3)" plegado con las fuentes. Links del pie con `rel="nofollow noopener"`.
+   **Encabezado**: quitar etiqueta "Contenido de Rodata" (el logo RODATA + "Por el equipo de Rodata" ya transparentan quién publica).
+3. **Reseñas** (`ADV_REVIEW_NAMES`) → `['Ricardo L.', 'Roberto G.', 'Fernando L.']`.
+   - Ricardo L. = eco exacto de la escena de la parada ("paramos a desayunar… sin la cintura tiesa"). Roberto G. = "No hace milagros, pero sí me ayudó bastante" (honestidad = credibilidad). Fernando L. = repartidor 7–8 h (cubre avatar 2).
+   - Quitar Humberto J. (dice "alivio" → claim de salud en voz de cliente, riesgo con Meta) y Esteban V. (muy largo + "problemas de espalda desde hace 20 años").
+   - Encima de las reseñas: línea dinámica "★ {rating} de 5 · {count} reseñas reales" calculada desde `rodataReviews.ts` (NUNCA hardcodear).
+   - Debajo: tira horizontal "Fotos reales de clientes" con `PHOTO_REVIEWS` (Pablo B., Alan M., Leonel B., Emilio Z., Esteban V.) — miniaturas 4:5, lazy, sin links.
+   - H2 bloque 8: "Más de 1,000 pedidos después" → "Lo que dicen quienes ya la usan" (y la cifra de pedidos queda en el párrafo).
+4. **Nuevo bloque "Lo que más preguntan"** (entre reseñas y cierre), 4 acordeones cortos, tono rider, honesto:
+   - ¿Da calor? → "Es de malla transpirable. En carretera casi no se siente; a mediodía en ciudad sí se nota como una capa más (así lo dicen algunos clientes)."
+   - ¿Qué talla pido? → "Se elige por la medida de cintura; la guía está en la página del producto. Si no te queda, el primer cambio de talla es gratis."
+   - ¿Se nota debajo de la chamarra? → "Es delgada y va pegada al cuerpo; la mayoría dice que a los minutos ni se acuerda que la trae."
+   - ¿Cuánto tarda en llegar? → "Preparamos tu pedido en 24–48 h y el envío es gratis a todo México." (NO prometer días de entrega sin dato del cliente.)
+   - PostHog `advertorial_faq_open` {q}.
+5. **Cierre con "regreso a la escena"** (future pacing) antes del texto de devolución:
+   "Kilómetro 150. Medio tanque, carretera libre. Esta vez, si el grupo para en la gasolinera, que sea por gasolina."
+6. **CTAs**: CTA2 "Conoce Rodata One" → "Ver Rodata One y elegir mi talla". CTA3 "Ver tallas y disponibilidad" → "Elegir mi talla". Debajo de CTA2 y CTA3 microcopy 13px:
+   "Envío gratis · 30 días para devolver · 1er cambio de talla gratis". Sticky: agregar "★ {rating} · {count} reseñas" en la 2ª línea (en lugar de "Soporte lumbar para moto · Tallas S a XL").
+7. **Fix Pixel**: consola avisa "non-standard event AdvertorialCTAClick… use trackCustom". En `facebook-pixel.ts`, enrutar eventos que NO son estándar de Meta a `fbq('trackCustom', …)` (lista de estándar: PageView, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Purchase, Lead, CompleteRegistration, Search, Contact, Subscribe…). Mantener eventID. Verificar que no rompa otros eventos custom existentes (buscar usos de `trackCustomEvent`).
+
+**PRIORIDAD MEDIA**
+8. H2 bloque 7 → **"Rodata One: el respaldo que la moto no trae"** (cierra la gran idea del artículo). Primer párrafo: "Si el problema es que la moto no trae respaldo para la espalda baja, la solución es llevarlo puesto. Eso es Rodata One: …"
+9. Bloque 6: "La faja de gimnasio" → "La faja de farmacia o de gimnasio" (las de farmacia son la referencia real del cliente MX; Jorge R. la menciona).
+10. Ilustración del mecanismo: el SVG se ve chico/pobre en móvil. Si el cliente manda la imagen del anuncio 5 → `ADV_MECHANISM_IMAGE`. Si no, agrandar el SVG (ancho completo, etiquetas 14px+, flecha "aquí trabaja el músculo, sin apoyo").
+11. Message match hero: revisar `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1793048789975-rz7gqvm3qi.webp` (subida por el cliente). Si es la imagen del anuncio de la gasolinera → `lov-copy` a public + convertir/servir WebP → `heroImage` de `a1`. Confirmar con el cliente antes.
+
+**NO hacer**: autor/médico inventado, logos de medios, "como se vio en", fecha falsa, contador de urgencia, precio en la página, reseñas editadas.
+
+**Medición posterior**: comparar 2 semanas: % que llega a 50/75%, clic CTA/visita, compra desde `utm_campaign`/`utm_term adv_*` vs tráfico directo a PDP. Registrar en cro-log.
+
+### 📰 Advertorial v1 (CONSTRUIDO 2026-11-11)
+- URL: `/lectura/espalda-baja-moto` (+ `?v=a2` / `?v=a3`). Eventos: Pixel `ViewContent` + `AdvertorialCTAClick` {cta, variant}; PostHog `advertorial_view`, `advertorial_scroll`, `AdvertorialCTAClick`.
+- CTAs: `cta1_mecanismo`, `cta2_producto`, `cta3_cierre`, `sticky` (desde 40% scroll).
+- **Pendiente cliente**: imágenes de cada anuncio (gasolinera a1, silueta anuncio 5).
 
 ### 💰 URL regalo a $899 (CONSTRUIDO 2026-10-26 — falta Dashboard + QA)
 - Fecha fin regalo: 2026-10-31 23:59 CDMX → redirige a PDP $799. **Pendiente**: compare_at/cost en Dashboard, compra de prueba.
@@ -54,6 +93,7 @@
 ### 🏠 Formulario dirección MX (PLANEADO — esperando OK). PDP Muñequeras / Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **📋 Plan Advertorial v2: sin países, fuentes plegadas, reseñas eco de la escena, FAQ, cierre future pacing, fix trackCustom (2026-11-11)**.
 - **📰 Advertorial `/lectura/espalda-baja-moto` con variantes ?v=, 3 CTAs + barra fija, scroll/CTA tracking (2026-11-11)**.
 - **🔁 URL regalo unificada: usa la PDP normal + bloques de regalo; GiftPDPUI borrado (2026-10-26)**.
 - **💰 URL regalo vende duplicado Rodata One $899 + regalo; resto $799 (2026-10-26)**.
@@ -68,7 +108,6 @@
 - **🔍 Auditoría CRO PDP móvil (2026-10-10)**.
 - **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)**.
 - **✅ Exp pack cerrado + regalo extendido al 31 oct (2026-10-07)**.
-- **📋 Plan cerrar exp pack + test regalo (2026-10-07)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
@@ -81,8 +120,10 @@
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`. Muñequeras (reales) `SB_MSG/1790638502334-*`.
 - PDP carretera: `/pdp-lifestyle-1.jpg` · `SB_MSG/1775768374485-uca4dkx21g.webp` (hero por defecto del advertorial). Home HERO `SB_MSG/1775772513540-16g7elmcuii.webp`.
 - Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
+- **Por revisar**: `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1793048789975-rz7gqvm3qi.webp` (subida por cliente, ¿anuncio gasolinera?).
 
 ## Known Issues
+- **Pixel: eventos custom se mandan con `fbq('track')` en vez de `trackCustom` (2026-11-11)** — Meta lo marca como no estándar. Fix en plan v2 punto 7.
 - **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED — no se pudo generar ilustración; se usó SVG.
 - **`GiftPDPUI.tsx` aparece aún en el repo (2026-11-11)** aunque el plan dice borrado — revisar y borrar si no se usa.
 - **Duplicado $899 sin compare_at/cost/paquete** (2026-10-26). Cliente debe ponerlos en Dashboard.
@@ -92,7 +133,8 @@
 - Checkout: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400. "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Código `DEDE` 98%. `useURLCartLoader` roto.
 
 ## Pending / Future Sessions
-- **[ALTA]** Advertorial: subir imágenes de anuncios por variante + verificar cifras de estudios + QA móvil + revisar embudo en PostHog tras 1–2 semanas.
+- **[ALTA]** Advertorial v2 (ver Active Plan) + imágenes de anuncios por variante + QA móvil + embudo PostHog tras 1–2 semanas.
+- **[MEDIA]** Advertorial: variante para repartidores (`?v=r1`, titular de turno de 8 h, hero foto real repartidor). ¿Historia real del fundador? (preguntar; NO inventar).
 - **[ALTA]** QA compra de prueba URL $899 + compare_at en Dashboard.
 - **[ALTA]** QA links de pago con descuento manual. **[ALTA]** Medir PDP móvil + encuesta PostHog.
 - **[ALTA]** Formulario dirección MX. **[ALTA]** Muñequeras precio final. **[ALTA]** Merchant Center. **[CRÍTICA]** decisión `DEDE`.
