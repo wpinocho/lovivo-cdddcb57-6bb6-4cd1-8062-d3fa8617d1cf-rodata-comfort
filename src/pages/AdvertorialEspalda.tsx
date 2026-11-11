@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Star, ChevronRight, ChevronDown } from 'lucide-react'
 import { ALL_REVIEWS, PHOTO_REVIEWS, REVIEW_STATS } from '@/data/rodataReviews'
 import {
+  ADV_DEFAULT_DEK,
   ADV_DEFAULT_VARIANT,
   ADV_FAQ,
   ADV_MECHANISM_IMAGE,
@@ -67,9 +68,7 @@ export default function AdvertorialEspalda() {
         <article>
           {/* Bloque 1 */}
           <h1 className="font-sora text-[1.85rem] sm:text-4xl font-extrabold leading-[1.15] text-brand-offwhite">{variant.headline}</h1>
-          <p className="mt-4 text-[1.1rem] leading-relaxed text-brand-smoke">
-            La moto trae suspensión, asiento y parabrisas. Lo único que no trae es algo que sostenga al piloto durante horas.
-          </p>
+          <p className="mt-4 text-[1.1rem] leading-relaxed text-brand-smoke">{variant.dek ?? ADV_DEFAULT_DEK}</p>
           <p className="mt-4 text-sm text-brand-steel">Por el equipo de Rodata · Lectura de 3 minutos</p>
 
           {/* Bloque 2 */}
@@ -79,9 +78,10 @@ export default function AdvertorialEspalda() {
             sizes="(max-width: 680px) 100vw, 680px"
             alt={variant.heroAlt}
             width={1100}
-            height={733}
+            height={1100}
             fetchPriority="high"
-            className="mt-6 -mx-5 w-[calc(100%+2.5rem)] max-w-none aspect-[3/2] object-cover sm:mx-0 sm:w-full sm:rounded-xl"
+            style={{ aspectRatio: variant.heroAspect ?? '1 / 1' }}
+            className="mt-6 -mx-5 w-[calc(100%+2.5rem)] max-w-none bg-brand-graphite object-cover object-top sm:mx-0 sm:w-full sm:rounded-xl"
           />
 
           {/* Bloque 3 */}

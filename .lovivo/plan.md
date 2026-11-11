@@ -17,7 +17,7 @@
 - **Política oficial (2026-09-28)**: 30 días · devolución normal = cliente paga regreso · defectuoso = RODATA cubre · 1er cambio de talla SIN COSTO ·
   reembolso máx 10 días hábiles · envío estándar gratis en MX · preparación 24–48 h.
 - WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
-- **Cliente (2026-11-11)**: nombres de países lejanos (Katmandú, Nigeria…) se sienten ajenos a su público → hablar de QUIÉN se estudió (repartidores, mototaxistas, estudiantes), no de DÓNDE.
+- **Cliente (2026-11-11)**: nombres de países lejanos se sienten ajenos → hablar de QUIÉN se estudió, no de DÓNDE. Anuncios Meta numerados CR-MX-125…138.
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
@@ -28,8 +28,9 @@
 - **PDP regalo = MISMA `ProductPageUI` con prop `giftOffer`**. Bloques en `src/components/gift/GiftPDPBlocks.tsx`. NO volver a forkear.
 - **Advertorial** `/lectura/espalda-baja-moto`: página standalone SIN EcommerceTemplate, columna 680px, texto 18px, noindex.
   Contenido/variantes/fuentes/FAQ/microcopy en `src/data/advertorialEspalda.ts`; medición en `src/hooks/useAdvertorialTracking.ts`; SVG en `src/components/advertorial/`.
-  `?v=a1|a2|a3` cambia titular + imagen. SIN precio (vive en PDP). CTAs → PDP conservando UTMs + `utm_term=adv_<v>_<cta>`.
-  **Reglas advertorial**: CERO links salientes en el cuerpo (fuentes solo al pie, plegadas, nofollow). Reseñas sin palabras de salud ("alivio", "dolor se quitó"). Sin etiqueta "Contenido de Rodata" (logo + firma ya transparentan). Rating/conteo desde `REVIEW_STATS`.
+  **`?v=125…138`** cambia titular + bajada (`dek`, opcional) + imagen (1:1 por defecto; `heroAspect` para recortar, ej. 133 solo foto superior). Sin v / desconocido → `default` (= 128). Claves viejas a1/a2/a3 = alias de 128/134/131.
+  SIN precio (vive en PDP). CTAs → PDP conservando UTMs + `utm_term=adv_<v>_<cta>`.
+  **Reglas advertorial**: CERO links salientes en el cuerpo (fuentes solo al pie, plegadas, nofollow). Reseñas sin palabras de salud. Sin etiqueta "Contenido de Rodata". Rating/conteo desde `REVIEW_STATS`. **Solo datos verificados** (estudio estudiantes: edad promedio 22, NO "mayoría 20–30 años").
 - **Pixel**: `facebook-pixel.ts` manda eventos NO estándar con `trackCustom` automáticamente (2026-11-11).
 - **Regla del cliente**: en `/repartidores` SOLO fotos reales. Errores de pago: nunca culpar al cliente. Precios: NUNCA hardcodear.
 - **Precio distinto por URL = PRODUCTO DUPLICADO en la BD**. Duplicados llevan tag `no-listar` + redirect de su slug.
@@ -42,10 +43,12 @@
 
 ## Active Plan
 
-### 📰 Advertorial v2 (CONSTRUIDO 2026-11-11)
-- Hecho: estudios sin países (4–6 de cada 10 + estudio de estudiantes de 22 años promedio, 53%, asociado a tiempo diario en moto — verificado JDUHS) · Bangladesh y claim "20–30 años" quitados · pie con aviso de 1 línea + `<details>` "Ver estudios citados (4)" · etiqueta del header quitada · reseñas Ricardo L./Roberto G./Fernando L. + línea ★ rating · tira "Fotos reales de clientes" (PHOTO_REVIEWS) · FAQ 4 preguntas (`advertorial_faq_open`) · cierre "Kilómetro 150… que sea por gasolina" · CTAs "Ver Rodata One y elegir mi talla" / "Elegir mi talla" + microcopy · sticky con ★ · H2 "Rodata One: el respaldo que la moto no trae" · "faja de farmacia o de gimnasio" · ilustración más grande + pie de figura legible · Pixel trackCustom.
-- **Pendiente cliente**: (1) ¿la imagen subida `.../message-images/.../1793048789975-rz7gqvm3qi.webp` es el anuncio de la gasolinera? → si sí, `heroImage` de `a1`. (2) Imagen del anuncio 5 (silueta) → `ADV_MECHANISM_IMAGE`. (3) ¿Historia real del fundador?
-- **Medición**: leer ~2026-11-25 (ver cro-log).
+### 📰 Advertorial v2 + variantes por anuncio (CONSTRUIDO 2026-11-11)
+- Hecho v2: estudios sin países, fuentes plegadas, reseñas + rating + fotos UGC, FAQ, cierre Km 150, CTAs con microcopy, Pixel trackCustom.
+- Hecho variantes: 14 anuncios `?v=125…138` + default con titular/bajada/imagen según tabla del cliente. 135–138 (tarjetas negras) usan foto eco: 135→128, 136→127, 137→129, 138→132.
+- **Cambio vs tabla del cliente**: bajada 138 → "edad promedio era de 22 años" (la tabla decía "mayoría entre 20 y 30", no verificado). Avisado.
+- **Pendiente cliente**: (1) Imagen silueta → `ADV_MECHANISM_IMAGE`. (2) ¿Historia real del fundador?
+- **Medición**: leer ~2026-11-25 por variante (ver cro-log).
 - **NO hacer**: autor/médico inventado, logos de medios, "como se vio en", fecha falsa, contador de urgencia, precio en la página, reseñas editadas.
 
 ### 💰 URL regalo a $899 (CONSTRUIDO 2026-10-26 — falta Dashboard + QA)
@@ -55,6 +58,7 @@
 ### 🏠 Formulario dirección MX (PLANEADO — esperando OK). PDP Muñequeras / Merchant Center — pendiente cliente.
 
 ## Recent Changes
+- **📰 Advertorial: variantes `?v=125…138` con titular, bajada e imagen por anuncio; hero 1:1; 133 recortada a la foto (2026-11-11)**.
 - **📰 Advertorial v2: sin países, fuentes plegadas, reseñas + rating + fotos UGC, FAQ, cierre Km 150, CTAs con microcopy, Pixel trackCustom (2026-11-11)**.
 - **📋 Plan Advertorial v2 (2026-11-11)**.
 - **📰 Advertorial `/lectura/espalda-baja-moto` con variantes ?v=, 3 CTAs + barra fija, scroll/CTA tracking (2026-11-11)**.
@@ -69,20 +73,19 @@
 - **⭐ PDP Paso 2: reseñas reales con foto (2026-10-10)**.
 - **📱 PDP móvil Paso 1 (2026-10-10)**.
 - **🔍 Auditoría CRO PDP móvil (2026-10-10)**.
-- **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
+- **Anuncios advertorial CR-MX (1:1)** `SB_MSG/`: 125 `1794420461297-6t16v1adhd6` · 126 `1794420461298-pa4gy6tk98` · 127 `…-gozxkcg96dj` · 128 `…-qk0u2y7eswn` (gasolinera, default) · 129 `…-45v9h42v3jd` · 130 `…-b5u75g7jkme` · 131 `…-9xzxueaao8t` · 132 `…-lwezis2obqk` · 133 `…-21cj3hu2vgf` (trae franja de texto abajo; se recorta con CSS) · 134 `…-q3xeo7zz6t`. Todas `.webp`.
 - **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = Alan M. (SOLO reseñas/tira UGC), `u068d1b4pr.webp` = Pablo B., `c3mx3z3w5kt.webp` = Esteban V.
 - **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = Leonel B. (advertorial bloque 7), `8818z991fgk.webp` = Emilio Z.
 - **UGC REAL (feature 02)** `SB_MSG/1791664562254-pgzyfsa1vdo.webp` = desierto → `FEAT_IMG_2`.
 - `FEAT_IMG_1` `SB_MSG/1775777133671-80hvv9dmxa.webp` = estudio, espalda con faja (no es UGC).
 - Catálogo lumbar: `product-images/products/` `zcop2dp0bh` (hero), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`.
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`. Muñequeras (reales) `SB_MSG/1790638502334-*`.
-- PDP carretera: `/pdp-lifestyle-1.jpg` · `SB_MSG/1775768374485-uca4dkx21g.webp` (hero por defecto del advertorial). Home HERO `SB_MSG/1775772513540-16g7elmcuii.webp`.
+- PDP carretera: `/pdp-lifestyle-1.jpg` · `SB_MSG/1775768374485-uca4dkx21g.webp` (ya no se usa en advertorial). Home HERO `SB_MSG/1775772513540-16g7elmcuii.webp`.
 - Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
-- **Por confirmar con cliente**: `SB_MSG/1793048789975-rz7gqvm3qi.webp` (¿anuncio gasolinera? → hero `a1`).
 
 ## Known Issues
 - **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED — se usó SVG en advertorial.
@@ -94,7 +97,7 @@
 - Checkout: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400. "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Código `DEDE` 98%. `useURLCartLoader` roto.
 
 ## Pending / Future Sessions
-- **[ALTA]** Advertorial: imágenes de anuncios por variante (hero a1, silueta) + QA móvil + embudo PostHog ~2026-11-25.
+- **[ALTA]** Advertorial: QA móvil de las 14 variantes + embudo PostHog por variante ~2026-11-25. Imagen silueta (`ADV_MECHANISM_IMAGE`).
 - **[MEDIA]** Advertorial: variante repartidores (`?v=r1`, titular turno 8 h, hero foto real repartidor). ¿Historia real del fundador? (preguntar; NO inventar).
 - **[ALTA]** QA compra de prueba URL $899 + compare_at en Dashboard.
 - **[ALTA]** QA links de pago con descuento manual. **[ALTA]** Medir PDP móvil + encuesta PostHog.

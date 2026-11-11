@@ -9,37 +9,105 @@ export const ADV_PRODUCT_ID = '400026a2-c277-407c-abbb-d1683f415120'
 
 const SB_MSG = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
 
-/** Foto de carretera real usada por defecto hasta tener las imágenes de cada anuncio */
-const HIGHWAY_IMG = `${SB_MSG}/1775768374485-uca4dkx21g.webp`
+/** Imágenes de los anuncios CR-MX-125 … 134 (1:1, subidas por el cliente 2026-11-11) */
+const AD_IMG = {
+  125: `${SB_MSG}/1794420461297-6t16v1adhd6.webp`,
+  126: `${SB_MSG}/1794420461298-pa4gy6tk98.webp`,
+  127: `${SB_MSG}/1794420461298-gozxkcg96dj.webp`,
+  128: `${SB_MSG}/1794420461298-qk0u2y7eswn.webp`,
+  129: `${SB_MSG}/1794420461298-45v9h42v3jd.webp`,
+  130: `${SB_MSG}/1794420461298-b5u75g7jkme.webp`,
+  131: `${SB_MSG}/1794420461298-9xzxueaao8t.webp`,
+  132: `${SB_MSG}/1794420461298-lwezis2obqk.webp`,
+  133: `${SB_MSG}/1794420461298-21cj3hu2vgf.webp`,
+  134: `${SB_MSG}/1794420461298-q3xeo7zz6t.webp`,
+} as const
+
+const ALT = {
+  125: 'Motociclista acostado en el piso junto a su moto después de la rodada',
+  126: 'Motociclista acostado a un lado de la carretera junto a su moto',
+  127: 'Asiento de coche con respaldo comparado con asiento de moto sin respaldo',
+  128: 'Motociclista con las manos en la cintura junto a su moto en la gasolinera',
+  129: 'Nota de rodada: 2 paradas por gasolina, 4 por la espalda',
+  130: 'Lista de equipo para la rodada con la espalda baja sin palomear',
+  131: 'Moto con flechas: asiento, parabrisas y suspensión, y nada para la espalda',
+  132: 'Rayos X de un motociclista con la zona lumbar marcada',
+  133: 'Moto estacionada en carretera al atardecer',
+  134: 'Tablero de moto marcando 150 km con medio tanque frente a una gasolinera',
+} as const
 
 export interface AdvVariant {
   headline: string
+  /** Bajada; si falta se usa ADV_DEFAULT_DEK */
+  dek?: string
   heroImage: string
   heroAlt: string
+  /** Proporción visible de la imagen (CSS aspect-ratio). Por defecto 1 / 1 */
+  heroAspect?: string
 }
 
+export const ADV_DEFAULT_DEK =
+  'La moto trae suspensión, asiento y parabrisas. Lo único que no trae es algo que sostenga al piloto durante horas.'
+
+const H_4DE10 = 'Por qué a 4 de cada 10 motociclistas les duele la espalda baja (y no es cosa de la edad)'
+
+const hero = (n: keyof typeof AD_IMG) => ({ heroImage: AD_IMG[n], heroAlt: ALT[n] })
+
 /**
- * Titular + imagen por anuncio → `?v=<clave>`.
- * Para conectar un anuncio nuevo: agrega una clave y su imagen (WebP).
+ * Titular + bajada + imagen por anuncio → `?v=<número de anuncio>`.
+ * Sin parámetro o con uno desconocido → `default`.
  */
 export const ADV_VARIANTS: Record<string, AdvVariant> = {
-  a1: {
-    headline: 'Por qué a 4 de cada 10 motociclistas les duele la espalda baja (y no es cosa de la edad)',
-    heroImage: HIGHWAY_IMG,
-    heroAlt: 'Motociclista en carretera',
+  default: { headline: H_4DE10, ...hero(128) },
+  '125': {
+    headline: 'Por qué la espalda baja lo resiente después de la rodada del fin (y no es la edad)',
+    dek: 'La rodada estuvo increíble. Lo que la espalda opina distinto tiene que ver con algo que la moto no trae.',
+    ...hero(125),
   },
-  a2: {
-    headline: 'La moto aguanta 500 km. La espalda del piloto, 150. La razón no es la edad.',
-    heroImage: HIGHWAY_IMG,
-    heroAlt: 'Motociclista en carretera',
+  '126': { headline: 'Lo que no te cuentan de los viajes en moto: la espalda pide parada antes que el tanque', ...hero(126) },
+  '127': { headline: 'En el coche hay respaldo. En la moto, nada. Por eso la espalda pide parada antes que el tanque', ...hero(127) },
+  '128': { headline: H_4DE10, ...hero(128) },
+  '129': { headline: '2 paradas por gasolina, 4 por la espalda: por qué pasa (y no es la edad)', ...hero(129) },
+  '130': { headline: 'Casco, chamarra, guantes, botas… ¿y la espalda baja? Lo que le falta al equipo del motociclista', ...hero(130) },
+  '131': { headline: 'Lo que la moto no trae: por qué la espalda pide parada antes que el tanque', ...hero(131) },
+  '132': { headline: 'No es la edad. Es algo que la moto no trae.', ...hero(132) },
+  // 133: solo la foto de arriba, sin la franja de texto del anuncio (la foto ocupa ~58% superior)
+  '133': {
+    headline: 'Por qué la espalda baja se resiente después de una rodada (y no siempre es por la edad)',
+    ...hero(133),
+    heroAspect: '1254 / 728',
   },
-  a3: {
-    headline: 'Lo que la moto no trae: por qué la espalda pide parada antes que el tanque',
-    heroImage: HIGHWAY_IMG,
-    heroAlt: 'Motociclista en carretera',
+  '134': { headline: 'La moto aguanta 500 km. La espalda del piloto, 150. La razón no es la edad.', ...hero(134) },
+  // Tarjetas negras: su imagen es la foto que les hace eco
+  '135': {
+    headline: 'Por qué tantos motociclistas se bajan de la moto con las manos en la cintura (y no es la edad)',
+    dek: 'Bajarse de la moto con las manos en la cintura no es por la edad. Es que la moto no trae respaldo.',
+    ...hero(128),
+  },
+  '136': {
+    headline: 'La faja de gimnasio no está hecha para la moto. Esto es lo que sí le falta a la espalda',
+    dek: 'La faja de gimnasio está hecha para cargar peso de pie, unos segundos. No para horas sentado en la moto.',
+    ...hero(127),
+  },
+  '137': {
+    headline: 'Cuenta las paradas: cuando la espalda pide parada antes que el tanque',
+    dek: 'Si son más que las que pidió el tanque, no es la moto: es la espalda.',
+    ...hero(129),
+  },
+  '138': {
+    headline: H_4DE10,
+    // Dato verificado (JDUHS): edad promedio 21.9 años, asociado al tiempo diario en moto.
+    // NO usar "la mayoría tenía entre 20 y 30 años" — no está verificado.
+    dek: 'En el estudio, la edad promedio era de 22 años. Lo que pesó fueron las horas arriba de la moto.',
+    ...hero(132),
   },
 }
-export const ADV_DEFAULT_VARIANT = 'a1'
+// Claves antiguas (por si algún anuncio ya salió con ellas)
+ADV_VARIANTS.a1 = ADV_VARIANTS['128']
+ADV_VARIANTS.a2 = ADV_VARIANTS['134']
+ADV_VARIANTS.a3 = ADV_VARIANTS['131']
+
+export const ADV_DEFAULT_VARIANT = 'default'
 
 /** Imagen del anuncio 5 (silueta). Si queda vacía se usa la ilustración vectorial. */
 export const ADV_MECHANISM_IMAGE = ''
