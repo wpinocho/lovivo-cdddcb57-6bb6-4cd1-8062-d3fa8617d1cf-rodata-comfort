@@ -48,7 +48,32 @@ export const ADV_MECHANISM_IMAGE = ''
 export const ADV_PRODUCT_PHOTO = `${SB_MSG}/1791663680441-cr0tattp1ss.webp`
 
 /** Reseñas reales a mostrar (nombre exacto en rodataReviews.ts) */
-export const ADV_REVIEW_NAMES = ['Esteban V.', 'Ricardo L.', 'Humberto J.']
+// Ricardo L. = eco de la escena de la parada · Roberto G. = honesto ("no hace milagros") · Fernando L. = repartidor.
+// Evitar reseñas con palabras de salud ("alivio", "dolor") por políticas de Meta.
+export const ADV_REVIEW_NAMES = ['Ricardo L.', 'Roberto G.', 'Fernando L.']
+
+/** Preguntas frecuentes del advertorial (tono rider, honesto — basadas en dudas/quejas reales de reseñas) */
+export const ADV_FAQ: { q: string; a: string }[] = [
+  {
+    q: '¿Da calor?',
+    a: 'Es de malla transpirable. En carretera casi no se siente; a mediodía en ciudad sí se nota como una capa más. Así lo dicen algunos clientes.',
+  },
+  {
+    q: '¿Qué talla pido?',
+    a: 'Se elige por la medida de tu cintura; la guía está en la página del producto. Si no te queda, el primer cambio de talla es gratis.',
+  },
+  {
+    q: '¿Se nota debajo de la chamarra?',
+    a: 'Es delgada y va pegada al cuerpo. La mayoría dice que a los pocos minutos ni se acuerda de que la trae.',
+  },
+  {
+    q: '¿Cuánto tarda en llegar?',
+    a: 'Preparamos tu pedido en 24 a 48 horas y el envío es gratis a todo México.',
+  },
+]
+
+/** Microcopy de confianza debajo de los botones */
+export const ADV_TRUST_LINE = 'Envío gratis · 30 días para devolver · 1er cambio de talla gratis'
 
 /** Cifra de pedidos — dato del dueño (2026-11-11) */
 export const ADV_ORDERS_CLAIM = 'más de 1,000 pedidos'
@@ -71,15 +96,13 @@ export const ADV_SOURCES: AdvSource[] = [
     url: 'https://www.sciencepublishinggroup.com/article/10.11648/j.sjph.20170503.15',
   },
   {
-    id: 'bangladesh',
-    label: 'Ali et al. (2024). Exploring the impact of occupational factors on low back pain among ride-sharing motorbike drivers in Bangladesh. Preventive Medicine Reports.',
-    url: 'https://www.sciencedirect.com/science/article/pii/S2211335524002031',
-  },
-  {
     id: 'tailandia',
     label: 'Jongprasitkul et al. (2016). Prevalence and associated factors of low back pain among motorcycle taxi drivers in Sriracha. Chulalongkorn Medical Journal.',
     url: 'https://digital.car.chula.ac.th/clmjournal/vol60/iss1/3',
   },
+  {
+    id: 'estudiantes',
+    label: 'Low back pain among student motorcyclists: a cross-sectional study. Journal of the Dow University of Health Sciences. (180 participantes, edad promedio 21.9 años, 53% con dolor lumbar; asociado al tiempo diario en moto.)',
+    url: 'https://www.jduhs.com/index.php/jduhs/article/view/786',
+  },
 ]
-
-export const advSource = (id: string) => ADV_SOURCES.find((s) => s.id === id)?.url ?? '#fuentes'

@@ -17,7 +17,7 @@
 - **Política oficial (2026-09-28)**: 30 días · devolución normal = cliente paga regreso · defectuoso = RODATA cubre · 1er cambio de talla SIN COSTO ·
   reembolso máx 10 días hábiles · envío estándar gratis en MX · preparación 24–48 h.
 - WhatsApp: +52 55 3121 5386. **No existe razón social/RFC/dirección/email públicos — NO inventarlos.**
-- **Cliente (2026-11-11)**: nombres de países lejanos (Katmandú, Nigeria…) se sienten ajenos a su público → hablar de QUIÉN se estudió (repartidores, mototaxistas), no de DÓNDE.
+- **Cliente (2026-11-11)**: nombres de países lejanos (Katmandú, Nigeria…) se sienten ajenos a su público → hablar de QUIÉN se estudió (repartidores, mototaxistas, estudiantes), no de DÓNDE.
 
 ## Design System
 - Dark theme: `brand-carbon` #111315, `brand-graphite` #1D2125, `brand-steel` #5E6670, `brand-smoke` #C7CDD3, `brand-offwhite` #F5F7F8
@@ -26,65 +26,27 @@
 - Imágenes Supabase: `render/image/public` + `?width=xxx&quality=75`
 - **Landings/PDP dedicadas**: forkear `ProductPageUI`/`DeliveryPDPUI` + ruta estática antes de `/productos/:slug`.
 - **PDP regalo = MISMA `ProductPageUI` con prop `giftOffer`**. Bloques en `src/components/gift/GiftPDPBlocks.tsx`. NO volver a forkear.
-- **Advertorial** `/lectura/espalda-baja-moto` (2026-11-11): página standalone SIN EcommerceTemplate (sin menú/carrito), columna 680px, texto 18px, noindex.
-  Contenido/variantes/fuentes en `src/data/advertorialEspalda.ts`; medición en `src/hooks/useAdvertorialTracking.ts`; SVG en `src/components/advertorial/`.
-  `?v=a1|a2|a3` cambia titular + imagen. SIN precio (vive en PDP). CTAs → PDP conservando UTMs del anuncio + `utm_term=adv_<v>_<cta>`.
-  **Regla advertorial**: CERO links salientes dentro del cuerpo (las fuentes solo al pie, plegadas). Reseñas sin palabras de salud ("alivio", "dolor se quitó").
+- **Advertorial** `/lectura/espalda-baja-moto`: página standalone SIN EcommerceTemplate, columna 680px, texto 18px, noindex.
+  Contenido/variantes/fuentes/FAQ/microcopy en `src/data/advertorialEspalda.ts`; medición en `src/hooks/useAdvertorialTracking.ts`; SVG en `src/components/advertorial/`.
+  `?v=a1|a2|a3` cambia titular + imagen. SIN precio (vive en PDP). CTAs → PDP conservando UTMs + `utm_term=adv_<v>_<cta>`.
+  **Reglas advertorial**: CERO links salientes en el cuerpo (fuentes solo al pie, plegadas, nofollow). Reseñas sin palabras de salud ("alivio", "dolor se quitó"). Sin etiqueta "Contenido de Rodata" (logo + firma ya transparentan). Rating/conteo desde `REVIEW_STATS`.
+- **Pixel**: `facebook-pixel.ts` manda eventos NO estándar con `trackCustom` automáticamente (2026-11-11).
 - **Regla del cliente**: en `/repartidores` SOLO fotos reales. Errores de pago: nunca culpar al cliente. Precios: NUNCA hardcodear.
 - **Precio distinto por URL = PRODUCTO DUPLICADO en la BD**. Duplicados llevan tag `no-listar` + redirect de su slug.
 - `isListableProduct()` en `src/lib/gift-offer.ts` filtra `no-listar`. `HeadlessIndex` es FORBIDDEN.
 - Copy devolución: "30 días para devolver", NO "garantía"/"prueba". Sin claims médicos. Un solo ancla de precio. **NO "Oferta de Lanzamiento"**.
 - **Urgencia: SOLO real**. **Vibración**: "para que la vibración del manubrio te canse menos". PROHIBIDO "elimina...".
 - Tracking: event_id ÚNICO POR OCURRENCIA; stableId SOLO con order_id.
-- **Reseñas: fuente única `src/data/rodataReviews.ts`**. Rating/conteo NUNCA hardcodeados. Advertorial toma reseñas por nombre.
+- **Reseñas: fuente única `src/data/rodataReviews.ts`**. Rating/conteo NUNCA hardcodeados (`REVIEW_STATS`). Advertorial toma reseñas por nombre.
 - **Galería PDP: SOLO fotos de catálogo**. **CHECKOUT**: con pedido, totales = valores del pedido (`src/lib/order-totals.ts`).
 
 ## Active Plan
 
-### 📰 Advertorial v2 — revisión CRO + copy (PLANEADO 2026-11-11, esperando OK del cliente)
-Archivos: `src/pages/AdvertorialEspalda.tsx`, `src/data/advertorialEspalda.ts`, `src/hooks/useAdvertorialTracking.ts`,
-`src/lib/facebook-pixel.ts` (o `tracking-utils.ts`), `src/components/advertorial/LumbarMechanismIllustration.tsx`.
-
-**PRIORIDAD ALTA**
-1. **Bloque 4 sin países + sin links en cifras** (los `<Cite>` mandan a ResearchGate = fuga de tráfico pagado). Reemplazar párrafo por:
-   - "Investigadores en varios países han estudiado a gente que pasa horas diarias arriba de la moto: repartidores, mototaxistas, gente que va y viene del trabajo. En tres estudios distintos, **entre 4 y 6 de cada 10** tenían dolor de espalda baja."
-   - "Y lo que más pesó no fue la edad. Fueron **las horas arriba de la moto y los kilómetros** recorridos." ← VERIFICAR en el estudio de Katmandú (Gautam 2023) que los factores asociados fueron horas/distancia; si no se confirma: "En esos estudios había de todo: también muchachos de veintitantos."
-   - Quitar "más de la mitad tenía entre 20 y 30 años" salvo que se confirme en la fuente. H2 si no se confirma la edad: "Les pasa a 4 de cada 10. Y no es la edad."
-   - Fuentes que se quedan (verificadas): Katmandú 43.8%, Nigeria ~41%, Tailandia 58.3%. **Quitar Bangladesh** (no verificado). Eliminar componente `Cite` y `advSource`.
-2. **Pie de página**: dejar 1 línea chica "Información general; no sustituye la valoración de un profesional de la salud." + `<details>` "Ver estudios citados (3)" plegado con las fuentes. Links del pie con `rel="nofollow noopener"`.
-   **Encabezado**: quitar etiqueta "Contenido de Rodata" (el logo RODATA + "Por el equipo de Rodata" ya transparentan quién publica).
-3. **Reseñas** (`ADV_REVIEW_NAMES`) → `['Ricardo L.', 'Roberto G.', 'Fernando L.']`.
-   - Ricardo L. = eco exacto de la escena de la parada ("paramos a desayunar… sin la cintura tiesa"). Roberto G. = "No hace milagros, pero sí me ayudó bastante" (honestidad = credibilidad). Fernando L. = repartidor 7–8 h (cubre avatar 2).
-   - Quitar Humberto J. (dice "alivio" → claim de salud en voz de cliente, riesgo con Meta) y Esteban V. (muy largo + "problemas de espalda desde hace 20 años").
-   - Encima de las reseñas: línea dinámica "★ {rating} de 5 · {count} reseñas reales" calculada desde `rodataReviews.ts` (NUNCA hardcodear).
-   - Debajo: tira horizontal "Fotos reales de clientes" con `PHOTO_REVIEWS` (Pablo B., Alan M., Leonel B., Emilio Z., Esteban V.) — miniaturas 4:5, lazy, sin links.
-   - H2 bloque 8: "Más de 1,000 pedidos después" → "Lo que dicen quienes ya la usan" (y la cifra de pedidos queda en el párrafo).
-4. **Nuevo bloque "Lo que más preguntan"** (entre reseñas y cierre), 4 acordeones cortos, tono rider, honesto:
-   - ¿Da calor? → "Es de malla transpirable. En carretera casi no se siente; a mediodía en ciudad sí se nota como una capa más (así lo dicen algunos clientes)."
-   - ¿Qué talla pido? → "Se elige por la medida de cintura; la guía está en la página del producto. Si no te queda, el primer cambio de talla es gratis."
-   - ¿Se nota debajo de la chamarra? → "Es delgada y va pegada al cuerpo; la mayoría dice que a los minutos ni se acuerda que la trae."
-   - ¿Cuánto tarda en llegar? → "Preparamos tu pedido en 24–48 h y el envío es gratis a todo México." (NO prometer días de entrega sin dato del cliente.)
-   - PostHog `advertorial_faq_open` {q}.
-5. **Cierre con "regreso a la escena"** (future pacing) antes del texto de devolución:
-   "Kilómetro 150. Medio tanque, carretera libre. Esta vez, si el grupo para en la gasolinera, que sea por gasolina."
-6. **CTAs**: CTA2 "Conoce Rodata One" → "Ver Rodata One y elegir mi talla". CTA3 "Ver tallas y disponibilidad" → "Elegir mi talla". Debajo de CTA2 y CTA3 microcopy 13px:
-   "Envío gratis · 30 días para devolver · 1er cambio de talla gratis". Sticky: agregar "★ {rating} · {count} reseñas" en la 2ª línea (en lugar de "Soporte lumbar para moto · Tallas S a XL").
-7. **Fix Pixel**: consola avisa "non-standard event AdvertorialCTAClick… use trackCustom". En `facebook-pixel.ts`, enrutar eventos que NO son estándar de Meta a `fbq('trackCustom', …)` (lista de estándar: PageView, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Purchase, Lead, CompleteRegistration, Search, Contact, Subscribe…). Mantener eventID. Verificar que no rompa otros eventos custom existentes (buscar usos de `trackCustomEvent`).
-
-**PRIORIDAD MEDIA**
-8. H2 bloque 7 → **"Rodata One: el respaldo que la moto no trae"** (cierra la gran idea del artículo). Primer párrafo: "Si el problema es que la moto no trae respaldo para la espalda baja, la solución es llevarlo puesto. Eso es Rodata One: …"
-9. Bloque 6: "La faja de gimnasio" → "La faja de farmacia o de gimnasio" (las de farmacia son la referencia real del cliente MX; Jorge R. la menciona).
-10. Ilustración del mecanismo: el SVG se ve chico/pobre en móvil. Si el cliente manda la imagen del anuncio 5 → `ADV_MECHANISM_IMAGE`. Si no, agrandar el SVG (ancho completo, etiquetas 14px+, flecha "aquí trabaja el músculo, sin apoyo").
-11. Message match hero: revisar `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1793048789975-rz7gqvm3qi.webp` (subida por el cliente). Si es la imagen del anuncio de la gasolinera → `lov-copy` a public + convertir/servir WebP → `heroImage` de `a1`. Confirmar con el cliente antes.
-
-**NO hacer**: autor/médico inventado, logos de medios, "como se vio en", fecha falsa, contador de urgencia, precio en la página, reseñas editadas.
-
-**Medición posterior**: comparar 2 semanas: % que llega a 50/75%, clic CTA/visita, compra desde `utm_campaign`/`utm_term adv_*` vs tráfico directo a PDP. Registrar en cro-log.
-
-### 📰 Advertorial v1 (CONSTRUIDO 2026-11-11)
-- URL: `/lectura/espalda-baja-moto` (+ `?v=a2` / `?v=a3`). Eventos: Pixel `ViewContent` + `AdvertorialCTAClick` {cta, variant}; PostHog `advertorial_view`, `advertorial_scroll`, `AdvertorialCTAClick`.
-- CTAs: `cta1_mecanismo`, `cta2_producto`, `cta3_cierre`, `sticky` (desde 40% scroll).
-- **Pendiente cliente**: imágenes de cada anuncio (gasolinera a1, silueta anuncio 5).
+### 📰 Advertorial v2 (CONSTRUIDO 2026-11-11)
+- Hecho: estudios sin países (4–6 de cada 10 + estudio de estudiantes de 22 años promedio, 53%, asociado a tiempo diario en moto — verificado JDUHS) · Bangladesh y claim "20–30 años" quitados · pie con aviso de 1 línea + `<details>` "Ver estudios citados (4)" · etiqueta del header quitada · reseñas Ricardo L./Roberto G./Fernando L. + línea ★ rating · tira "Fotos reales de clientes" (PHOTO_REVIEWS) · FAQ 4 preguntas (`advertorial_faq_open`) · cierre "Kilómetro 150… que sea por gasolina" · CTAs "Ver Rodata One y elegir mi talla" / "Elegir mi talla" + microcopy · sticky con ★ · H2 "Rodata One: el respaldo que la moto no trae" · "faja de farmacia o de gimnasio" · ilustración más grande + pie de figura legible · Pixel trackCustom.
+- **Pendiente cliente**: (1) ¿la imagen subida `.../message-images/.../1793048789975-rz7gqvm3qi.webp` es el anuncio de la gasolinera? → si sí, `heroImage` de `a1`. (2) Imagen del anuncio 5 (silueta) → `ADV_MECHANISM_IMAGE`. (3) ¿Historia real del fundador?
+- **Medición**: leer ~2026-11-25 (ver cro-log).
+- **NO hacer**: autor/médico inventado, logos de medios, "como se vio en", fecha falsa, contador de urgencia, precio en la página, reseñas editadas.
 
 ### 💰 URL regalo a $899 (CONSTRUIDO 2026-10-26 — falta Dashboard + QA)
 - Fecha fin regalo: 2026-10-31 23:59 CDMX → redirige a PDP $799. **Pendiente**: compare_at/cost en Dashboard, compra de prueba.
@@ -93,7 +55,8 @@ Archivos: `src/pages/AdvertorialEspalda.tsx`, `src/data/advertorialEspalda.ts`, 
 ### 🏠 Formulario dirección MX (PLANEADO — esperando OK). PDP Muñequeras / Merchant Center — pendiente cliente.
 
 ## Recent Changes
-- **📋 Plan Advertorial v2: sin países, fuentes plegadas, reseñas eco de la escena, FAQ, cierre future pacing, fix trackCustom (2026-11-11)**.
+- **📰 Advertorial v2: sin países, fuentes plegadas, reseñas + rating + fotos UGC, FAQ, cierre Km 150, CTAs con microcopy, Pixel trackCustom (2026-11-11)**.
+- **📋 Plan Advertorial v2 (2026-11-11)**.
 - **📰 Advertorial `/lectura/espalda-baja-moto` con variantes ?v=, 3 CTAs + barra fija, scroll/CTA tracking (2026-11-11)**.
 - **🔁 URL regalo unificada: usa la PDP normal + bloques de regalo; GiftPDPUI borrado (2026-10-26)**.
 - **💰 URL regalo vende duplicado Rodata One $899 + regalo; resto $799 (2026-10-26)**.
@@ -107,34 +70,32 @@ Archivos: `src/pages/AdvertorialEspalda.tsx`, `src/data/advertorialEspalda.ts`, 
 - **📱 PDP móvil Paso 1 (2026-10-10)**.
 - **🔍 Auditoría CRO PDP móvil (2026-10-10)**.
 - **🐛 Fix: regalo se agregaba desde la PDP normal (2026-10-07)**.
-- **✅ Exp pack cerrado + regalo extendido al 31 oct (2026-10-07)**.
 
 ## Image Inventory
 - `SB_PROD` = `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf`
 - `SB_MSG` = `.../render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1`
-- **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = Alan M. (SOLO reseñas), `u068d1b4pr.webp` = Pablo B., `c3mx3z3w5kt.webp` = Esteban V.
-- **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = Leonel B. (de espaldas, junto a moto roja — usada en advertorial bloque 7), `8818z991fgk.webp` = Emilio Z.
+- **UGC REALES** `SB_MSG/1791657732114-`: `ghaahb3lsec.webp` = Alan M. (SOLO reseñas/tira UGC), `u068d1b4pr.webp` = Pablo B., `c3mx3z3w5kt.webp` = Esteban V.
+- **UGC REALES** `SB_MSG/1791663680441-`: `cr0tattp1ss.webp` = Leonel B. (advertorial bloque 7), `8818z991fgk.webp` = Emilio Z.
 - **UGC REAL (feature 02)** `SB_MSG/1791664562254-pgzyfsa1vdo.webp` = desierto → `FEAT_IMG_2`.
 - `FEAT_IMG_1` `SB_MSG/1775777133671-80hvv9dmxa.webp` = estudio, espalda con faja (no es UGC).
 - Catálogo lumbar: `product-images/products/` `zcop2dp0bh` (hero), `j8kw94s83hn`, `pjleekrch4l`, `b5mg4lv2qbf`, `0evbcgfgplnh`.
 - **Kit regalo**: `SB_PROD/kit-rodata-one-munequeras.webp`. Muñequeras (reales) `SB_MSG/1790638502334-*`.
 - PDP carretera: `/pdp-lifestyle-1.jpg` · `SB_MSG/1775768374485-uca4dkx21g.webp` (hero por defecto del advertorial). Home HERO `SB_MSG/1775772513540-16g7elmcuii.webp`.
 - Repartidor real: `SB_MSG/1787249204164-*`, `1787251752010-*`. DEPRECADAS `SB_PROD/dlv-*.webp`.
-- **Por revisar**: `https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1793048789975-rz7gqvm3qi.webp` (subida por cliente, ¿anuncio gasolinera?).
+- **Por confirmar con cliente**: `SB_MSG/1793048789975-rz7gqvm3qi.webp` (¿anuncio gasolinera? → hero `a1`).
 
 ## Known Issues
-- **Pixel: eventos custom se mandan con `fbq('track')` en vez de `trackCustom` (2026-11-11)** — Meta lo marca como no estándar. Fix en plan v2 punto 7.
-- **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED — no se pudo generar ilustración; se usó SVG.
+- **imagegen sin créditos (2026-11-11)**: Gemini 402 RESOURCE_EXHAUSTED — se usó SVG en advertorial.
 - **`GiftPDPUI.tsx` aparece aún en el repo (2026-11-11)** aunque el plan dice borrado — revisar y borrar si no se usa.
 - **Duplicado $899 sin compare_at/cost/paquete** (2026-10-26). Cliente debe ponerlos en Dashboard.
 - Checkout links de pago (2026-10-12): sin QA con link real.
-- "4.9 · +800 riders" hardcodeado en `StripePayment.tsx`. Ahora dueño dice +1,000 pedidos → alinear.
-- Quejas en reseñas: entrega tardía, calor, ajuste (2026-10-10).
+- "4.9 · +800 riders" hardcodeado en `StripePayment.tsx`. Ahora dueño dice +1,000 pedidos → alinear con `REVIEW_STATS`.
+- Quejas en reseñas: entrega tardía, calor, ajuste (2026-10-10) — cubiertas en FAQ del advertorial.
 - Checkout: etiquetas Stripe confusas + sin Colonia. `clients-upsert` 400. "Garantía 30 días" en `StripePayment.tsx`/`DeliveryLandingUI.tsx`. Código `DEDE` 98%. `useURLCartLoader` roto.
 
 ## Pending / Future Sessions
-- **[ALTA]** Advertorial v2 (ver Active Plan) + imágenes de anuncios por variante + QA móvil + embudo PostHog tras 1–2 semanas.
-- **[MEDIA]** Advertorial: variante para repartidores (`?v=r1`, titular de turno de 8 h, hero foto real repartidor). ¿Historia real del fundador? (preguntar; NO inventar).
+- **[ALTA]** Advertorial: imágenes de anuncios por variante (hero a1, silueta) + QA móvil + embudo PostHog ~2026-11-25.
+- **[MEDIA]** Advertorial: variante repartidores (`?v=r1`, titular turno 8 h, hero foto real repartidor). ¿Historia real del fundador? (preguntar; NO inventar).
 - **[ALTA]** QA compra de prueba URL $899 + compare_at en Dashboard.
 - **[ALTA]** QA links de pago con descuento manual. **[ALTA]** Medir PDP móvil + encuesta PostHog.
 - **[ALTA]** Formulario dirección MX. **[ALTA]** Muñequeras precio final. **[ALTA]** Merchant Center. **[CRÍTICA]** decisión `DEDE`.

@@ -10,6 +10,13 @@ export interface FacebookPixelEvent {
   parameters?: Record<string, any>;
 }
 
+/** Eventos estándar de Meta. Cualquier otro se envía con `trackCustom`. */
+const STANDARD_EVENTS = new Set([
+  'PageView', 'ViewContent', 'AddToCart', 'AddToWishlist', 'InitiateCheckout', 'AddPaymentInfo',
+  'Purchase', 'Lead', 'CompleteRegistration', 'Search', 'Contact', 'Subscribe', 'StartTrial',
+  'CustomizeProduct', 'Donate', 'FindLocation', 'Schedule', 'SubmitApplication',
+]);
+
 class FacebookPixelService {
   private initialized = false;
   private pixelId: string | null = null;
@@ -72,10 +79,11 @@ class FacebookPixelService {
   track(event: string, parameters?: Record<string, any>, eventId?: string) {
     if (!this.initialized || typeof window === 'undefined' || !window.fbq) return;
     
+    const method = STANDARD_EVENTS.has(event) ? 'track' : 'trackCustom';
     if (eventId) {
-      window.fbq('track', event, parameters || {}, { eventID: eventId });
+      window.fbq(method, event, parameters || {}, { eventID: eventId });
     } else {
-      window.fbq('track', event, parameters || {});
+      window.fbq(method, event, parameters || {});
     }
   }
 

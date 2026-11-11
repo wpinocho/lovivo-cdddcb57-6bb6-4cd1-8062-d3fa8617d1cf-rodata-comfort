@@ -43,13 +43,13 @@ export const LumbarMechanismIllustration = () => (
     <path d="M152 124 L178 107" stroke="currentColor" strokeWidth="22" strokeLinecap="round" opacity="0.9" />
 
     {/* Anotación */}
-    <line x1="148" y1="100" x2="110" y2="68" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="110" cy="68" r="3" fill="currentColor" />
-    <text x="24" y="34" className="fill-brand-offwhite font-inter" fontSize="13" fontWeight="600">
+    <line x1="148" y1="100" x2="104" y2="70" stroke="currentColor" strokeWidth="2" />
+    <circle cx="104" cy="70" r="3.5" fill="currentColor" />
+    <text x="14" y="32" className="fill-brand-offwhite font-inter" fontSize="21" fontWeight="700">
       Zona lumbar
     </text>
-    <text x="24" y="50" className="fill-brand-smoke font-inter" fontSize="11">
-      sostiene el torso sin respaldo
+    <text x="14" y="54" className="fill-brand-smoke font-inter" fontSize="16">
+      trabaja sin respaldo
     </text>
   </svg>
 )

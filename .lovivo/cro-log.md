@@ -14,6 +14,11 @@
 - **Top sources**: direct 45%, meta ads 30%, organic 25%
 -->
 
+### 2026-11-11 — Advertorial v2 `/lectura/espalda-baja-moto` (cambios de copy/confianza, NO experimento)
+- Hipótesis: menos fugas (links a estudios fuera del cuerpo), más cercanía (sin países), más confianza junto al CTA (rating real, fotos UGC, FAQ calor/talla/envío, microcopy de política) → más clic a PDP y más compra por visita.
+- Cambios: estudios sin países + estudio de estudiantes de 22 años · fuentes plegadas al pie (nofollow) · sin etiqueta "Contenido de Rodata" · reseñas Ricardo L./Roberto G./Fernando L. + "★ rating · N reseñas" · tira de fotos reales · FAQ (`advertorial_faq_open`) · cierre "Kilómetro 150" · CTAs "Ver Rodata One y elegir mi talla"/"Elegir mi talla" + microcopy · sticky con estrellas · Pixel custom → `trackCustom`.
+- **Leer ~2026-11-25**: % scroll 50/75, `AdvertorialCTAClick`/visita por variante, compras con `utm_term adv_*`. Sin baseline previo limpio (v1 vivió <1 día).
+
 ### 2026-10-10 — Baseline PDP móvil antes de "Paso 1" (claridad/confianza, NO experimento)
 - 30d: Mobile 3,187 PDP → 229 ATC → 71 compras (**2.2%**) · Desktop 176 → 15 (8.5%)
 - Semana 28-sep: PDP 644 → ATC 60 (9.3%) → compra 24 (3.7%). 5–10 oct: 2.8%. Tráfico PDP ~300–650/sem (−75% vs agosto).
