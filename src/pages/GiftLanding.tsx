@@ -48,7 +48,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   const compareAt = logic.currentCompareAt || (originalCompareAt && originalCompareAt > logic.currentPrice ? originalCompareAt : undefined)
 
   useEffect(() => {
-    document.title = 'Buen Fin: Rodata One + Soporte de muñeca de regalo | RODATA'
+    document.title = 'Rodata One + Soporte de muñeca de regalo | RODATA'
     const robots = document.createElement('meta')
     robots.name = 'robots'
     robots.content = 'noindex, follow'
@@ -111,7 +111,7 @@ const GiftPDPWithGift = ({ logic }: { logic: ReturnType<typeof useProductLogic> 
   )
 }
 
-/** After the real end date the promo URL sends visitors (and ads) to the normal PDP. */
+/** While GIFT_OFFER_ENABLED is true the URL stays live; when switched off it sends visitors (and ads) to the normal PDP. */
 const GiftLanding = () => {
   if (!isGiftOfferActive()) return <Navigate to={`/productos/${ORIGINAL_PRODUCT_SLUG}`} replace />
   return (

@@ -1,7 +1,6 @@
-import { Check, Gift, ShoppingCart, Clock } from 'lucide-react'
+import { Check, Gift, ShoppingCart, PackageCheck } from 'lucide-react'
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription, DrawerClose } from '@/components/ui/drawer'
-import { GiftCountdown } from '@/components/GiftCountdown'
-import { GIFT_NAME, GIFT_PROMO_NAME, formatGiftEndDate } from '@/lib/gift-offer'
+import { GIFT_NAME, GIFT_URGENCY_LABEL } from '@/lib/gift-offer'
 
 const GIFT_PHOTO = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1790638502334-nwhrcsc3un.webp?width=800&quality=75'
 
@@ -23,8 +22,6 @@ interface GiftDetailsDrawerProps {
 
 /** Bottom sheet with the gift details (94% of traffic is mobile). */
 export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, onBuy, ctaLabel, ctaDisabled }: GiftDetailsDrawerProps) => {
-  const endDate = formatGiftEndDate(true)
-
   return (
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
       <DrawerContent className="max-h-[88vh] bg-brand-carbon border-white/[0.1] md:max-w-lg md:mx-auto">
@@ -36,7 +33,7 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
             </div>
           </div>
 
-          <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.16em] mt-5">Regalo de {GIFT_PROMO_NAME}</p>
+          <p className="text-brand-amber text-[10px] font-sora font-bold uppercase tracking-[0.16em] mt-5">Regalo · {GIFT_URGENCY_LABEL}</p>
           <DrawerTitle className="font-sora font-bold text-brand-offwhite text-xl leading-tight mt-1">
             {GIFT_NAME} (par)
           </DrawerTitle>
@@ -47,7 +44,7 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
           </div>
 
           <DrawerDescription className="text-brand-smoke text-sm font-inter leading-relaxed mt-4">
-            Es nuestro {GIFT_PROMO_NAME}: del 13 al 17 de noviembre, cada Rodata One lleva de regalo el par de soportes de muñeca.
+            Nos quedan pocas piezas. Mientras duren, cada Rodata One pedido desde esta página lleva de regalo el par de soportes de muñeca.
           </DrawerDescription>
           <p className="text-brand-steel text-sm font-inter leading-relaxed mt-2">
             El manubrio te pasa vibración todo el camino. A la hora, la muñeca ya se siente cansada — a veces hasta dormida.
@@ -66,14 +63,11 @@ export const GiftDetailsDrawer = ({ open, onOpenChange, giftValue, formatMoney, 
             ))}
           </div>
 
-          <div className="rounded-xl border border-brand-amber/40 bg-brand-amber/10 p-4 mt-5 space-y-3">
+          <div className="rounded-xl border border-brand-amber/40 bg-brand-amber/10 p-4 mt-5">
             <p className="flex items-start gap-2 text-brand-offwhite text-sm font-inter leading-snug">
-              <Clock size={15} className="text-brand-amber mt-0.5 flex-shrink-0" />
-              {endDate
-                ? <span>Gratis hasta el <strong className="font-sora">{endDate}</strong>, último día del {GIFT_PROMO_NAME}.</span>
-                : <span>Gratis por tiempo limitado.</span>}
+              <PackageCheck size={15} className="text-brand-amber mt-0.5 flex-shrink-0" />
+              <span>Gratis <strong className="font-sora">hasta agotar las piezas que quedan</strong>. Cuando se terminen, ya no se incluye.</span>
             </p>
-            <GiftCountdown variant="boxes" />
           </div>
 
           <p className="text-brand-steel text-xs font-inter text-center mt-4">Se agrega solo a tu pedido. No tienes que hacer nada.</p>

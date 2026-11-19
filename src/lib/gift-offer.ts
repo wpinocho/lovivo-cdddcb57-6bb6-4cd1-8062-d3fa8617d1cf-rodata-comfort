@@ -16,7 +16,7 @@ import type { CartProductItem } from '@/contexts/CartContext'
  */
 /**
  * PRICE PER URL: the gift PDP sells a DUPLICATE Rodata One (tags `no-listar,buen-fin`).
- * Buen Fin 2026 (2026-11-11): duplicate set to $799 = same as the main PDP; the crossed-out
+ * Since 2026-11-11 the duplicate is $799 = same as the main PDP; the crossed-out
  * price comes from the original product's compare_at (see GiftLanding). The backend
  * recomputes prices from the DB. The gift is ONLY attached to the duplicate.
  */
@@ -39,23 +39,26 @@ export const GIFT_NAME = 'Soporte de muñeca para moto'
 export const GIFT_NAME_SHORT = 'soporte de muñeca'
 
 /**
- * REAL, FIXED end of the gift promo — same moment for every visitor
- * (never a per-visitor resetting timer). BUEN FIN 2026 (13–17 nov): end of day
- * Tue 17 Nov 2026, CDMX (UTC-6). Previous run (launch gift) ended 31 Oct.
- * Set to null for "no end date" (then copy falls back to "while stock lasts").
+ * ON/OFF SWITCH of the gift URL (2026-11-19: "hasta agotar las muñequeras que quedan").
+ * true  → /productos/soporte-lumbar-rodata-one-regalo sells Rodata One + gift.
+ * false → the URL redirects to the normal PDP and the gift is no longer attached.
+ * 👉 When the remaining wrist supports run out, set this to false.
  */
-export const GIFT_OFFER_ENDS_AT: string | null = '2026-11-17T23:59:59-06:00'
+export const GIFT_OFFER_ENABLED = true
 
-/** Current reason for the gift (copy). Buen Fin 2026 — official logo + QR (participation requirement). */
-export const GIFT_PROMO_NAME = 'Buen Fin'
-const SB_MSG_RENDER = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/render/image/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1'
-/** Official Buen Fin 2026 calendar logo, background removed (transparent, 400×373). */
-export const BUEN_FIN_LOGO = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/product-images/cdddcb57-6bb6-4cd1-8062-d3fa8617d1cf/buen-fin-2026-logo.webp'
-export const BUEN_FIN_QR = 'https://ptgmltivisbtvmoxwnhd.supabase.co/storage/v1/object/public/message-images/0f3c776b-9309-4486-bd63-fd732b7d8db1/1794427528866-38mnaj0p5ig.webp'
+/**
+ * Optional REAL, FIXED end date (same moment for every visitor). null = no date,
+ * the offer lives until GIFT_OFFER_ENABLED is switched off. Buen Fin 2026 ended 17 Nov.
+ */
+export const GIFT_OFFER_ENDS_AT: string | null = null
+
+/** Urgency copy = REAL limited stock of the gift (no invented counts). */
+export const GIFT_URGENCY_LABEL = 'Últimas piezas'
 
 export const giftOfferEndMs = () => (GIFT_OFFER_ENDS_AT ? new Date(GIFT_OFFER_ENDS_AT).getTime() : null)
 
 export function isGiftOfferActive(now = Date.now()): boolean {
+  if (!GIFT_OFFER_ENABLED) return false
   const end = giftOfferEndMs()
   return end === null || now <= end
 }
